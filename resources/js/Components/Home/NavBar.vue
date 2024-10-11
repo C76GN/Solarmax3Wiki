@@ -1,46 +1,58 @@
 <template>
-  <nav class="bg-sky-900 p-4">
+  <!-- 设置背景和内边距 -->
+  <nav class="bg-camp-blue p-4">
+    <!-- Flexbox 容器，子元素均匀分布并垂直居中，宽度为100% -->
     <div class="flex justify-between items-center w-full">
+
       <!-- 左侧导航 -->
+      <!-- Flexbox 容器，子元素垂直居中，水平间距为4个单位 -->
       <div class="flex items-center space-x-4">
-        <a href="#" class="text-white font-bold text-lg">Solarmax3Wiki Unofficial</a>
-        <a href="#" :class=linkClass>游戏版本</a>
-        <a href="#" :class=linkClass>游戏内容</a>
-        <a href="#" :class=linkClass>自制制作</a>
-        <a href="#" :class=linkClass>攻略专区</a>
-        <a href="#" :class=linkClass>论坛</a>
+        <!-- 动态生成导航链接，使用 link.name 作为唯一键，链接地址为 link.url，样式为 linkClass -->
+        <a v-for="link in navLinks" :key="link.name" :href="link.url" :class="linkClass">{{ link.name }}</a>
       </div>
 
-      <!-- 右侧导航：登录和注册 -->
+      <!-- 右侧导航 -->
+      <!-- Flexbox 容器，子元素垂直居中，水平间距为4个单位 -->
       <div class="flex items-center space-x-4">
-        <!-- 判断用户是否已经登录 -->
+        <!-- 语言切换，文本样式为 linkClass -->
+        <a href="#" :class="linkClass">中/英</a>
+        <!-- 点击按钮时，将 showDownloadModal 的值设置为 true，显示窗口 -->
+        <button @click="showDownloadModal = true" :class="linkClass">游戏下载</button>
+        <!-- 点击按钮时，将 showCommunityModal 的值设置为 true，显示窗口 -->
+        <button @click="showCommunityModal = true" :class="linkClass">社群</button>
+        <!-- 检查用户是否登陆 -->
         <template v-if="$page.props.auth.user">
-          <Link href="/dashboard" :class=linkClass>Dashboard</Link>
+          <!-- 渲染一个指向用户仪表盘的链接，文本样式为 linkClass -->
+          <Link href="/dashboard" :class="linkClass">{{ $page.props.auth.user.name }}</Link>
         </template>
         <template v-else>
-          <Link href="/login" :class=linkClass>登录</Link>
-          <Link v-if="canRegister" href="/register" :class=linkClass>注册</Link>
+          <!-- 渲染一个指向登陆的链接 -->
+          <Link href="/login" :class="linkClass">登录</Link>
+          <!-- 通过 canRegister 动态控制注册功能 -->
+          <Link v-if="canRegister" href="/register" :class="linkClass">注册</Link>
         </template>
-        <a href="#" :class=linkClass>中/英</a>
-        <button @click="showDownloadModal = true" :class=linkClass>游戏下载</button>
-        <button @click="showCommunityModal = true" :class=linkClass>社群</button>
       </div>
     </div>
 
     <!-- 游戏下载弹出窗口 -->
+    <!-- 如果 showDownloadModal 为 true，显示 PopUp 组件 -->
     <PopUp v-if="showDownloadModal" @close="showDownloadModal = false" title="游戏下载">
       <ul>
+        <!-- 半成品 -->
         <li><a href="#" class="text-blue-500 hover:underline">推荐的版本！</a></li>
         <li><a href="#" class="text-blue-500 hover:underline">全部版本</a></li>
       </ul>
     </PopUp>
 
     <!-- 社群弹出窗口 -->
+    <!-- 如果 showCommunityModal 为 true，显示 PopUp 组件 -->
     <PopUp v-if="showCommunityModal" @close="showCommunityModal = false" title="社群">
       <ul>
         <li>
+          <!-- Flexbox 容器，子元素垂直居中，设置最小高度 -->
           <div class="flex items-center min-h-10">
             <p class="text-zinc-950 mr-2 font-bold min-w-60">官方群：736250242</p>
+            <!-- qq加群组件 -->
             <a target="_blank"
               href="https://qm.qq.com/cgi-bin/qm/qr?k=2LWqL9kEm4RCkBfmR7amYbXiFFqsXT_1&jump_from=webapi&authKey=cW8TXI2GV09Y6ThMrVIKTlNc3M/vqnR8dJe0jKsa2wPITtrVMkqCVO4UdQTXcFjT">
               <img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="Solarmax3官方群" title="Solarmax3官方群">
@@ -80,25 +92,32 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { Link } from '@inertiajs/inertia-vue3';  // 引入 Inertia.js 的 Link 组件
-import PopUp from '@/Components/Home/PopUp.vue';  // 引入弹窗组件
+import { ref } from 'vue';  // 导入 ref，用于创建响应式变量
+import { Link } from '@inertiajs/inertia-vue3'; // 导入 Inertia.js 的 Link 组件，用于无刷新的页面导航
+import PopUp from '@/Components/Home/PopUp.vue';  // 导入 PopUp 组件，用于显示弹出窗口
 
-const linkClass = 'text-gray-300 hover:text-white';
-const showDownloadModal = ref(false);
-const showCommunityModal = ref(false);
+const navLinks = [
+  { name: 'Solarmax3Wiki Unofficial', url: '#' },// 第一个链接，指向首页
+  { name: '游戏维基', url: '#' }, // 第二个链接，指向游戏维基页面
+  { name: '游戏版本', url: '#' }, // 第三个链接，指向游戏版本页面
+  { name: '自制制作', url: '#' }, // 第四个链接，指向自制制作页面
+  { name: '攻略专区', url: '#' }, // 第五个链接，指向攻略专区
+  { name: '论坛', url: '#' }  // 第六个链接，指向论坛页面
+];
 
-// 使用 defineProps 获取 props
+// 定义链接样式类
+const linkClass = 'text-camp-black hover:text-white'; // 使用 Tailwind CSS 样式，设置默认颜色和悬停时的颜色
+
+// 定义响应式变量，用于控制弹出窗口的显示
+const showDownloadModal = ref(false); // 用于控制游戏下载弹出窗口的状态
+const showCommunityModal = ref(false);  // 用于控制社群弹出窗口的状态
+
+// 定义组件接收的 props
 const props = defineProps({
-  canRegister: {
-    type: Boolean,
-    default: true,  // 默认显示注册按钮
+  canRegister: {  // 是否可以注册
+    type: Boolean,  // 类型为布尔值
+    default: false, // 默认值
   },
-});
-
-// 设置组件名称
-defineOptions({
-  name: 'NavBar',
 });
 </script>
 
