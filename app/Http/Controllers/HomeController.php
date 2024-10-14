@@ -10,6 +10,6 @@ class HomeController extends Controller // 定义 HomeController 类，继承自
     public function index() // 定义 index 方法，处理首页请求
     {
         // 返回给 Inertia 渲染的首页组件
-        return Inertia::render('Solarmax3WikiHome/Home'); // 使用 Inertia 渲染指定的 Vue 组件
+        return Inertia::render('Solarmax3Wiki/Home'); // 使用 Inertia 渲染指定的 Vue 组件
     }
 }
