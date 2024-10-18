@@ -1,3 +1,4 @@
+<!-- 删除账户 -->
 <script setup>
 import DangerButton from '@/Components/DangerButton.vue';
 import InputError from '@/Components/InputError.vue';

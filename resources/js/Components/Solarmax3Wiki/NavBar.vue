@@ -23,20 +23,19 @@
     </PopUp>
 
   </nav>
-  <!-- 设置内容部分，动态设置 padding-top -->
-  <div :style="{ paddingTop: navbarHeight + 'px' }">
-    <!-- 其他页面内容 -->
-  </div>
+  
+
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';  // 导入 ref，用于创建响应式变量
+import { ref } from 'vue';  // 导入 ref，用于创建响应式变量
 import PopUp from '@/Components/Solarmax3Wiki/PopUp.vue';  // 导入 PopUp 组件，用于显示弹出窗口
 import NavLinks from '@/Components/Solarmax3Wiki/NavLinks.vue';
 import SearchBar from '@/Components/Solarmax3Wiki/SearchBar.vue';
 import RightNav from '@/Components/Solarmax3Wiki/RightNav.vue';
 import DownloadContent from '@/Components/Solarmax3Wiki/PopUpContent/DownloadContent.vue';
 import CommunityContent from '@/Components/Solarmax3Wiki/PopUpContent/CommunityContent.vue';
+
 
 
 const navLinks = [
@@ -73,17 +72,6 @@ const closeModal = () => {
   currentModalContent.value = null;
 };
 
-
-// 定义导航栏的 ref
-const navbar = ref(null);
-const navbarHeight = ref(0);
-
-// 使用 onMounted 获取导航栏的高度
-onMounted(() => {
-  if (navbar.value) {
-    navbarHeight.value = navbar.value.offsetHeight; // 获取导航栏的高度
-  }
-});
 
 </script>
 

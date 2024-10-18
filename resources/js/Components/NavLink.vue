@@ -1,3 +1,6 @@
+<!-- 导航链接
+不同状态显示不同的样式
+-->
 <script setup>
 import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';

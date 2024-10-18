@@ -1,3 +1,5 @@
+<!-- 响应式导航链接
+好像是竖着排列的？ -->
 <script setup>
 import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';

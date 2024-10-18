@@ -1,3 +1,4 @@
+<!-- 还是按钮 -->
 <script setup>
 defineProps({
     type: {

@@ -1,3 +1,5 @@
+<!-- 认证布局 -->
+
 <script setup>
 import { ref } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';

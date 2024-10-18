@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\GameWikiController;
+use App\Http\Controllers\TextController;
 
 
 Route::get('/', [HomeController::class, 'index'])->name('home'); //主页路由
@@ -14,7 +15,7 @@ Route::get('/gamewiki', [GameWikiController::class, 'index'])->name('gamewiki');
 
 Route::get('/gamewiki/versions', [GameWikiController::class, 'showVersions']);
 
-
+Route::get('/text', [TextController::class, 'index']);
 
 // Route::get('/', function () {
 //     return Inertia::render('Welcome', [

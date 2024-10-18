@@ -1,3 +1,4 @@
+<!-- 错误消息组件 -->
 <script setup>
 defineProps({
     message: {

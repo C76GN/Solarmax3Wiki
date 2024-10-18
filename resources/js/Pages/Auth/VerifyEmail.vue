@@ -1,3 +1,4 @@
+<!-- 验证邮件 -->
 <script setup>
 import { computed } from 'vue';
 import GuestLayout from '@/Layouts/GuestLayout.vue';

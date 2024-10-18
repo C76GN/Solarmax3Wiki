@@ -5,6 +5,7 @@ import './bootstrap';// 导入 Bootstrap 相关的 JavaScript 文件
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h } from 'vue';
+import { FontAwesomeIcon } from './fontAwesome'; // 导入 FontAwesomeIcon 组件
 
 // 导入 ZiggyVue，用于处理 Laravel 路由
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
@@ -28,6 +29,7 @@ createInertiaApp({
         return createApp({ render: () => h(App, props) })// 使用 h 函数渲染 App 组件
             .use(plugin)// 使用 Inertia 插件
             .use(ZiggyVue)// 使用 ZiggyVue 插件以支持 Laravel 路由
+            .component('font-awesome-icon', FontAwesomeIcon) // 注册 FontAwesomeIcon 组件
             .mount(el);// 挂载到指定的 DOM 元素
     },
 

@@ -1,3 +1,4 @@
+<!-- 重置密码 -->
 <script setup>
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import InputError from '@/Components/InputError.vue';

@@ -1,3 +1,4 @@
+<!-- 动态显示组件 -->
 <script setup>
 defineProps({
     value: {

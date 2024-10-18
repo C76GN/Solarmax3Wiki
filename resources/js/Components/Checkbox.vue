@@ -1,3 +1,4 @@
+<!-- 复选框组件 -->
 <script setup>
 import { computed } from 'vue';
 
@@ -25,10 +26,6 @@ const proxyChecked = computed({
 </script>
 
 <template>
-    <input
-        type="checkbox"
-        :value="value"
-        v-model="proxyChecked"
-        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
-    />
+    <input type="checkbox" :value="value" v-model="proxyChecked"
+        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" />
 </template>

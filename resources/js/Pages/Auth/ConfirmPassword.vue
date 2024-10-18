@@ -1,3 +1,4 @@
+<!-- 简单的密码确认页面，用于在用户访问安全区域前确认其密码。 -->
 <script setup>
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import InputError from '@/Components/InputError.vue';

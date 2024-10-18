@@ -1,3 +1,4 @@
+<!-- 注册页面 -->
 <script setup>
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import InputError from '@/Components/InputError.vue';
