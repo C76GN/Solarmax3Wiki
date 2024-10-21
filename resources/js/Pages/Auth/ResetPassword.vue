@@ -1,10 +1,48 @@
-<!-- 重置密码 -->
+<template>
+    <GuestLayout>
+
+        <Head title="Reset Password" />
+        <h1 class="text-center text-white text-2xl mb-8">Reset Password</h1>
+
+        <form @submit.prevent="submit">
+            <div>
+                <!-- 使用自定义的 LoginInput 组件，并传递 label 属性 -->
+                <LoginInput id="email" type="email" class="mt-1 block w-full" v-model="form.email" required autofocus
+                    ref="emailInput" autocomplete="username" label="Email" />
+
+                <InputError class="mt-2" :message="form.errors.email" />
+            </div>
+
+            <div class="mt-4">
+                <LoginInput id="password" type="password" class="mt-1 block w-full" v-model="form.password" required
+                    autocomplete="new-password" label="Password" />
+
+                <InputError class="mt-2" :message="form.errors.password" />
+            </div>
+
+            <div class="mt-4">
+                <LoginInput id="password_confirmation" type="password" class="mt-1 block w-full"
+                    v-model="form.password_confirmation" required autocomplete="new-password"
+                    label="Confirm Password" />
+
+                <InputError class="mt-2" :message="form.errors.password_confirmation" />
+            </div>
+
+            <div class="mt-6 flex flex-col items-center justify-center">
+                <LoginButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+                    Reset Password
+                </LoginButton>
+            </div>
+        </form>
+    </GuestLayout>
+</template>
+
 <script setup>
+import { ref, onMounted } from 'vue';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
+import LoginButton from '@/Components/Solarmax3Wiki/Buttons/LoginButton.vue';
+import LoginInput from '@/Components/Solarmax3Wiki/LoginInput.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -25,78 +63,16 @@ const form = useForm({
     password_confirmation: '',
 });
 
+const emailInput = ref(null);
+
 const submit = () => {
     form.post(route('password.store'), {
         onFinish: () => form.reset('password', 'password_confirmation'),
     });
 };
+
+// 页面加载时自动聚焦到第一个输入框
+onMounted(() => {
+    emailInput.value.focus();
+});
 </script>
-
-<template>
-    <GuestLayout>
-        <Head title="Reset Password" />
-
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Email" />
-
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
-                    required
-                    autofocus
-                    autocomplete="username"
-                />
-
-                <InputError class="mt-2" :message="form.errors.email" />
-            </div>
-
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
-
-                <TextInput
-                    id="password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password"
-                    required
-                    autocomplete="new-password"
-                />
-
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
-
-            <div class="mt-4">
-                <InputLabel
-                    for="password_confirmation"
-                    value="Confirm Password"
-                />
-
-                <TextInput
-                    id="password_confirmation"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password_confirmation"
-                    required
-                    autocomplete="new-password"
-                />
-
-                <InputError
-                    class="mt-2"
-                    :message="form.errors.password_confirmation"
-                />
-            </div>
-
-            <div class="mt-4 flex items-center justify-end">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Reset Password
-                </PrimaryButton>
-            </div>
-        </form>
-    </GuestLayout>
-</template>

@@ -13,9 +13,10 @@ Route::get('/', [HomeController::class, 'index'])->name('home'); //主页路由
 
 Route::get('/gamewiki', [GameWikiController::class, 'index'])->name('gamewiki');
 
-Route::get('/gamewiki/versions', [GameWikiController::class, 'showVersions']);
+Route::get('/gamewiki/versions', [GameWikiController::class,'showVersions']);
 
 Route::get('/text', [TextController::class, 'index']);
+Route::get('/text2', [TextController::class, 'index2']);
 
 // Route::get('/', function () {
 //     return Inertia::render('Welcome', [

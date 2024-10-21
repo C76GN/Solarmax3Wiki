@@ -12,4 +12,9 @@ class TextController extends Controller
         // 返回给 Inertia 渲染的首页组件
         return Inertia::render('Solarmax3Wiki/text'); 
     }
+    public function index2()
+    {
+        // 返回给 Inertia 渲染的首页组件
+        return Inertia::render('Solarmax3Wiki/text2');
+    }
 }

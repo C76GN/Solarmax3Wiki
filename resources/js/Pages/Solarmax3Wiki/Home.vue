@@ -7,8 +7,10 @@
     <!-- 大标题，中央展示，带背景图片 -->
     <div
       class="w-full flex justify-center items-center h-48 border-4 border-camp-black bg-opacity-75 p-4 rounded-lg shadow-lg"
-      style="background-image: url('/images/BG1.jpg'); background-size: cover; background-position: center;">
-      <h1 class="text-4xl font-bold text-camp-green">欢迎来到太阳系争夺战3非官方维基百科</h1>
+      style="background-image: url('/images/BG1.webp'); background-size: cover; background-position: center;">
+      <h1
+        class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-yellow-700 whitespace-nowrap">
+        欢迎来到太阳系争夺战3非官方维基百科</h1>
     </div>
 
     <!-- 内容部分，左边为关于游戏和关于网站，右边为公告栏 -->
