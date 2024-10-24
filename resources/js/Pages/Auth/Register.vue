@@ -7,7 +7,7 @@
         <form @submit.prevent="submit">
             <div>
                 <!-- 使用自定义的 LoginInput 组件，并传递 label 属性，绑定 ref -->
-                <LoginInput id="name" type="text" class="mt-1 block w-full" v-model="form.name" required autofocus
+                <LoginInput id="name" type="text" class="mt-1 block w-full" v-model="form.name" required 
                     ref="nameInput" autocomplete="name" label="Name" />
 
                 <InputError class="mt-2" :message="form.errors.name" />
@@ -76,6 +76,8 @@ const submit = () => {
 
 // 页面加载时自动聚焦到第一个输入框
 onMounted(() => {
-    nameInput.value.focus();
+    if (nameInput.value) {
+        nameInput.value.focus(); // 手动聚焦到邮箱输入框
+    }
 });
 </script>

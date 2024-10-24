@@ -1,8 +1,10 @@
 <template>
- 
+    <StarrySky/>
 </template>
 
 <script setup>
+import StarrySky from '@/Components/Solarmax3Wiki/StarrySky.vue';
+
 
 </script>
 

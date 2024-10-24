@@ -10,18 +10,15 @@ const props = defineProps({
         required: true,
     },
     value: {
+        type: [String, Number, Boolean], // 明确类型
         default: null,
     },
 });
 
+// 使用 computed 直接返回 props.checked，简化 getter 和 setter
 const proxyChecked = computed({
-    get() {
-        return props.checked;
-    },
-
-    set(val) {
-        emit('update:checked', val);
-    },
+    get: () => props.checked,
+    set: (val) => emit('update:checked', val),
 });
 </script>
 

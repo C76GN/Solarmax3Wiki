@@ -9,7 +9,7 @@
                     enter-to-class="opacity-100" leave-active-class="ease-in duration-200"
                     leave-from-class="opacity-100" leave-to-class="opacity-0">
                     <div v-show="show" class="fixed inset-0 transform transition-all" @click="close">
-                        <div class="absolute inset-0 bg-gray-500 opacity-75" />
+                        <div class="absolute inset-0 bg-black opacity-75" />
                     </div>
                 </Transition>
 
@@ -20,7 +20,7 @@
                     leave-from-class="opacity-100 translate-y-0 sm:scale-100"
                     leave-to-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
                     <div v-show="show"
-                        class="dialog-content mb-6 transform overflow-auto rounded-lg bg-white shadow-xl transition-all sm:w-full"
+                        class="dialog-content mb-6 transform overflow-auto rounded-lg bg-cyan-900 shadow-xl transition-all sm:w-full"
                         :class="maxWidthClass">
                         <!-- 使用 slot 动态传入弹窗内容 -->
                         <slot v-if="show" />

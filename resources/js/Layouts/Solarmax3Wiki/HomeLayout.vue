@@ -20,6 +20,7 @@
 <script setup>
 import NavBar from '@/Components/Solarmax3Wiki/NavBar.vue';
 import { Head } from '@inertiajs/vue3';
+
 defineProps({
     title: {
         type: String,

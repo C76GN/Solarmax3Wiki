@@ -1,5 +1,3 @@
-<!-- 响应式导航链接
-好像是竖着排列的？ -->
 <script setup>
 import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
@@ -14,15 +12,22 @@ const props = defineProps({
     },
 });
 
-const classes = computed(() =>
-    props.active
-        ? 'block w-full ps-3 pe-4 py-2 border-l-4 border-indigo-400 text-start text-base font-medium text-indigo-700 bg-indigo-50 focus:outline-none focus:text-indigo-800 focus:bg-indigo-100 focus:border-indigo-700 transition duration-150 ease-in-out'
-        : 'block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:text-gray-800 focus:bg-gray-50 focus:border-gray-300 transition duration-150 ease-in-out',
-);
+// 公共类
+const commonClass = 'inline-flex items-center px-1 pt-1 transition duration-300 ease-in-out whitespace-nowrap focus:outline-none';
+// Active时的类
+const IsActiveClass = `${commonClass} bg-sky-600 text-xl font-extrabold text-black hover:bg-sky-500`;
+// 非Active时的类
+const NotActiveClass = `${commonClass} bg-sky-400 text-xl font-medium text-slate-700 hover:bg-sky-500 hover:font-extrabold`;
+
+const classes = computed(() => {
+    return props.active ?
+        `${IsActiveClass} block w-full ps-3 pe-4 py-2` :
+        `${NotActiveClass} block w-full ps-3 pe-4 py-2`;
+});
 </script>
 
 <template>
     <Link :href="href" :class="classes">
-        <slot />
+    <slot />
     </Link>
 </template>

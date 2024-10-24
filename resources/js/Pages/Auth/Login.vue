@@ -10,7 +10,7 @@
         <form @submit.prevent="submit">
             <div>
                 <!-- 使用自定义的 LoginInput 组件，并传递 label 属性，绑定 ref -->
-                <LoginInput id="email" type="email" class="mt-1 block w-full" v-model="form.email" required autofocus
+                <LoginInput id="email" type="email" class="mt-1 block w-full" v-model="form.email" required
                     ref="emailInput" autocomplete="username" label="Email" />
 
                 <InputError class="mt-2" :message="form.errors.email" />
@@ -37,6 +37,10 @@
                 <Link v-if="canResetPassword" :href="route('password.request')"
                     class="mt-4 text-white text-center text-sm underline hover:text-cyan-300 focus:outline-none">
                 Forgot your password?
+                </Link>
+                <Link :href="route('register')"
+                    class="mt-2 text-white text-center text-sm underline hover:text-cyan-300 focus:outline-none">
+                Don't have an account? Sign up here
                 </Link>
             </div>
         </form>
@@ -77,6 +81,8 @@ const submit = () => {
 
 // 页面加载时自动聚焦到第一个输入框
 onMounted(() => {
-    emailInput.value.focus();
+    if (emailInput.value) {
+        emailInput.value.focus(); // 手动聚焦到邮箱输入框
+    }
 });
 </script>
