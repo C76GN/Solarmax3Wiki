@@ -1,22 +1,23 @@
 <template>
-    <TopNavBar>
-        <!-- 将 LeftTopNavBar 插入到顶部导航栏的左侧 -->
-        <LeftTopNavBar :links="navLinks" @nav-click="handleNavClick" />
-    </TopNavBar>
-
-    <!-- 页面内容 -->
-    <div class="content mt-20 p-4">
-        <p>这里是页面内容</p>
-        <!-- 更多内容模拟页面滚动 -->
-        <div style="height: 2000px"></div>
+    <div>
+        <!-- 使用 NavText 组件，传入导航链接和用户信息 -->
+        <NavText :logo-link="'/dashboard'" :navigation-links="[
+            { href: '/text', label: 'text1' },
+            { href: '/text2', label: 'text2' }
+        ]" :logout-link="'/logout'" :show-dropdown="true">
+            <!-- 页面内容示例 -->
+            <div class="p-10 text-white">
+                <h1 class="text-4xl font-bold">Welcome to Text Page</h1>
+                <p class="mt-4">This is an example page using the NavText component.</p>
+            </div>
+        </NavText>
     </div>
 </template>
 
 <script setup>
-import TopNavBar from "@/Components/Solarmax3Wiki/Nav/TopNavBar.vue";
-import LeftTopNavBar from "@/Components/Solarmax3Wiki/Nav/LeftTopNavBar.vue";
-import { useNavLinks } from "@/Composables/useNavLinks";
-
-const { navLinks, handleNavClick } = useNavLinks();  // 使用抽象的状态管理逻辑
-
+import NavText from '@/Components/Solarmax3Wiki/text/NavText.vue';
 </script>
+
+<style scoped>
+/* 可根据需要调整样式 */
+</style>
