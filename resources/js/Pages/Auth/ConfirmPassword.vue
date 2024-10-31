@@ -28,10 +28,10 @@
 </template>
 
 <script setup>
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import LoginButton from '@/Components/Solarmax3Wiki/Buttons/LoginButton.vue';
-import LoginInput from '@/Components/Solarmax3Wiki/LoginInput.vue';
+import GuestLayout from '@/Layouts/UserLayouts/GuestLayout.vue';
+import InputError from '@/Components/Other/InputError.vue';
+import LoginButton from '@/Components/Buttons/LoginButton.vue';
+import LoginInput from '@/Components/Inputs/LoginInput.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 
 const form = useForm({

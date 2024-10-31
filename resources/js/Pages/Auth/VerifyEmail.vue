@@ -32,8 +32,8 @@
 
 <script setup>
 import { computed } from 'vue';
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import LoginButton from '@/Components/Solarmax3Wiki/Buttons/LoginButton.vue';
+import GuestLayout from '@/Layouts/UserLayouts/GuestLayout.vue';
+import LoginButton from '@/Components/Buttons/LoginButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({

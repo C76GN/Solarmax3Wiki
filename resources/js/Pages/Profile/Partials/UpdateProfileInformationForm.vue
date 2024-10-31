@@ -1,9 +1,9 @@
 <!-- 修改信息 -->
 <script setup>
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
+import InputError from '@/Components/Other/InputError.vue';
+import InputLabel from '@/Components/Other/InputLabel.vue';
+import PrimaryButton from '@/Components/Buttons/PrimaryButton.vue';
+import TextInput from '@/Components/Inputs/TextInput.vue';
 import { Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue'; // 导入 ref 和 onMounted
 

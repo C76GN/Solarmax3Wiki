@@ -9,8 +9,8 @@
                 <!-- 左侧部分 -->
                 <div class="flex items-start">
                     <!-- Logo -->
-                    <Link :href="route('dashboard')">
-                    <ApplicationLogo class="block h-9 w-auto fill-current text-gray-800" />
+                    <Link :href="'/'">
+                    <HomeLogo class="block h-9 w-auto fill-current text-gray-800" />
                     </Link>
 
                     <!-- Navigation Links -->
@@ -103,14 +103,14 @@
 </template>
 
 <script setup>
-import { ref ,onMounted, onBeforeUnmount } from 'vue';
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import Dropdown from '@/Components/Dropdown.vue';
-import DropdownLink from '@/Components/DropdownLink.vue';
-import NavLink from '@/Components/NavLink.vue';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
+import HomeLogo from '@/Components/Svg/HomeLogo.vue';
+import Dropdown from '@/Components/Other/Dropdown.vue';
+import DropdownLink from '@/Components/Other/DropdownLink.vue';
+import NavLink from '@/Components/Nav/NavLink.vue';
+import ResponsiveNavLink from '@/Components/Nav/ResponsiveNavLink.vue';
 import { Link } from '@inertiajs/vue3';
-import StarrySky from '@/Components/Solarmax3Wiki/StarrySky.vue';
+import StarrySky from '@/Components/Other/StarrySky.vue';
 
 const showingNavigationDropdown = ref(false);
 

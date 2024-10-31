@@ -33,8 +33,8 @@ import PopUp from '@/Components/Solarmax3Wiki/PopUp.vue';  // 导入 PopUp 组�
 import NavLinks from '@/Components/Solarmax3Wiki/NavLinks.vue';
 import SearchBar from '@/Components/Solarmax3Wiki/SearchBar.vue';
 import RightNav from '@/Components/Solarmax3Wiki/RightNav.vue';
-import DownloadContent from '@/Components/Solarmax3Wiki/Modal/ModalContent/DownloadContent.vue';
-import CommunityContent from '@/Components/Solarmax3Wiki/Modal/ModalContent/CommunityContent.vue';
+import DownloadContent from '@/Components/Modal/ModalContent/DownloadContent.vue';
+import CommunityContent from '@/Components/Modal/ModalContent/CommunityContent.vue';
 
 
 

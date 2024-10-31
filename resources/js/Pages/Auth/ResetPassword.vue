@@ -7,7 +7,7 @@
         <form @submit.prevent="submit">
             <div>
                 <!-- 使用自定义的 LoginInput 组件，并传递 label 属性 -->
-                <LoginInput id="email" type="email" class="mt-1 block w-full" v-model="form.email" required 
+                <LoginInput id="email" type="email" class="mt-1 block w-full" v-model="form.email" required
                     ref="emailInput" autocomplete="username" label="Email" />
 
                 <InputError class="mt-2" :message="form.errors.email" />
@@ -39,10 +39,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import LoginButton from '@/Components/Solarmax3Wiki/Buttons/LoginButton.vue';
-import LoginInput from '@/Components/Solarmax3Wiki/LoginInput.vue';
+import GuestLayout from '@/Layouts/UserLayouts/GuestLayout.vue';
+import InputError from '@/Components/Other/InputError.vue';
+import LoginButton from '@/Components/Buttons/LoginButton.vue';
+import LoginInput from '@/Components/Inputs/LoginInput.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({

@@ -7,7 +7,7 @@
         <!-- Logo 区域 -->
         <div class="w-full max-w-xs sm:max-w-md h-auto z-10">
             <Link href="/">
-            <Logo
+            <AppLogo
                 class="fill-current object-contain text-cyan-500 hover:scale-105 transition duration-300 ease-in-out" />
             </Link>
         </div>
@@ -21,7 +21,7 @@
 </template>
 
 <script setup>
-import StarrySky from '@/Components/Solarmax3Wiki/StarrySky.vue';
-import Logo from '@/Components/Solarmax3Wiki/Svg/Logo.vue';
+import StarrySky from '@/Components/Other/StarrySky.vue';
+import AppLogo from '@/Components/Svg/AppLogo.vue';
 import { Link } from '@inertiajs/vue3';
 </script>

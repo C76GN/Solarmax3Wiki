@@ -7,8 +7,8 @@
         <form @submit.prevent="submit">
             <div>
                 <!-- 使用自定义的 LoginInput 组件，并传递 label 属性，绑定 ref -->
-                <LoginInput id="name" type="text" class="mt-1 block w-full" v-model="form.name" required 
-                    ref="nameInput" autocomplete="name" label="Name" />
+                <LoginInput id="name" type="text" class="mt-1 block w-full" v-model="form.name" required ref="nameInput"
+                    autocomplete="name" label="Name" />
 
                 <InputError class="mt-2" :message="form.errors.name" />
             </div>
@@ -53,10 +53,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import LoginButton from '@/Components/Solarmax3Wiki/Buttons/LoginButton.vue';
-import LoginInput from '@/Components/Solarmax3Wiki/LoginInput.vue';
+import GuestLayout from '@/Layouts/UserLayouts/GuestLayout.vue';
+import InputError from '@/Components/Other/InputError.vue';
+import LoginButton from '@/Components/Buttons/LoginButton.vue';
+import LoginInput from '@/Components/Inputs/LoginInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 const form = useForm({
