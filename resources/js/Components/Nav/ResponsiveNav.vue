@@ -1,6 +1,6 @@
 <template>
     <!-- 整个导航容器 -->
-    <div class="relative w-full bg-sky-400 shadow-lg z-40 overflow-hidden">
+    <div class="relative w-full bg-sky-400 bg-opacity-75 shadow-lg z-40 overflow-hidden">
         <!-- 导航链接部分 -->
         <div class="space-y-1 pb-3 pt-2">
             <!-- 遍历 navigationLinks 数组，渲染每个导航链接 -->
@@ -21,7 +21,7 @@
                 </div>
                 <div class="mt-3 space-y-1">
                     <!-- 已登录用户显示个人资料和登出链接 -->
-                    <ResponsiveNavLink href="/profile.edit">Profile</ResponsiveNavLink>
+                    <ResponsiveNavLink :href="route('profile.edit')">Profile</ResponsiveNavLink>
                     <ResponsiveNavLink href="/logout" method="post" as="button">Log Out</ResponsiveNavLink>
                 </div>
             </div>

@@ -1,5 +1,6 @@
 import '../css/app.css';// 导入全局 CSS 文件
 import './bootstrap';// 导入 Bootstrap 相关的 JavaScript 文件
+import './consoleMessage.js';
 
 // 从 Inertia.js 和 Vue 3 中导入必要的函数
 import { createInertiaApp } from '@inertiajs/vue3';
@@ -37,4 +38,5 @@ createInertiaApp({
     progress: {
         color: '#1e3a8a',
     },
+    
 });

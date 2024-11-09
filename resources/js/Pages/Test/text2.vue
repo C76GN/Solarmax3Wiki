@@ -42,12 +42,49 @@
             </ul>
         </div>
 
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+        <!-- 群组图标 -->
+        <template>
+            <div>
+                <!-- 群组图标 -->
+                <button>
+                    <font-awesome-icon icon="users" /> 加入社群
+                </button>
+
+                <!-- 朋友图标 -->
+                <button>
+                    <font-awesome-icon icon="user-friends" /> 加入朋友群
+                </button>
+
+                <!-- 评论图标 -->
+                <button>
+                    <font-awesome-icon icon="comments" /> 参与讨论
+                </button>
+
+                <!-- 添加/加入图标 -->
+                <button>
+                    <font-awesome-icon icon="plus" /> 加入
+                </button>
+            </div>
+        </template>
+
+        <script>
+export default {
+  name: 'CommunityButtons',
+};
+</script>
+
+
     </HomeLayout>
+
 </template>
 
 <script setup>
 import HomeLayout from '@/Layouts/Solarmax3Wiki/HomeLayout.vue';
 import ContentBox from '@/Components/Solarmax3Wiki/ContentBox.vue';  // 引入 ContentBox 组件
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+
 
 </script>
 

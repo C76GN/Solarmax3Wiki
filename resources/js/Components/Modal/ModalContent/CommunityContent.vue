@@ -1,5 +1,5 @@
 <template>
-    <div class="p-6 rounded-lg shadow-lg bg-white">
+    <div class="p-6 rounded-lg shadow-lg bg-sky-200 bg-opacity-80">
         <h2 class="text-xl font-bold whitespace-nowrap mb-4">社群</h2>
         <ul class="space-y-4">
             <li v-for="group in groups" :key="group.id" class="flex items-center justify-between space-x-4">
