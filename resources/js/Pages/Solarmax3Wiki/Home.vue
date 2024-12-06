@@ -1,3 +1,4 @@
+<!-- Home.vue -->
 <template>
 
   <Head title="Home" />
@@ -15,27 +16,27 @@
           <p class="text-lg font-medium">发现最新的游戏资讯、指南与更新</p>
         </div>
 
-        <!-- 瀑布流布局 -->
-        <ContentLayout>
-          <template #left>
-            <InfoCard title="关于游戏" icon="🎮" description="《太阳系争夺战3》是一款星空背景，不断开辟新星球的游戏..." />
-            <InfoCard title="关于网站" icon="🌐" description="本网站由游戏爱好者搭建，旨在为玩家提供关于《太阳系争夺战3》的详细攻略、资源等信息..." />
-            <InfoCard title="最新公告" icon="📢" description="查看最新的游戏公告与资讯。" />
-            <InfoCard title="网站更新" icon="🔄" description="显示网站最近的更新内容。" />
-            <InfoCard title="游戏更新" icon="🆕" description="查看最新的游戏版本。" />
-            <InfoCard title="网站指南" icon="📖" description="提供游戏相关的详细指南与攻略信息，帮助玩家更好地参与游戏。" />
-          </template>
+        <!-- 主内容布局 -->
+        <div class="main-content-layout">
+          <!-- 瀑布流布局 -->
+          <div class="masonry-grid">
+            <SectionCard title="关于游戏" icon="🎮" description="《太阳系争夺战3》是一款星空背景，不断开辟新星球的游戏..." />
+            <SectionCard title="关于网站" icon="🌐" description="本网站由游戏爱好者搭建，旨在为玩家提供关于《太阳系争夺战3》的详细攻略、资源等信息..." />
+            <SectionCard title="最新公告" icon="📢" description="查看最新的游戏公告与资讯。" />
+            <SectionCard title="网站更新" icon="🔄" description="显示网站最近的更新内容。" />
+            <SectionCard title="游戏更新" icon="🆕" description="查看最新的游戏版本。" />
 
-          <template #right>
-            <Carousel>
-              <div v-for="(slide, index) in slides" :key="index" class="carousel-slide">
-                <img :src="slide.image" alt="轮播图内容" class="w-full rounded-lg" />
-                <p class="text-white mt-4">{{ slide.description }}</p>
-              </div>
-            </Carousel>
-          </template>
-        </ContentLayout>
+          </div>
 
+          <div class="right-content">
+
+            <!-- 轮播图组件替换右侧板块 -->
+            <Carousel :images="imageList" :autoPlayInterval="5000" />
+            <SectionCard title="网站指南" icon="📖"
+              description="此处应有使用该网站的教程此处应有使用该网站的教程此处应有使用该网站的教程此处应有使用该网站的教程此处应有使用该网站的教程" />
+          </div>
+
+        </div>
       </div>
     </div>
   </MainLayout>
@@ -44,22 +45,64 @@
 <script setup>
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import { Head } from '@inertiajs/vue3';
-import ContentLayout from '@/Layouts/MainLayouts/ContentLayout.vue';
-import InfoCard from '@/Components/Other/InfoCard.vue';
-import Carousel from '@/Components/Other/Carousel.vue';
+import SectionCard from '@/Components/Other/SectionCard.vue'; // 引入 SectionCard 组件
+import Carousel from '@/Components/Other/Carousel.vue'; // 引入 Carousel 组件
 
-// 示例轮播内容
-const slides = [
-  { image: '/images/BG1.jpg', description: '轮播图内容1' },
-  { image: '/images/BG2.jpg', description: '轮播图内容2' },
-  { image: '/images/BG1.jpg', description: '轮播图内容3' },
+const imageList = [
+  { src: '/images/BG1.jpg', alt: 'Image 1', link: '/' },
+  { src: '/images/BG2.jpg', alt: 'Image 2', link: '/' },
+  { src: '/images/BG1.jpg', alt: 'Image 3', link: '/' },
+  { src: '/images/BG2.jpg', alt: 'Image 4', link: '/' },
 ];
 </script>
 
-
 <style scoped>
+
+.right-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* 确保此间距与左侧间距一致 */
+}
 .custom-max-w {
-  max-width: 120rem;
+  max-width: 100rem;
   /* 自定义宽度 */
+}
+
+/* 主内容布局：瀑布流和轮播图的容器 */
+.main-content-layout {
+  display: flex;
+  gap: 24px;
+  /* 调整左右两块的间距 */
+}
+
+/* Masonry Grid 样式 */
+.masonry-grid {
+  flex-grow: 2;
+  column-count: 2;
+  /* 默认 2 列，自动适应内容高度 */
+  column-gap: 16px;
+}
+
+.masonry-item {
+  break-inside: avoid;
+  margin-bottom: 16px;
+}
+
+/* 响应式布局，调整列数 */
+@media (max-width: 1200px) {
+  .masonry-grid {
+    column-count: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .masonry-grid {
+    column-count: 1;
+  }
+
+  .main-content-layout {
+    flex-direction: column;
+  }
 }
 </style>
