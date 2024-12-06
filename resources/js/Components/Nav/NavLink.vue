@@ -24,7 +24,7 @@ const props = defineProps({
 });
 
 // 定义基础样式类（用于所有导航链接）
-const baseClass = 'inline-flex items-center px-1 pt-1 border-b-2 text-xl transition duration-300 ease-in-out whitespace-nowrap';
+const baseClass = 'inline-flex items-center px-1 pt-1 border-b-2 text-xl transition duration-400 ease-in-out whitespace-nowrap';
 // 定义鼠标悬浮时的样式
 const hoverClass = 'hover:text-gray-700 hover:border-gray-300';
 // 活动状态下的样式：背景渐变色和加粗字体
