@@ -7,13 +7,17 @@ use Inertia\Inertia;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\GameWikiController;
 use App\Http\Controllers\TextController;
+use App\Http\Controllers\TemplateController;
 
 
 Route::get('/', [HomeController::class, 'index'])->name('home'); //主页路由
 
+Route::middleware(['auth'])->group(function () {
+    Route::resource('templates', TemplateController::class);
+});
+
 Route::get('/gamewiki', [GameWikiController::class, 'index'])->name('gamewiki');
 
-Route::get('/gamewiki/versions', [GameWikiController::class,'showVersions']);
 
 Route::get('/text', [TextController::class, 'index']);
 Route::get('/text2', [TextController::class, 'index2']);

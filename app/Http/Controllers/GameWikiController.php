@@ -12,8 +12,4 @@ class GameWikiController extends Controller
         return Inertia::render('Solarmax3Wiki/GameWiki'); // 假设你用的是 Inertia.js
     }
 
-    public function showVersions()
-    {
-        return Inertia::render('Solarmax3Wiki/GameVersions');
-    }
 }

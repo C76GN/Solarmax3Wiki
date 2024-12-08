@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import Navbar from '@/Components/Nav/NavBar.vue'; // 引入新创建的 Navbar 组件
+import Navbar from '@/Components/Nav/NavBar.vue'; 
 import FloatingMenu from '@/Components/Other/FloatingMenu.vue';
 import StarrySky from '@/Components/Other/StarrySky.vue';
 

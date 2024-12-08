@@ -1,4 +1,3 @@
-<!-- SectionCard.vue -->
 <template>
     <div class="masonry-item">
         <div class="section-card">
