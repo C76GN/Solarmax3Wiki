@@ -6,10 +6,10 @@
             <div class="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg overflow-hidden">
                 <div class="p-6">
                     <h2 class="text-2xl font-semibold text-gray-800 mb-6">
-                        创建新模板
+                        编辑页面：{{ page.title }}
                     </h2>
 
-                    <TemplateForm submit-button-text="创建模板" />
+                    <PageForm :templates="templates" :page="page" submit-button-text="更新页面" />
                 </div>
             </div>
         </div>
@@ -18,6 +18,16 @@
 
 <script setup>
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue'
-import TemplateForm from '@/Components/Form/TemplateForm.vue'
+import PageForm from '@/Components/Form/PageForm.vue'
 
+const props = defineProps({
+    page: {
+        type: Object,
+        required: true
+    },
+    templates: {
+        type: Array,
+        required: true
+    }
+})
 </script>

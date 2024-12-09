@@ -44,4 +44,43 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
         ];
     }
+
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class);
+    }
+
+    public function hasRole($role)
+    {
+        if (is_string($role)) {
+            return $this->roles->contains('name', $role);
+        }
+        return $this->roles->contains($role);
+    }
+
+    public function hasPermission($permission)
+    {
+        return $this->roles->flatMap(function ($role) {
+            return $role->permissions;
+        })->contains('name', is_string($permission) ? $permission : $permission->name);
+    }
+
+    public function hasAnyRole(array $roles)
+    {
+        return $this->roles->whereIn('name', $roles)->isNotEmpty();
+    }
+
+    public function hasAnyPermission(array $permissions)
+    {
+        return $this->roles->flatMap(function ($role) {
+            return $role->permissions;
+        })->whereIn('name', $permissions)->isNotEmpty();
+    }
+
+    public function getAllPermissionsAttribute()
+    {
+        return $this->roles->flatMap(function ($role) {
+            return $role->permissions;
+        })->pluck('name')->unique()->values()->all();
+    }
 }

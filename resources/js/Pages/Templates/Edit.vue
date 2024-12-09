@@ -18,7 +18,7 @@
 
 <script setup>
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue'
-import TemplateForm from '@/Pages/Templates/TemplateForm.vue'
+import TemplateForm from '@/Components/Form/TemplateForm.vue'
 
 const props = defineProps({
     template: {
