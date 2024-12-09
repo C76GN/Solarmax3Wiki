@@ -6,18 +6,26 @@
             <div class="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg overflow-hidden">
                 <div class="p-6">
                     <h2 class="text-2xl font-semibold text-gray-800 mb-6">
-                        创建新模板
+                        创建新页面
                     </h2>
 
-                    <TemplateForm submit-button-text="创建模板" />
+                    <PageForm :templates="templates" submit-button-text="创建页面" />
                 </div>
             </div>
         </div>
+        <FlashMessage ref="flash" />
     </MainLayout>
 </template>
 
 <script setup>
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue'
-import TemplateForm from '@/Components/Form/TemplateForm.vue'
+import PageForm from '@/Components/Form/PageForm.vue'
+import FlashMessage from '@/Components/Other/FlashMessage.vue'
 
+const props = defineProps({
+    templates: {
+        type: Array,
+        required: true
+    }
+})
 </script>

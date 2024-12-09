@@ -14,13 +14,18 @@
 
                     <!-- 操作栏 -->
                     <div class="mb-4 flex justify-between items-center">
-                        <div>
-                            <Link :href="route('templates.create')"
-                                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">
+                        <div class="space-x-2">
+                            <Link v-if="canCreateTemplate" :href="route('templates.create')"
+                                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
                             创建新模板
                             </Link>
+                            <button v-if="canCreateTemplate" @click="showImportModal = true"
+                                class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
+                                导入模板
+                            </button>
                         </div>
                     </div>
+
 
                     <!-- 模板列表 -->
                     <div class="overflow-x-auto">
@@ -42,13 +47,21 @@
                                     <td class="px-4 py-3 text-center">{{ template.fields.length }}</td>
                                     <td class="px-4 py-3 text-center">{{ formatDate(template.created_at) }}</td>
                                     <td class="px-4 py-3 text-center">
-                                        <Link :href="route('templates.edit', template.id)"
+                                        <button @click="previewTemplate(template)"
+                                            class="inline-flex items-center px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out mr-2">
+                                            预览
+                                        </button>
+                                        <Link v-if="canEditTemplate" :href="route('templates.edit', template.id)"
                                             class="inline-flex items-center px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out mr-2">
                                         编辑
                                         </Link>
-                                        <button @click="deleteTemplate(template.id)"
-                                            class="inline-flex items-center px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out">
+                                        <button v-if="canDeleteTemplate" @click="deleteTemplate(template.id)"
+                                            class="inline-flex items-center px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out mr-2">
                                             删除
+                                        </button>
+                                        <button v-if="canEditTemplate" @click="exportTemplate(template.id)"
+                                            class="inline-flex items-center px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out">
+                                            导出
                                         </button>
                                     </td>
                                 </tr>
@@ -63,15 +76,53 @@
             </div>
         </div>
         <FlashMessage ref="flash" />
+        <TemplatePreviewModal :is-open="isPreviewModalOpen" :template="selectedTemplate" @close="closePreviewModal" />
+        <TemplateImportModal :is-open="showImportModal" @close="showImportModal = false" />
     </MainLayout>
 </template>
 
 <script setup>
-import { Link, Head, router } from '@inertiajs/vue3'
+import { Link, Head, router, usePage } from '@inertiajs/vue3'
+import { ref, computed } from 'vue'
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue'
 import Pagination from '@/Components/Other/Pagination.vue'
 import FlashMessage from '@/Components/Other/FlashMessage.vue'
+import TemplatePreviewModal from '@/Components/Modal/TemplatePreviewModal.vue'
+import TemplateImportModal from '@/Components/Modal/TemplateImportModal.vue'
 
+const page = usePage()
+const user = page.props.auth.user
+
+const canCreateTemplate = computed(() => user.permissions.includes('template.create'))
+const canEditTemplate = computed(() => user.permissions.includes('template.edit'))
+const canDeleteTemplate = computed(() => user.permissions.includes('template.delete'))
+
+// 在 setup 中添加
+const showImportModal = ref(false)
+
+const exportTemplate = (id) => {
+    // 创建一个临时链接并触发点击
+    const link = document.createElement('a')
+    link.href = route('templates.export', id)
+    link.download = true
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+}
+const isPreviewModalOpen = ref(false)
+const selectedTemplate = ref(null)
+
+// 打开预览模态框
+const previewTemplate = (template) => {
+    selectedTemplate.value = template
+    isPreviewModalOpen.value = true
+}
+
+// 关闭预览模态框
+const closePreviewModal = () => {
+    isPreviewModalOpen.value = false
+    selectedTemplate.value = null
+}
 
 const props = defineProps({
     templates: Object

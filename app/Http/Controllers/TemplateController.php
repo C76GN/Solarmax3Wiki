@@ -111,4 +111,80 @@ class TemplateController extends Controller
                 ]
             ]);
     }
+    
+    public function export($id)
+    {
+        $template = Template::findOrFail($id);
+        
+        // 准备导出数据
+        $exportData = [
+            'name' => $template->name,
+            'description' => $template->description,
+            'fields' => $template->fields,
+            'exported_at' => now()->toIso8601String(),
+            'version' => '1.0'
+        ];
+        
+        // 生成文件名
+        $fileName = Str::slug($template->name) . '-' . now()->format('Y-m-d') . '.json';
+        
+        // 返回文件下载响应
+        return response()->streamDownload(function () use ($exportData) {
+            echo json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        }, $fileName, [
+            'Content-Type' => 'application/json',
+            'X-Inertia-Location' => request()->fullUrl(),
+        ]);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'template_file' => 'required|file|mimes:json|max:1024', // 最大1MB
+        ]);
+
+        try {
+            // 读取并解析JSON文件
+            $content = json_decode(file_get_contents($request->file('template_file')), true);
+            
+            if (!$content || !isset($content['name']) || !isset($content['fields'])) {
+                throw new \Exception('Invalid template file format');
+            }
+
+            // 检查名称是否已存在
+            $baseName = $content['name'];
+            $name = $baseName;
+            $counter = 1;
+            
+            while (Template::where('name', $name)->exists()) {
+                $name = $baseName . ' (' . $counter . ')';
+                $counter++;
+            }
+
+            // 创建新模板
+            $template = Template::create([
+                'name' => $name,
+                'description' => $content['description'] ?? '',
+                'fields' => $content['fields'],
+                'slug' => Str::slug($name)
+            ]);
+
+            return redirect()->route('templates.index')
+                ->with('flash', [
+                    'message' => [
+                        'type' => 'success',
+                        'text' => '模板导入成功！'
+                    ]
+                ]);
+
+        } catch (\Exception $e) {
+            return redirect()->route('templates.index')
+                ->with('flash', [
+                    'message' => [
+                        'type' => 'error',
+                        'text' => '模板导入失败：' . $e->getMessage()
+                    ]
+                ]);
+        }
+    }
 }
