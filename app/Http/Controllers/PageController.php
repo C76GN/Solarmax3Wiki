@@ -187,7 +187,7 @@ class PageController extends Controller
             'is_published' => true,
             'published_at' => now()
         ]);
-
+        $page->logCustomActivity('publish');
         return redirect()->route('pages.index')
             ->with('flash', [
                 'message' => [
