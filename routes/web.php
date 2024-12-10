@@ -13,17 +13,45 @@ use App\Http\Controllers\PageController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home'); //主页路由
 
-// Route::middleware(['auth'])->group(function () {
-//     Route::resource('templates', TemplateController::class);
-//     Route::get('/templates/{template}/export', [TemplateController::class, 'export'])->name('templates.export');
-//     Route::post('/templates/import', [TemplateController::class, 'import'])->name('templates.import');
-// });
+Route::middleware(['auth'])->group(function () {
+    // 系统日志路由
+    Route::get('/activity-logs', [ActivityLogController::class, 'index'])
+        ->middleware('permission:log.view')
+        ->name('activity-logs.index');
+});
 
-// Route::middleware(['auth'])->group(function () {
-//     Route::resource('pages', PageController::class);
-//     Route::post('/pages/{page}/publish', [PageController::class, 'publish'])->name('pages.publish');
-//     Route::post('/pages/{page}/unpublish', [PageController::class, 'unpublish'])->name('pages.unpublish');
-// });
+Route::middleware(['auth'])->group(function () {
+    // 用户管理路由
+    Route::middleware('permission:user.view')->group(function () {
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        
+        Route::middleware('permission:user.edit')->group(function () {
+            Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+            Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        });
+    });
+});
+
+Route::middleware(['auth'])->group(function () {
+    // 角色管理路由
+    Route::middleware('permission:role.view')->group(function () {
+        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+        
+        Route::middleware('permission:role.create')->group(function () {
+            Route::get('/roles/create', [RoleController::class, 'create'])->name('roles.create');
+            Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
+        });
+        
+        Route::middleware('permission:role.edit')->group(function () {
+            Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
+            Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
+        });
+        
+        Route::delete('/roles/{role}', [RoleController::class, 'destroy'])
+            ->middleware('permission:role.delete')
+            ->name('roles.destroy');
+    });
+});
 
 Route::middleware(['auth'])->group(function () {
     // 模板管理路由

@@ -25,6 +25,19 @@ class PermissionSeeder extends Seeder
             ['name' => 'page.edit', 'display_name' => '编辑页面', 'group' => 'page'],
             ['name' => 'page.delete', 'display_name' => '删除页面', 'group' => 'page'],
             ['name' => 'page.publish', 'display_name' => '发布页面', 'group' => 'page'],
+
+            // 角色权限
+            ['name' => 'role.view', 'display_name' => '查看角色', 'group' => 'role'],
+            ['name' => 'role.create', 'display_name' => '创建角色', 'group' => 'role'],
+            ['name' => 'role.edit', 'display_name' => '编辑角色', 'group' => 'role'],
+            ['name' => 'role.delete', 'display_name' => '删除角色', 'group' => 'role'],
+
+            // 用户权限
+            ['name' => 'user.view', 'display_name' => '查看用户', 'group' => 'user'],
+            ['name' => 'user.edit', 'display_name' => '编辑用户角色', 'group' => 'user'],
+
+            // 日志权限
+            ['name' => 'log.view', 'display_name' => '查看系统日志', 'group' => 'log'],
         ];
 
         foreach ($permissions as $permission) {
