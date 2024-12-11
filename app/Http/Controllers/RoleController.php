@@ -58,6 +58,13 @@ class RoleController extends Controller
             ]);
     }
 
+    public function show(Role $role)
+    {
+        return Inertia::render('Roles/Show', [
+            'role' => $role->load('permissions')
+        ]);
+    }
+
     public function edit(Role $role)
     {
         if ($role->is_system) {

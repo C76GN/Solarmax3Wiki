@@ -11,19 +11,61 @@ use Illuminate\Validation\Rule;
 
 class PageController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $pages = Page::with('template')
-            ->latest()
-            ->paginate(10);
-        
-        return Inertia::render('Pages/Index', [
-            'pages' => $pages
+        \Log::info('User Permissions:', [
+        'user_id' => $request->user()->id,
+        'email' => $request->user()->email,
+        'can_create' => $request->user()->hasPermission('page.create'),
+        'all_permissions' => $request->user()->getAllPermissionsAttribute()
         ]);
+        // 获取所有模板用于筛选
+        $templates = Template::select('id', 'name')->get();
+
+        // 构建查询
+        $pages = Page::with(['template', 'lastEditor'])
+            ->filter($request->only(['search', 'status', 'template_id', 'from_date', 'to_date']))
+            ->orderBy($request->input('sort', 'created_at'), $request->input('direction', 'desc'))
+            ->paginate(10)
+            ->withQueryString()
+            ->through(function ($page) {
+                return [
+                    'id' => $page->id,
+                    'title' => $page->title,
+                    'slug' => $page->slug,
+                    'status' => $page->status,
+                    'template' => [
+                        'id' => $page->template->id,
+                        'name' => $page->template->name,
+                    ],
+                    'view_count' => $page->view_count,
+                    'last_edited_at' => $page->last_edited_at,
+                    'last_editor' => $page->lastEditor ? [
+                        'name' => $page->lastEditor->name,
+                    ] : null,
+                    'published_at' => $page->published_at,
+                    'created_at' => $page->created_at,
+                ];
+            });
+        
+            return Inertia::render('Pages/Index', [
+                'pages' => $pages,
+                'templates' => $templates,
+                'filters' => $request->only(['search', 'status', 'template_id', 'from_date', 'to_date', 'sort', 'direction']),
+                'can' => [
+                    'create_page' => $request->user()->hasPermission('page.create'),
+                    'edit_page' => $request->user()->hasPermission('page.edit'),
+                    'delete_page' => $request->user()->hasPermission('page.delete'),
+                ],
+            ]);
     }
 
     public function create()
     {
+        if (!auth()->user()->hasPermission('page.create')) {
+            return $this->unauthorized();
+        }
+
         $templates = Template::all();
         
         return Inertia::render('Pages/Create', [
@@ -197,6 +239,14 @@ class PageController extends Controller
             ]);
     }
 
+    public function show(Page $page)
+    {
+        return Inertia::render('Pages/Show', [
+            'page' => $page->load('template')
+        ]);
+    }
+
+    
     public function unpublish(Page $page)
     {
         $page->update([

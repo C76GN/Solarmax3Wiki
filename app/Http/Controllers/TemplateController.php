@@ -61,6 +61,12 @@ class TemplateController extends Controller
                 ]
             ]);
     }
+    public function show(Template $template)
+    {
+        return Inertia::render('Templates/Show', [
+            'template' => $template
+        ]);
+    }
 
     public function edit(Template $template)
     {

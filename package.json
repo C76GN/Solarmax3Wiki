@@ -22,7 +22,9 @@
         "@fortawesome/free-brands-svg-icons": "^6.6.0",
         "@fortawesome/free-solid-svg-icons": "^6.6.0",
         "@fortawesome/vue-fontawesome": "^3.0.8",
+        "@heroicons/vue": "^2.2.0",
         "@inertiajs/inertia": "^0.11.1",
-        "@inertiajs/inertia-vue3": "^0.6.0"
+        "@inertiajs/inertia-vue3": "^0.6.0",
+        "marked": "^15.0.3"
     }
 }

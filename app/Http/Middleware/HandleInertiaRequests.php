@@ -22,7 +22,8 @@ class HandleInertiaRequests extends Middleware
                     'id' => $request->user()->id,
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
-                    'permissions' => $request->user()->all_permissions,
+                    'permissions' => $request->user()->getAllPermissionsAttribute(),
+                    'roles' => $request->user()->roles->pluck('name'),
                 ] : null,
             ],
         ]);
