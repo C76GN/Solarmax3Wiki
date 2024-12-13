@@ -50,56 +50,7 @@ Route::middleware(['auth'])->group(function () {
             ->name('roles.destroy');
     });
 
-    // 模板管理路由
-    Route::middleware('permission:template.view')->group(function () {
-        Route::get('/templates', [TemplateController::class, 'index'])->name('templates.index');
-        
-        Route::middleware('permission:template.create')->group(function () {
-            Route::get('/templates/create', [TemplateController::class, 'create'])->name('templates.create');
-            Route::post('/templates', [TemplateController::class, 'store'])->name('templates.store');
-            Route::post('/templates/import', [TemplateController::class, 'import'])->name('templates.import');
-        });
-        
-        Route::middleware('permission:template.edit')->group(function () {
-            Route::get('/templates/{template}/edit', [TemplateController::class, 'edit'])->name('templates.edit');
-            Route::put('/templates/{template}', [TemplateController::class, 'update'])->name('templates.update');
-            Route::get('/templates/export/{template}', [TemplateController::class, 'export'])->name('templates.export');
-        });
-        
-        Route::delete('/templates/{template}', [TemplateController::class, 'destroy'])
-            ->middleware('permission:template.delete')
-            ->name('templates.destroy');
-            
-        Route::get('/templates/{template}', [TemplateController::class, 'show'])->name('templates.show');
-    });
 
-    // 页面管理路由
-        Route::middleware(['auth', 'verified'])->group(function () {
-        Route::get('/pages', [PageController::class, 'index'])->name('pages.index');
-        
-        // 创建页面路由放在动态路由之前
-        Route::middleware('permission:page.create')->group(function () {
-            Route::get('/pages/create', [PageController::class, 'create'])->name('pages.create');
-            Route::post('/pages', [PageController::class, 'store'])->name('pages.store');
-        });
-        
-        Route::middleware('permission:page.edit')->group(function () {
-            Route::get('/pages/{page}/edit', [PageController::class, 'edit'])->name('pages.edit');
-            Route::put('/pages/{page}', [PageController::class, 'update'])->name('pages.update');
-        });
-        
-        Route::middleware('permission:page.publish')->group(function () {
-            Route::post('/pages/{page}/publish', [PageController::class, 'publish'])->name('pages.publish');
-            Route::post('/pages/{page}/unpublish', [PageController::class, 'unpublish'])->name('pages.unpublish');
-        });
-        
-        Route::delete('/pages/{page}', [PageController::class, 'destroy'])
-            ->middleware('permission:page.delete')
-            ->name('pages.destroy');
-            
-        // 查看单个页面的路由放在最后
-        Route::get('/pages/{page}', [PageController::class, 'show'])->name('pages.show');
-    });
 });
 
 Route::get('/gamewiki', [GameWikiController::class, 'index'])->name('gamewiki');

@@ -13,18 +13,12 @@ class PermissionSeeder extends Seeder
     {
         // 创建权限
         $permissions = [
-            // 模板权限
-            ['name' => 'template.view', 'display_name' => '查看模板', 'group' => 'template'],
-            ['name' => 'template.create', 'display_name' => '创建模板', 'group' => 'template'],
-            ['name' => 'template.edit', 'display_name' => '编辑模板', 'group' => 'template'],
-            ['name' => 'template.delete', 'display_name' => '删除模板', 'group' => 'template'],
-
-            // 页面权限
-            ['name' => 'page.view', 'display_name' => '查看页面', 'group' => 'page'],
-            ['name' => 'page.create', 'display_name' => '创建页面', 'group' => 'page'],
-            ['name' => 'page.edit', 'display_name' => '编辑页面', 'group' => 'page'],
-            ['name' => 'page.delete', 'display_name' => '删除页面', 'group' => 'page'],
-            ['name' => 'page.publish', 'display_name' => '发布页面', 'group' => 'page'],
+            // Wiki文章权限
+            ['name' => 'wiki.view', 'display_name' => '查看Wiki文章', 'group' => 'wiki'],
+            ['name' => 'wiki.create', 'display_name' => '创建Wiki文章', 'group' => 'wiki'],
+            ['name' => 'wiki.edit', 'display_name' => '编辑Wiki文章', 'group' => 'wiki'],
+            ['name' => 'wiki.delete', 'display_name' => '删除Wiki文章', 'group' => 'wiki'],
+            ['name' => 'wiki.publish', 'display_name' => '发布Wiki文章', 'group' => 'wiki'],
 
             // 角色权限
             ['name' => 'role.view', 'display_name' => '查看角色', 'group' => 'role'],
@@ -63,11 +57,10 @@ class PermissionSeeder extends Seeder
         $adminRole->permissions()->attach(Permission::all());
         $editorRole->permissions()->attach(
             Permission::whereIn('name', [
-                'template.view',
-                'page.view',
-                'page.create',
-                'page.edit',
-                'page.publish'
+                'wiki.view',
+                'wiki.create',
+                'wiki.edit',
+                'wiki.publish'
             ])->get()
         );
 
