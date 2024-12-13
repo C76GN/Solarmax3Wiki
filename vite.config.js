@@ -17,4 +17,15 @@ export default defineConfig({
             },
         }),
     ],
+    resolve: {
+        alias: {
+            '@': '/resources/js',
+        },
+    },
+    // 添加以下配置来处理 TinyMCE 的静态资源
+    build: {
+        rollupOptions: {
+            external: ['tinymce'],
+        },
+    },
 });

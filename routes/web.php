@@ -4,9 +4,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\GameWikiController;
 use App\Http\Controllers\TextController;
-use App\Http\Controllers\TemplateController;
-use App\Http\Controllers\PageController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\WikiArticleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ActivityLogController;
 use Illuminate\Foundation\Application;
@@ -14,6 +13,24 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// Wiki 路由
+Route::middleware(['auth'])->prefix('wiki')->name('wiki.')->group(function () {
+    Route::get('/', [WikiArticleController::class, 'index'])->name('index');
+    Route::get('/create', [WikiArticleController::class, 'create'])
+        ->middleware('permission:wiki.create')->name('create');
+    Route::post('/', [WikiArticleController::class, 'store'])
+        ->middleware('permission:wiki.create')->name('store');
+    Route::get('/{article}/edit', [WikiArticleController::class, 'edit'])
+        ->middleware('permission:wiki.edit')->name('edit');
+    Route::put('/{article}', [WikiArticleController::class, 'update'])
+        ->middleware('permission:wiki.edit')->name('update');
+    Route::delete('/{article}', [WikiArticleController::class, 'destroy'])
+        ->middleware('permission:wiki.delete')->name('destroy');
+    Route::post('/{article}/publish', [WikiArticleController::class, 'publish'])
+        ->middleware('permission:wiki.publish')->name('publish');
+    Route::get('/{article}', [WikiArticleController::class, 'show'])->name('show');
+});
 
 Route::middleware(['auth'])->group(function () {
     // 系统日志路由

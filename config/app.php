@@ -2,6 +2,15 @@
 
 return [
 
+
+    'tinymce' => [
+        'path' => '/tinymce',  // TinyMCE 资源文件路径
+        'upload_path' => public_path('uploads/images'),  // 图片上传路径
+        'upload_url' => '/uploads/images',  // 图片访问路径
+    ],
+
+
+
     /*
     |--------------------------------------------------------------------------
     | Application Name
