@@ -11,7 +11,7 @@ class PermissionSeeder extends Seeder
 {
     public function run()
     {
-        // 创建权限
+        // 定义所有权限
         $permissions = [
             // Wiki文章权限
             ['name' => 'wiki.view', 'display_name' => '查看Wiki文章', 'group' => 'wiki'],
@@ -19,6 +19,12 @@ class PermissionSeeder extends Seeder
             ['name' => 'wiki.edit', 'display_name' => '编辑Wiki文章', 'group' => 'wiki'],
             ['name' => 'wiki.delete', 'display_name' => '删除Wiki文章', 'group' => 'wiki'],
             ['name' => 'wiki.publish', 'display_name' => '发布Wiki文章', 'group' => 'wiki'],
+
+            // Wiki分类权限
+            ['name' => 'wiki.category.view', 'display_name' => '查看Wiki分类', 'group' => 'wiki'],
+            ['name' => 'wiki.category.create', 'display_name' => '创建Wiki分类', 'group' => 'wiki'],
+            ['name' => 'wiki.category.edit', 'display_name' => '编辑Wiki分类', 'group' => 'wiki'],
+            ['name' => 'wiki.category.delete', 'display_name' => '删除Wiki分类', 'group' => 'wiki'],
 
             // 角色权限
             ['name' => 'role.view', 'display_name' => '查看角色', 'group' => 'role'],
@@ -34,28 +40,37 @@ class PermissionSeeder extends Seeder
             ['name' => 'log.view', 'display_name' => '查看系统日志', 'group' => 'log'],
         ];
 
+        // 创建或更新权限
         foreach ($permissions as $permission) {
-            Permission::create($permission);
+            Permission::updateOrCreate(
+                ['name' => $permission['name']], // 查找条件
+                $permission // 更新/创建的数据
+            );
         }
 
-        // 创建角色
-        $adminRole = Role::create([
-            'name' => 'admin',
-            'display_name' => '管理员',
-            'description' => '系统管理员',
-            'is_system' => true,
-        ]);
+        // 创建或获取管理员角色
+        $adminRole = Role::firstOrCreate(
+            ['name' => 'admin'],
+            [
+                'display_name' => '管理员',
+                'description' => '系统管理员',
+                'is_system' => true,
+            ]
+        );
 
-        $editorRole = Role::create([
-            'name' => 'editor',
-            'display_name' => '编辑',
-            'description' => '内容编辑',
-            'is_system' => false,
-        ]);
+        // 创建或获取编辑角色
+        $editorRole = Role::firstOrCreate(
+            ['name' => 'editor'],
+            [
+                'display_name' => '编辑',
+                'description' => '内容编辑',
+                'is_system' => false,
+            ]
+        );
 
         // 分配权限给角色
-        $adminRole->permissions()->attach(Permission::all());
-        $editorRole->permissions()->attach(
+        $adminRole->permissions()->sync(Permission::all());
+        $editorRole->permissions()->sync(
             Permission::whereIn('name', [
                 'wiki.view',
                 'wiki.create',
@@ -67,7 +82,7 @@ class PermissionSeeder extends Seeder
         // 为测试用户分配管理员角色
         $user = User::where('email', 'test@example.com')->first();
         if ($user) {
-            $user->roles()->attach($adminRole);
+            $user->roles()->sync([$adminRole->id]);
         }
     }
 }

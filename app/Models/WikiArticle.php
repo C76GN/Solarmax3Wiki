@@ -51,4 +51,9 @@ class WikiArticle extends Model
     {
         $this->increment('view_count');
     }
+
+    public function categories()
+    {
+        return $this->belongsToMany(WikiCategory::class, 'wiki_article_category');
+    }
 }
