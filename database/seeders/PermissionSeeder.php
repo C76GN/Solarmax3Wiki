@@ -13,12 +13,12 @@ class PermissionSeeder extends Seeder
     {
         // 定义所有权限
         $permissions = [
-            // Wiki文章权限
-            ['name' => 'wiki.view', 'display_name' => '查看Wiki文章', 'group' => 'wiki'],
-            ['name' => 'wiki.create', 'display_name' => '创建Wiki文章', 'group' => 'wiki'],
-            ['name' => 'wiki.edit', 'display_name' => '编辑Wiki文章', 'group' => 'wiki'],
-            ['name' => 'wiki.delete', 'display_name' => '删除Wiki文章', 'group' => 'wiki'],
-            ['name' => 'wiki.publish', 'display_name' => '发布Wiki文章', 'group' => 'wiki'],
+            // Wiki页面权限
+            ['name' => 'wiki.view', 'display_name' => '查看Wiki页面', 'group' => 'wiki'],
+            ['name' => 'wiki.create', 'display_name' => '创建Wiki页面', 'group' => 'wiki'],
+            ['name' => 'wiki.edit', 'display_name' => '编辑Wiki页面', 'group' => 'wiki'],
+            ['name' => 'wiki.delete', 'display_name' => '删除Wiki页面', 'group' => 'wiki'],
+            ['name' => 'wiki.publish', 'display_name' => '发布Wiki页面', 'group' => 'wiki'],
 
             // Wiki分类权限
             ['name' => 'wiki.category.view', 'display_name' => '查看Wiki分类', 'group' => 'wiki'],

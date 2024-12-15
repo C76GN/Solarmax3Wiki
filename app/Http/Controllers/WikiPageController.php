@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\WikiArticle;
+use App\Models\WikiPage;
 use App\Models\WikiCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
 
-class WikiArticleController extends Controller
+class WikiPageController extends Controller
 {
     public function index(Request $request)
     {
-        $query = WikiArticle::with(['creator', 'lastEditor', 'categories'])
+        $query = WikiPage::with(['creator', 'lastEditor', 'categories'])
             ->latest();
 
         // 搜索条件
@@ -36,24 +36,24 @@ class WikiArticleController extends Controller
             });
         }
 
-        $articles = $query->paginate(10)
-            ->through(fn ($article) => [
-                'id' => $article->id,
-                'title' => $article->title,
-                'status' => $article->status,
-                'creator' => $article->creator ? [
-                    'name' => $article->creator->name,
+        $pages = $query->paginate(10)
+            ->through(fn ($page) => [
+                'id' => $page->id,
+                'title' => $page->title,
+                'status' => $page->status,
+                'creator' => $page->creator ? [
+                    'name' => $page->creator->name,
                 ] : null,
-                'lastEditor' => $article->lastEditor ? [
-                    'name' => $article->lastEditor->name,
+                'lastEditor' => $page->lastEditor ? [
+                    'name' => $page->lastEditor->name,
                 ] : null,
-                'categories' => $article->categories->map(fn($category) => [
+                'categories' => $page->categories->map(fn($category) => [
                     'id' => $category->id,
                     'name' => $category->name
                 ]),
-                'published_at' => $article->published_at,
-                'view_count' => $article->view_count,
-                'created_at' => $article->created_at,
+                'published_at' => $page->published_at,
+                'view_count' => $page->view_count,
+                'created_at' => $page->created_at,
             ]);
 
         // 获取所有分类用于筛选
@@ -64,13 +64,13 @@ class WikiArticleController extends Controller
             ]);
 
         return Inertia::render('Wiki/Index', [
-            'articles' => $articles,
+            'pages' => $pages,
             'categories' => $categories,
             'filters' => $request->only(['search', 'status', 'category']),
             'can' => [
-                'create_article' => $request->user()?->hasPermission('wiki.create'),
-                'edit_article' => $request->user()?->hasPermission('wiki.edit'),
-                'delete_article' => $request->user()?->hasPermission('wiki.delete'),
+                'create_page' => $request->user()?->hasPermission('wiki.create'),
+                'edit_page' => $request->user()?->hasPermission('wiki.edit'),
+                'delete_page' => $request->user()?->hasPermission('wiki.delete'),
             ],
         ]);
     }
@@ -81,7 +81,6 @@ class WikiArticleController extends Controller
             return $this->unauthorized();
         }
 
-        // 获取所有分类供选择
         $categories = WikiCategory::orderBy('order')->get()
             ->map(fn($category) => [
                 'id' => $category->id,
@@ -97,25 +96,22 @@ class WikiArticleController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255|unique:wiki_articles',
+            'title' => 'required|string|max:255|unique:wiki_pages',
             'content' => 'required|string',
             'categories' => 'array',
             'categories.*' => 'exists:wiki_categories,id'
         ]);
 
-        // 生成基础 slug
         $baseSlug = Str::slug($validated['title']);
-        
-        // 如果 slug 已存在，添加递增数字直到找到唯一的 slug
         $slug = $baseSlug;
         $counter = 1;
         
-        while (WikiArticle::where('slug', $slug)->exists()) {
+        while (WikiPage::where('slug', $slug)->exists()) {
             $slug = $baseSlug . '-' . $counter;
             $counter++;
         }
 
-        $article = WikiArticle::create([
+        $page = WikiPage::create([
             'title' => $validated['title'],
             'content' => $validated['content'],
             'slug' => $slug,
@@ -123,27 +119,26 @@ class WikiArticleController extends Controller
             'last_edited_by' => auth()->id(),
         ]);
 
-        // 关联分类
         if (!empty($validated['categories'])) {
-            $article->categories()->sync($validated['categories']);
+            $page->categories()->sync($validated['categories']);
         }
+        $page->updateReferences();
 
         return redirect()->route('wiki.index')
             ->with('flash', [
                 'message' => [
                     'type' => 'success',
-                    'text' => '文章创建成功！'
+                    'text' => '页面创建成功！'
                 ]
             ]);
     }
 
-    public function edit(WikiArticle $article)
+    public function edit(WikiPage $page)
     {
         if (!auth()->user()->hasPermission('wiki.edit')) {
             return $this->unauthorized();
         }
 
-        // 获取所有分类供选择
         $categories = WikiCategory::orderBy('order')->get()
             ->map(fn($category) => [
                 'id' => $category->id,
@@ -152,17 +147,17 @@ class WikiArticleController extends Controller
             ]);
 
         return Inertia::render('Wiki/Edit', [
-            'article' => array_merge($article->toArray(), [
-                'categories' => $article->categories->pluck('id')->toArray()
+            'page' => array_merge($page->toArray(), [
+                'categories' => $page->categories->pluck('id')->toArray()
             ]),
             'categories' => $categories
         ]);
     }
 
-    public function update(Request $request, WikiArticle $article)
+    public function update(Request $request, WikiPage $page)
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255', Rule::unique('wiki_articles')->ignore($article->id)],
+            'title' => ['required', 'string', 'max:255', Rule::unique('wiki_pages')->ignore($page->id)],
             'content' => 'required|string',
             'categories' => 'array',
             'categories.*' => 'exists:wiki_categories,id'
@@ -170,64 +165,66 @@ class WikiArticleController extends Controller
 
         $validated['last_edited_by'] = auth()->id();
 
-        $article->update($validated);
-
-        // 更新分类关联
-        $article->categories()->sync($validated['categories'] ?? []);
-
+        $page->update($validated);
+        $page->categories()->sync($validated['categories'] ?? []);
+        $page->updateReferences();
         return redirect()->route('wiki.index')
             ->with('flash', [
                 'message' => [
                     'type' => 'success',
-                    'text' => '文章更新成功！'
+                    'text' => '页面更新成功！'
                 ]
             ]);
     }
 
-    public function show(WikiArticle $article)
+    public function show(WikiPage $page)
     {
-        $article->incrementViewCount();
+        $page->incrementViewCount();
         
         return Inertia::render('Wiki/Show', [
-            'article' => array_merge($article->toArray(), [
-                'creator' => $article->creator ? [
-                    'name' => $article->creator->name,
-                ] : null,
-                'lastEditor' => $article->lastEditor ? [
-                    'name' => $article->lastEditor->name,
-                ] : null,
-                'categories' => $article->categories->map(fn($category) => [
-                    'id' => $category->id,
-                    'name' => $category->name
-                ])
+            'page' => array_merge($page->load([
+                'creator',
+                'lastEditor',
+                'categories',
+                'referencedPages',
+                'referencedByPages'
+            ])->toArray(), [
+                'related_pages' => $page->getRelatedPages(),
+                'is_following' => $page->isFollowedByUser(auth()->id()),
+                'references_count' => $page->incomingReferences()->count(),
+                'recent_revisions' => $page->revisions()
+                    ->with('creator')
+                    ->latest()
+                    ->take(5)
+                    ->get()
             ])
         ]);
     }
 
-    public function destroy(WikiArticle $article)
+    public function destroy(WikiPage $page)
     {
         if (!auth()->user()->hasPermission('wiki.delete')) {
             return $this->unauthorized();
         }
 
-        $article->delete();
+        $page->delete();
 
         return redirect()->route('wiki.index')
             ->with('flash', [
                 'message' => [
                     'type' => 'success',
-                    'text' => '文章删除成功！'
+                    'text' => '页面删除成功！'
                 ]
             ]);
     }
 
-    public function publish(WikiArticle $article)
+    public function publish(WikiPage $page)
     {
         if (!auth()->user()->hasPermission('wiki.publish')) {
             return $this->unauthorized();
         }
 
-        $article->update([
+        $page->update([
             'status' => 'published',
             'published_at' => now(),
         ]);
@@ -236,8 +233,75 @@ class WikiArticleController extends Controller
             ->with('flash', [
                 'message' => [
                     'type' => 'success',
-                    'text' => '文章发布成功！'
+                    'text' => '页面发布成功！'
                 ]
             ]);
+    }
+
+    public function revisions(WikiPage $page)
+    {
+        $revisions = $page->revisions()
+            ->with('creator')
+            ->orderBy('version', 'desc')
+            ->paginate(20);
+
+        return Inertia::render('Wiki/Revisions', [
+            'page' => $page,
+            'revisions' => $revisions
+        ]);
+    }
+
+    public function showRevision(WikiPage $page, $version)
+    {
+        $revision = $page->revisions()
+            ->where('version', $version)
+            ->with('creator')
+            ->firstOrFail();
+
+        return Inertia::render('Wiki/ShowRevision', [
+            'page' => $page,
+            'revision' => $revision
+        ]);
+    }
+
+    public function compareRevisions(WikiPage $page, $fromVersion, $toVersion)
+    {
+        $diff = $page->getRevisionDiff($fromVersion, $toVersion);
+
+        return Inertia::render('Wiki/CompareRevisions', [
+            'page' => $page,
+            'diff' => $diff
+        ]);
+    }
+
+    public function revertToVersion(Request $request, WikiPage $page, $version)
+    {
+        $page->revertToVersion($version);
+
+        return redirect()->route('wiki.show', $page->id)
+            ->with('flash', [
+                'message' => [
+                    'type' => 'success',
+                    'text' => "页面已恢复到版本 {$version}"
+                ]
+            ]);
+    }
+
+    public function toggleFollow(WikiPage $page)
+    {
+        $user = auth()->user();
+        
+        if ($page->isFollowedByUser($user->id)) {
+            $page->followers()->detach($user->id);
+            $message = '取消关注成功';
+        } else {
+            $page->followers()->attach($user->id);
+            $message = '关注成功';
+        }
+
+        return response()->json([
+            'followed' => !$page->isFollowedByUser($user->id),
+            'message' => $message
+        ]);
     }
 }

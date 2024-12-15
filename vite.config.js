@@ -22,10 +22,13 @@ export default defineConfig({
             '@': '/resources/js',
         },
     },
-    // 添加以下配置来处理 TinyMCE 的静态资源
     build: {
         rollupOptions: {
-            external: ['tinymce'],
-        },
-    },
+            external: [
+                'tinymce/tinymce',
+                // 显式声明外部依赖
+                '/tinymce/plugins/wikilink/plugin.js'
+            ]
+        }
+    }
 });

@@ -31,10 +31,10 @@ class WikiCategory extends Model
         return $this->hasMany(WikiCategory::class, 'parent_id');
     }
 
-    // 与文章的关系
-    public function articles()
+    // 与页面的关系
+    public function pages()
     {
-        return $this->belongsToMany(WikiArticle::class, 'wiki_article_category');
+        return $this->belongsToMany(WikiPage::class, 'wiki_page_category');
     }
 
     // 获取分类的完整路径
