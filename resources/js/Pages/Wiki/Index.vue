@@ -1,13 +1,19 @@
+// 3. 更新文章列表页面以整合分类导航
+// resources/js/Pages/Wiki/Index.vue
+
 <template>
     <MainLayout
-        :navigationLinks="[{ href: '/wiki', label: '游戏维基' }, { href: '#', label: '游戏历史&名人墙' }, { href: '#', label: '自制专区' }, { href: '#', label: '攻略专区' }, { href: '#', label: '论坛' }]"
-        :show-dropdown="true">
+        :navigationLinks="[{ href: '/wiki', label: '游戏维基' }, { href: '#', label: '游戏历史&名人墙' }, { href: '#', label: '自制专区' }, { href: '#', label: '攻略专区' }, { href: '#', label: '论坛' }]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- 分类导航 -->
+            <CategoryNav :categories="categories" :current-category="filters.category" />
+
+            <!-- 文章列表卡片 -->
             <div class="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg overflow-hidden">
                 <div class="p-6">
                     <!-- 标题和操作按钮 -->
                     <div class="mb-6 flex justify-between items-center">
-                        <h2 class="text-2xl font-semibold text-gray-800">Wiki 文章管理</h2>
+                        <h2 class="text-2xl font-semibold text-gray-900">Wiki 文章</h2>
                         <Link v-if="can.create_article" :href="route('wiki.create')"
                             class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">
                         创建新文章
@@ -23,8 +29,8 @@
                         </div>
                         <div>
                             <select v-model="form.status" @change="search"
-                                class="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">全部状态</option>
+                                class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">所有状态</option>
                                 <option value="draft">草稿</option>
                                 <option value="published">已发布</option>
                             </select>
@@ -32,75 +38,37 @@
                     </div>
 
                     <!-- 文章列表 -->
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        标题
-                                    </th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        作者
-                                    </th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        状态
-                                    </th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        浏览量
-                                    </th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        最后编辑
-                                    </th>
-                                    <th
-                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        操作
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <tr v-for="article in articles.data" :key="article.id">
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm font-medium text-gray-900">{{ article.title }}</div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm text-gray-500">{{ article.creator?.name || '未知' }}</div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <span :class="[
-                                            'px-2 py-1 text-xs font-medium rounded-full',
-                                            {
-                                                'bg-gray-100 text-gray-800': article.status === 'draft',
-                                                'bg-green-100 text-green-800': article.status === 'published'
-                                            }
-                                        ]">
-                                            {{ article.status === 'draft' ? '草稿' : '已发布' }}
+                    <div class="space-y-6">
+                        <div v-for="article in articles.data" :key="article.id"
+                            class="border-b border-gray-200 pb-6 last:border-0 last:pb-0">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <Link :href="route('wiki.show', article.id)"
+                                        class="text-xl font-medium text-blue-600 hover:text-blue-800">
+                                    {{ article.title }}
+                                    </Link>
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        <span v-for="category in article.categories" :key="category.id"
+                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            {{ category.name }}
                                         </span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm text-gray-500">{{ article.view_count }}</div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm text-gray-500">
-                                            {{ formatDate(article.created_at) }}
-                                            <div>{{ article.lastEditor?.name || '未知' }}</div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 text-right text-sm font-medium">
-                                        <Link :href="route('wiki.show', article.id)"
-                                            class="text-blue-600 hover:text-blue-900 mr-4">查看</Link>
-                                        <Link v-if="can.edit_article" :href="route('wiki.edit', article.id)"
-                                            class="text-blue-600 hover:text-blue-900 mr-4">编辑</Link>
-                                        <button v-if="can.delete_article" @click="confirmDelete(article)"
-                                            class="text-red-600 hover:text-red-900">删除</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                    </div>
+                                    <div class="mt-2 text-sm text-gray-500">
+                                        <span>{{ formatDate(article.created_at) }}</span>
+                                        <span class="mx-2">•</span>
+                                        <span>作者: {{ article.creator?.name || '未知' }}</span>
+                                        <span class="mx-2">•</span>
+                                        <span>浏览: {{ article.view_count }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <Link v-if="can.edit_article" :href="route('wiki.edit', article.id)"
+                                        class="text-blue-600 hover:text-blue-900">编辑</Link>
+                                    <button v-if="can.delete_article" @click="confirmDelete(article)"
+                                        class="text-red-600 hover:text-red-900">删除</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- 分页 -->
@@ -111,72 +79,70 @@
             </div>
         </div>
 
-        <!-- 确认删除对话框 -->
-        <ConfirmationModal :show="confirmingDeletion" title="确认删除文章" message="确定要删除该文章吗？此操作不可恢复。"
+        <!-- 删除确认对话框 -->
+        <ConfirmationModal :show="confirmingDeletion" title="确认删除文章" :message="'确定要删除文章吗？此操作不可恢复。'"
             @close="closeDeleteModal" @confirm="deleteArticle" />
-
-        <!-- 消息提示 -->
-        <FlashMessage ref="flash" />
     </MainLayout>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
-import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue'
-import Pagination from '@/Components/Other/Pagination.vue'
-import ConfirmationModal from '@/Components/Modal/ConfirmationModal.vue'
-import FlashMessage from '@/Components/Other/FlashMessage.vue'
+import { ref, reactive } from 'vue';
+import { Link, router } from '@inertiajs/vue3';
+import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
+import CategoryNav from '@/Components/Wiki/CategoryNav.vue';
+import Pagination from '@/Components/Other/Pagination.vue';
+import ConfirmationModal from '@/Components/Modal/ConfirmationModal.vue';
 
 const props = defineProps({
     articles: Object,
+    categories: Array,
     filters: Object,
     can: Object
-})
+});
 
-// 表单数据
 const form = reactive({
     search: props.filters.search || '',
     status: props.filters.status || '',
-})
+    category: props.filters.category || ''
+});
 
-// 删除确认
-const confirmingDeletion = ref(false)
-const articleToDelete = ref(null)
+const confirmingDeletion = ref(false);
+const articleToDelete = ref(null);
 
 const search = () => {
     router.get(route('wiki.index'), form, {
         preserveState: true,
         preserveScroll: true
-    })
-}
+    });
+};
 
 const confirmDelete = (article) => {
-    articleToDelete.value = article
-    confirmingDeletion.value = true
-}
+    articleToDelete.value = article;
+    confirmingDeletion.value = true;
+};
 
 const closeDeleteModal = () => {
-    confirmingDeletion.value = false
-    articleToDelete.value = null
-}
+    confirmingDeletion.value = false;
+    articleToDelete.value = null;
+};
 
 const deleteArticle = () => {
     if (articleToDelete.value) {
         router.delete(route('wiki.destroy', articleToDelete.value.id), {
             onSuccess: () => {
-                closeDeleteModal()
+                closeDeleteModal();
             }
-        })
+        });
     }
-}
+};
 
 const formatDate = (date) => {
-    if (!date) return ''
+    if (!date) return '';
     return new Date(date).toLocaleString('zh-CN', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-    })
-}
+    });
+};
+
 </script>

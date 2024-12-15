@@ -6,6 +6,7 @@ use App\Http\Controllers\GameWikiController;
 use App\Http\Controllers\TextController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\WikiArticleController;
+use App\Http\Controllers\WikiCategoryController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ActivityLogController;
 use Illuminate\Foundation\Application;
@@ -14,8 +15,9 @@ use Inertia\Inertia;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// Wiki 路由
+// Wiki 路由组
 Route::middleware(['auth'])->prefix('wiki')->name('wiki.')->group(function () {
+    // 文章路由
     Route::get('/', [WikiArticleController::class, 'index'])->name('index');
     Route::get('/create', [WikiArticleController::class, 'create'])
         ->middleware('permission:wiki.create')->name('create');
@@ -30,6 +32,21 @@ Route::middleware(['auth'])->prefix('wiki')->name('wiki.')->group(function () {
     Route::post('/{article}/publish', [WikiArticleController::class, 'publish'])
         ->middleware('permission:wiki.publish')->name('publish');
     Route::get('/{article}', [WikiArticleController::class, 'show'])->name('show');
+
+    // 分类路由
+    Route::prefix('categories')->name('categories.')->group(function () {
+        Route::get('/', [WikiCategoryController::class, 'index'])->name('index');
+        Route::get('/create', [WikiCategoryController::class, 'create'])
+            ->middleware('permission:wiki.category.create')->name('create');
+        Route::post('/', [WikiCategoryController::class, 'store'])
+            ->middleware('permission:wiki.category.create')->name('store');
+        Route::get('/{category}/edit', [WikiCategoryController::class, 'edit'])
+            ->middleware('permission:wiki.category.edit')->name('edit');
+        Route::put('/{category}', [WikiCategoryController::class, 'update'])
+            ->middleware('permission:wiki.category.edit')->name('update');
+        Route::delete('/{category}', [WikiCategoryController::class, 'destroy'])
+            ->middleware('permission:wiki.category.delete')->name('destroy');
+    });
 });
 
 Route::middleware(['auth'])->group(function () {

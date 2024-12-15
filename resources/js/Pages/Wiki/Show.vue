@@ -1,34 +1,31 @@
 <template>
     <MainLayout
-        :navigationLinks="[{ href: '/wiki', label: '游戏维基' }, { href: '#', label: '游戏历史&名人墙' }, { href: '#', label: '自制专区' }, { href: '#', label: '攻略专区' }, { href: '#', label: '论坛' }]"
-        :show-dropdown="true">
+        :navigationLinks="[{ href: '/wiki', label: '游戏维基' }, { href: '#', label: '游戏历史&名人墙' }, { href: '#', label: '自制专区' }, { href: '#', label: '攻略专区' }, { href: '#', label: '论坛' }]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- 文章内容卡片 -->
-            <div class="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg overflow-hidden">
-                <!-- 文章头部信息 -->
+            <!-- 文章头部信息 -->
+            <div class="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg overflow-hidden mb-6">
                 <div class="p-6 border-b border-gray-200">
                     <div class="flex justify-between items-start">
-                        <div>
+                        <div class="flex-1">
                             <h1 class="text-3xl font-bold text-gray-900">{{ article.title }}</h1>
-                            <div class="mt-2 text-sm text-gray-500 space-y-1">
+                            <div class="mt-4 flex flex-wrap gap-4 text-sm text-gray-500">
                                 <div>
                                     作者: {{ article.creator?.name || '未知' }}
                                 </div>
                                 <div>
                                     最后编辑: {{ formatDate(article.updated_at) }} by {{ article.lastEditor?.name || '未知' }}
                                 </div>
-                                <div class="flex items-center gap-4">
-                                    <span>浏览量: {{ article.view_count }}</span>
-                                    <span :class="[
-                                        'px-2 py-1 text-xs font-medium rounded-full',
-                                        {
-                                            'bg-gray-100 text-gray-800': article.status === 'draft',
-                                            'bg-green-100 text-green-800': article.status === 'published'
-                                        }
-                                    ]">
-                                        {{ article.status === 'draft' ? '草稿' : '已发布' }}
-                                    </span>
+                                <div>
+                                    浏览量: {{ article.view_count }}
                                 </div>
+                            </div>
+                            <!-- 分类标签 -->
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <Link v-for="category in article.categories" :key="category.id"
+                                    :href="route('wiki.index', { category: category.id })"
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors duration-150">
+                                {{ category.name }}
+                                </Link>
                             </div>
                         </div>
 
@@ -46,10 +43,8 @@
                     </div>
                 </div>
 
-                <!-- 文章正文内容 -->
-                <div class="p-6">
-                    <div class="prose prose-lg max-w-none" v-html="article.content"></div>
-                </div>
+                <!-- 文章内容 -->
+                <div class="p-6 prose prose-lg max-w-none" v-html="article.content"></div>
             </div>
         </div>
     </MainLayout>
@@ -87,7 +82,6 @@ const publishArticle = () => {
 </script>
 
 <style>
-/* 添加这些样式来美化 TinyMCE 内容的显示 */
 .prose {
     color: #374151;
     max-width: 65ch;
@@ -125,18 +119,19 @@ const publishArticle = () => {
     font-weight: 600;
 }
 
-.prose ul {
-    margin-top: 1.25em;
-    margin-bottom: 1.25em;
-    list-style-type: disc;
-    padding-left: 1.625em;
-}
-
+.prose ul,
 .prose ol {
     margin-top: 1.25em;
     margin-bottom: 1.25em;
-    list-style-type: decimal;
     padding-left: 1.625em;
+}
+
+.prose ul {
+    list-style-type: disc;
+}
+
+.prose ol {
+    list-style-type: decimal;
 }
 
 .prose blockquote {
@@ -146,8 +141,7 @@ const publishArticle = () => {
     border-left-width: 0.25rem;
     border-left-color: #e5e7eb;
     quotes: "\201C" "\201D" "\2018" "\2019";
-    margin-top: 1.6em;
-    margin-bottom: 1.6em;
+    margin: 1.6em 0;
     padding-left: 1em;
 }
 
@@ -163,8 +157,7 @@ const publishArticle = () => {
     overflow-x: auto;
     font-size: 0.875em;
     line-height: 1.7142857;
-    margin-top: 1.7142857em;
-    margin-bottom: 1.7142857em;
+    margin: 1.7142857em 0;
     border-radius: 0.375rem;
     padding: 0.8571429em 1.1428571em;
 }
