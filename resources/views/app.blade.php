@@ -13,6 +13,20 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        <!-- TinyMCE -->
+        <script src="{{ asset('tinymce/tinymce.min.js') }}"></script>
+        <script>
+            // 设置 TinyMCE 的全局配置
+            window.tinymce.overrideDefaults({
+                base_url: '{{ asset("tinymce") }}',
+                suffix: '.min',
+                language: 'zh_CN',
+                content_css: [
+                    '{{ asset("css/content.css") }}'
+                ]
+            });
+        </script>
+
         <!-- Scripts -->
         @routes
         @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])

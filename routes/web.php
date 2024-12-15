@@ -5,7 +5,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\GameWikiController;
 use App\Http\Controllers\TextController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\WikiArticleController;
+use App\Http\Controllers\WikiPageController;
 use App\Http\Controllers\WikiCategoryController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ActivityLogController;
@@ -17,22 +17,33 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Wiki 路由组
 Route::middleware(['auth'])->prefix('wiki')->name('wiki.')->group(function () {
-    // 文章路由
-    Route::get('/', [WikiArticleController::class, 'index'])->name('index');
-    Route::get('/create', [WikiArticleController::class, 'create'])
+    // 页面路由
+    Route::get('/', [WikiPageController::class, 'index'])->name('index');
+    Route::get('/create', [WikiPageController::class, 'create'])
         ->middleware('permission:wiki.create')->name('create');
-    Route::post('/', [WikiArticleController::class, 'store'])
+    Route::post('/', [WikiPageController::class, 'store'])
         ->middleware('permission:wiki.create')->name('store');
-    Route::get('/{article}/edit', [WikiArticleController::class, 'edit'])
+    Route::get('/{page}/edit', [WikiPageController::class, 'edit'])
         ->middleware('permission:wiki.edit')->name('edit');
-    Route::put('/{article}', [WikiArticleController::class, 'update'])
+    Route::put('/{page}', [WikiPageController::class, 'update'])
         ->middleware('permission:wiki.edit')->name('update');
-    Route::delete('/{article}', [WikiArticleController::class, 'destroy'])
+    Route::delete('/{page}', [WikiPageController::class, 'destroy'])
         ->middleware('permission:wiki.delete')->name('destroy');
-    Route::post('/{article}/publish', [WikiArticleController::class, 'publish'])
+    Route::post('/{page}/publish', [WikiPageController::class, 'publish'])
         ->middleware('permission:wiki.publish')->name('publish');
-    Route::get('/{article}', [WikiArticleController::class, 'show'])->name('show');
-
+    Route::get('/{page}', [WikiPageController::class, 'show'])->name('show');
+    Route::get('/{page}/revisions', [WikiPageController::class, 'revisions'])
+        ->name('revisions');
+    Route::get('/{page}/revisions/{version}', [WikiPageController::class, 'showRevision'])
+        ->name('show-revision');
+    Route::get('/{page}/compare/{fromVersion}/{toVersion}', [WikiPageController::class, 'compareRevisions'])
+        ->name('compare-revisions');
+    Route::post('/{page}/revert/{version}', [WikiPageController::class, 'revertToVersion'])
+        ->middleware('permission:wiki.edit')
+        ->name('revert-version');
+    Route::post('/{page}/follow', [WikiPageController::class, 'toggleFollow'])
+    ->middleware('auth')
+    ->name('follow');
     // 分类路由
     Route::prefix('categories')->name('categories.')->group(function () {
         Route::get('/', [WikiCategoryController::class, 'index'])->name('index');

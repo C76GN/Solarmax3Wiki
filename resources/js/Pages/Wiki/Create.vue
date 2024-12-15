@@ -14,7 +14,7 @@
 
 <script setup>
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
-import WikiArticleForm from '@/Components/Wiki/WikiArticleForm.vue';
+import WikiArticleForm from '@/Components/Wiki/WikiPageForm.vue';
 
 defineProps({
     categories: {
