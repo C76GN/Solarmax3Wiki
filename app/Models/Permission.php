@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/app/Models/Permission.php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;

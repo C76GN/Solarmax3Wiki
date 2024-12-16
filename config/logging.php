@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/config/logging.php
+
 
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;

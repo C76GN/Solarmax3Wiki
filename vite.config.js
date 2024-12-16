@@ -26,8 +26,7 @@ export default defineConfig({
         rollupOptions: {
             external: [
                 'tinymce/tinymce',
-                // 显式声明外部依赖
-                '/tinymce/plugins/wikilink/plugin.js'
+                '/tinymce/plugins/wikilink/plugin.min.js'
             ]
         }
     }

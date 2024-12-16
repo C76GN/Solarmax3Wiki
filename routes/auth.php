@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/routes/auth.php
+
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;

@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Wiki/Show.vue
 <template>
     <MainLayout :navigationLinks="navigationLinks">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

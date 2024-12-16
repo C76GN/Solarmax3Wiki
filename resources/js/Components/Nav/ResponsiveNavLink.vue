@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Nav/ResponsiveNavLink.vue
 <template>
     <!-- Link 组件 -->
     <Link :href="href" :class="[ // 动态绑定 class，根据 active 状态应用不同的样式

@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Layouts/UserLayouts/GuestLayout.vue
 <template>
     <div class="flex min-h-screen flex-col items-center pt-6 sm:justify-center sm:pt-0 p-6 text-white relative bg-center bg-cover bg-fixed"
         style="background-image: url('/images/BG2.webp');">

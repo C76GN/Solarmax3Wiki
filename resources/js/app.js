@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/app.js
 import '../css/app.css';// 导入全局 CSS 文件
 import './bootstrap';// 导入 Bootstrap 相关的 JavaScript 文件
 import './consoleMessage.js';

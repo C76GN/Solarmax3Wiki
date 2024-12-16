@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Layouts/MainLayouts/MainLayout.vue
 <template>
     <div class="min-h-screen w-full relative overflow-hidden bg-cover bg-center"
         style="background-image: url('/images/BG2.webp')">

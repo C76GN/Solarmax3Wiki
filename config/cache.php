@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/config/cache.php
+
 
 use Illuminate\Support\Str;
 

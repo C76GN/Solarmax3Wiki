@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Wiki/Index.vue
 <template>
     <MainLayout
         :navigationLinks="[{ href: '/wiki', label: '游戏维基' }, { href: '#', label: '游戏历史&名人墙' }, { href: '#', label: '自制专区' }, { href: '#', label: '攻略专区' }, { href: '#', label: '论坛' }]">
@@ -11,10 +12,17 @@
                     <!-- 标题和操作按钮 -->
                     <div class="mb-6 flex justify-between items-center">
                         <h2 class="text-2xl font-semibold text-gray-900">Wiki 页面</h2>
-                        <Link v-if="can.create_page" :href="route('wiki.create')"
-                            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">
-                        创建新页面
-                        </Link>
+                        <div class="flex gap-2">
+                            <Link v-if="$page.props.auth.user.permissions.includes('wiki.manage_trash')"
+                                :href="route('wiki.trash')"
+                                class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition duration-150 ease-in-out">
+                            回收站
+                            </Link>
+                            <Link v-if="can.create_page" :href="route('wiki.create')"
+                                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">
+                            创建新页面
+                            </Link>
+                        </div>
                     </div>
 
                     <!-- 搜索和筛选 -->
@@ -77,8 +85,26 @@
         </div>
 
         <!-- 删除确认对话框 -->
-        <ConfirmationModal :show="confirmingDeletion" title="确认删除页面" :message="'确定要删除页面吗？此操作不可恢复。'"
-            @close="closeDeleteModal" @confirm="deletePage" />
+        <Modal :show="showDeleteConfirmation" @close="cancelDelete">
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">
+                    确认删除
+                </h3>
+                <p class="text-sm text-gray-500 mb-4">
+                    确定要删除"{{ pageToDelete?.title }}"吗？此操作无法撤销。
+                </p>
+                <div class="mt-5 flex justify-end gap-4">
+                    <button type="button" @click="cancelDelete"
+                        class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                        取消
+                    </button>
+                    <button type="button" @click="deleteConfirmed"
+                        class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                        确认删除
+                    </button>
+                </div>
+            </div>
+        </Modal>
     </MainLayout>
 </template>
 
@@ -88,7 +114,7 @@ import { Link, router } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import CategoryNav from '@/Components/Wiki/CategoryNav.vue';
 import Pagination from '@/Components/Other/Pagination.vue';
-import ConfirmationModal from '@/Components/Modal/ConfirmationModal.vue';
+import Modal from '@/Components/Modal/Modal.vue';
 
 const props = defineProps({
     pages: Object,
@@ -103,7 +129,7 @@ const form = reactive({
     category: props.filters.category || ''
 });
 
-const confirmingDeletion = ref(false);
+const showDeleteConfirmation = ref(false);
 const pageToDelete = ref(null);
 
 const search = () => {
@@ -113,22 +139,25 @@ const search = () => {
     });
 };
 
+// 显示删除确认对话框
 const confirmDelete = (page) => {
     pageToDelete.value = page;
-    confirmingDeletion.value = true;
+    showDeleteConfirmation.value = true;
 };
 
-const closeDeleteModal = () => {
-    confirmingDeletion.value = false;
+// 取消删除
+const cancelDelete = () => {
+    showDeleteConfirmation.value = false;
     pageToDelete.value = null;
 };
 
-const deletePage = () => {
+// 确认删除
+const deleteConfirmed = () => {
     if (pageToDelete.value) {
         router.delete(route('wiki.destroy', pageToDelete.value.id), {
             onSuccess: () => {
-                closeDeleteModal();
-            }
+                cancelDelete();
+            },
         });
     }
 };

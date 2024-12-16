@@ -1,9 +1,10 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Wiki/WikiPageForm.vue
 <template>
     <form @submit.prevent="submit" class="space-y-6">
         <!-- 标题输入 -->
         <div>
-            <label for="title" class="block text-sm font-medium text-gray-700">页面标题</label>
-            <input type="text" id="title" v-model="form.title"
+            <label class="block text-sm font-medium text-gray-700">页面标题</label>
+            <input type="text" v-model="form.title"
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 :class="{ 'border-red-500': form.errors.title }">
             <p v-if="form.errors.title" class="mt-1 text-sm text-red-600">{{ form.errors.title }}</p>
@@ -30,7 +31,9 @@
         <!-- 内容编辑器 -->
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">页面内容</label>
-            <WikiEditor id="content" v-model="form.content" :init="editorConfig" />
+            <div ref="editorContainer">
+                <textarea ref="editor"></textarea>
+            </div>
             <p v-if="form.errors.content" class="mt-1 text-sm text-red-600">{{ form.errors.content }}</p>
         </div>
 
@@ -42,7 +45,7 @@
             </Link>
             <button type="submit" :disabled="form.processing"
                 class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-150 ease-in-out disabled:opacity-50">
-                {{ page ? '更新页面' : '创建页面' }}
+                {{ isEditing ? '更新页面' : '创建页面' }}
             </button>
         </div>
     </form>
@@ -50,7 +53,7 @@
 
 <script setup>
 import { useForm, Link } from '@inertiajs/vue3';
-import WikiEditor from '@/Components/Editor/WikiEditor.vue';
+import { onMounted, onUnmounted, ref, computed } from 'vue';
 import { useEditor } from '@/plugins/tinymce';
 
 const props = defineProps({
@@ -64,16 +67,58 @@ const props = defineProps({
     }
 });
 
-const { init: editorConfig } = useEditor();
+const isEditing = computed(() => !!props.page);
 
 const form = useForm({
     title: props.page?.title || '',
     content: props.page?.content || '',
-    categories: props.page?.categories?.map(c => c.id) || []
+    categories: props.page?.categories || []
 });
 
+const editor = ref(null);
+const editorContainer = ref(null);
+
+const { init: editorConfig } = useEditor();
+
+// 初始化编辑器
+onMounted(() => {
+    if (editorContainer.value) {
+        const config = {
+            ...editorConfig,
+            selector: 'textarea',
+            init_instance_callback: (ed) => {
+                editor.value = ed;
+                if (props.page?.content) {
+                    editor.value.setContent(props.page.content);
+                }
+            },
+            setup: (ed) => {
+                ed.on('input change', () => {
+                    form.content = ed.getContent();
+                });
+            }
+        };
+
+        window.tinymce?.init(config);
+    }
+});
+
+// 清理函数
+const cleanup = () => {
+    if (editor.value) {
+        editor.value.destroy();
+        editor.value = null;
+    }
+};
+
+// 组件卸载时清理
+onUnmounted(() => {
+    cleanup();
+});
+
+// 提交表单处理
 const submit = () => {
-    if (props.page) {
+    if (isEditing.value) {
         form.put(route('wiki.update', props.page.id));
     } else {
         form.post(route('wiki.store'));

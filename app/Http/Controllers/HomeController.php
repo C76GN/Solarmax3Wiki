@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/app/Http/Controllers/HomeController.php
+
 
 namespace App\Http\Controllers; // 定义命名空间
 

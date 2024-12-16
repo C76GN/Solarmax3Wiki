@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Profile/Partials/DeleteUserForm.vue
 <template>
     <section class="space-y-6">
         <header>

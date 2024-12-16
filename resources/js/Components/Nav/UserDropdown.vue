@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Nav/UserDropdown.vue
 <template>
     <!-- 下拉菜单组件，显示用户信息的下拉选项 -->
     <Dropdown align="right" width="48">

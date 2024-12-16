@@ -1,4 +1,10 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/app/Http/Controllers/WikiPageController.php
+
+// File: /var/www/Solarmax3Wiki/app/Http/Controllers/WikiPageController.php
+
+// File: /var/www/Solarmax3Wiki/app/Http/Controllers/WikiPageController.php
+
 
 namespace App\Http\Controllers;
 
@@ -8,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB; 
 
 class WikiPageController extends Controller
 {
@@ -139,6 +146,9 @@ class WikiPageController extends Controller
             return $this->unauthorized();
         }
 
+        // 确保加载所有必要的关联数据
+        $page->load(['categories']);
+        
         $categories = WikiCategory::orderBy('order')->get()
             ->map(fn($category) => [
                 'id' => $category->id,
@@ -150,7 +160,8 @@ class WikiPageController extends Controller
             'page' => array_merge($page->toArray(), [
                 'categories' => $page->categories->pluck('id')->toArray()
             ]),
-            'categories' => $categories
+            'categories' => $categories,
+            'canEdit' => true
         ]);
     }
 
@@ -207,15 +218,39 @@ class WikiPageController extends Controller
             return $this->unauthorized();
         }
 
-        $page->delete();
+        try {
+            // 开始事务
+            DB::beginTransaction();
+            
+            // 删除相关的引用
+            $page->outgoingReferences()->delete();
+            $page->incomingReferences()->delete();
+            
+            // 删除页面
+            $page->delete();
+            
+            // 提交事务
+            DB::commit();
 
-        return redirect()->route('wiki.index')
-            ->with('flash', [
-                'message' => [
-                    'type' => 'success',
-                    'text' => '页面删除成功！'
-                ]
-            ]);
+            return redirect()->route('wiki.index')
+                ->with('flash', [
+                    'message' => [
+                        'type' => 'success',
+                        'text' => '页面删除成功！'
+                    ]
+                ]);
+        } catch (\Exception $e) {
+            // 回滚事务
+            DB::rollback();
+            
+            return redirect()->back()
+                ->with('flash', [
+                    'message' => [
+                        'type' => 'error',
+                        'text' => '删除失败：' . $e->getMessage()
+                    ]
+                ]);
+        }
     }
 
     public function publish(WikiPage $page)
@@ -303,5 +338,110 @@ class WikiPageController extends Controller
             'followed' => !$page->isFollowedByUser($user->id),
             'message' => $message
         ]);
+    }
+
+    public function trash()
+    {
+        if (!auth()->user()->hasPermission('wiki.manage_trash')) {
+            return $this->unauthorized();
+        }
+
+        $trashedPages = WikiPage::onlyTrashed()
+            ->with(['creator', 'lastEditor', 'categories'])
+            ->latest('deleted_at')
+            ->paginate(10)
+            ->through(fn ($page) => [
+                'id' => $page->id,
+                'title' => $page->title,
+                'creator' => $page->creator ? [
+                    'name' => $page->creator->name,
+                ] : null,
+                'lastEditor' => $page->lastEditor ? [
+                    'name' => $page->lastEditor->name,
+                ] : null,
+                'categories' => $page->categories->map(fn($category) => [
+                    'id' => $category->id,
+                    'name' => $category->name
+                ]),
+                'deleted_at' => $page->deleted_at->format('Y-m-d H:i:s'),
+            ]);
+
+        return Inertia::render('Wiki/Trash', [
+            'pages' => $trashedPages,
+        ]);
+    }
+
+    // 恢复已删除的页面
+    public function restore($id)
+    {
+        if (!auth()->user()->hasPermission('wiki.manage_trash')) {
+            return $this->unauthorized();
+        }
+
+        $page = WikiPage::onlyTrashed()->findOrFail($id);
+
+        try {
+            DB::beginTransaction();
+
+            // 恢复页面及其关联
+            $page->restore();
+            
+            DB::commit();
+
+            return redirect()->back()->with('flash', [
+                'message' => [
+                    'type' => 'success',
+                    'text' => '页面已成功恢复！'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return redirect()->back()->with('flash', [
+                'message' => [
+                    'type' => 'error',
+                    'text' => '恢复失败：' . $e->getMessage()
+                ]
+            ]);
+        }
+    }
+
+    // 彻底删除页面
+    public function forceDelete($id)
+    {
+        if (!auth()->user()->hasPermission('wiki.manage_trash')) {
+            return $this->unauthorized();
+        }
+
+        $page = WikiPage::onlyTrashed()->findOrFail($id);
+
+        try {
+            DB::beginTransaction();
+
+            // 删除所有相关引用
+            $page->outgoingReferences()->forceDelete();
+            $page->incomingReferences()->forceDelete();
+
+            // 彻底删除页面
+            $page->forceDelete();
+
+            DB::commit();
+
+            return redirect()->back()->with('flash', [
+                'message' => [
+                    'type' => 'success',
+                    'text' => '页面已彻底删除！'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return redirect()->back()->with('flash', [
+                'message' => [
+                    'type' => 'error',
+                    'text' => '删除失败：' . $e->getMessage()
+                ]
+            ]);
+        }
     }
 }

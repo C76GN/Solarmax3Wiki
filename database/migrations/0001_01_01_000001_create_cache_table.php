@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/database/migrations/0001_01_01_000001_create_cache_table.php
+
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;

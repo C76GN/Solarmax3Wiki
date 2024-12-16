@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Wiki/Revision/RevisionList.vue
 <template>
     <div class="space-y-4">
         <div v-for="revision in revisions" :key="revision.version" class="border-b border-gray-200 pb-4 last:border-0">

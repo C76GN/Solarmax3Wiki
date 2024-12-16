@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Nav/NavLinks.vue
 <template>
     <!-- 导航链接容器：用于存放导航项 -->
     <!-- 仅在中等及以上屏幕（md）显示，通过 'hidden md:flex' 控制显示/隐藏 -->

@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.vue
 <!-- 修改信息 -->
 <script setup>
 import InputError from '@/Components/Other/InputError.vue';

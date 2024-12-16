@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Inputs/TextInput.vue
 <template>
     <input
         class="rounded-md border-gray-300 shadow-sm focus:border-cyan-300 focus:ring-cyan-900 transition-all duration-300 ease-in-out"

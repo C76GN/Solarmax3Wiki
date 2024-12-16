@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Other/InputError.vue
 <!-- 错误消息组件 -->
 <script setup>
 defineProps({

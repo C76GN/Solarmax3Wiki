@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Svg/AppLogo.vue
 <template>
     <svg id="e3287856-fd7e-4127-8b94-c0f3f14756cb" data-name="图层 1" xmlns="http://www.w3.org/2000/svg"
         xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 902.84059 274.90137">

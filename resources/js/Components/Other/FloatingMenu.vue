@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Other/FloatingMenu.vue
 <template>
     <div :class="['menu', { active: menuActive }]" @click.stop="toggleMenu">
         <!-- 中心的触发按钮 -->

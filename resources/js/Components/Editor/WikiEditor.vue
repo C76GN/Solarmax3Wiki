@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Editor/WikiEditor.vue
 <template>
     <div class="wiki-editor relative">
         <textarea :id="id" :value="modelValue" @input="handleInput" ref="editor"></textarea>
@@ -9,6 +10,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import WikiLinkAutocomplete from '@/Components/Wiki/WikiLinkAutocomplete.vue';
+import { useEditor } from '@/plugins/tinymce';
 
 const props = defineProps({
     id: {
@@ -19,10 +21,6 @@ const props = defineProps({
         type: String,
         default: ''
     },
-    init: {
-        type: Object,
-        default: () => ({})
-    }
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -31,23 +29,18 @@ const showAutocomplete = ref(false);
 const autocompleteQuery = ref('');
 const autocompletePosition = ref({});
 
-// 计算编辑器配置
+// 获取基础编辑器配置
+const { init: baseInit } = useEditor();
+
+// 扩展编辑器配置
 const editorConfig = computed(() => ({
-    ...props.init,
+    ...baseInit,
     selector: `textarea#${props.id}`,
-    skin: 'oxide',
-    content_css: 'default',
-    height: 500,
-    menubar: false,
     plugins: [
-        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-        'insertdatetime', 'media', 'table', 'wikilink'
+        ...baseInit.plugins,
+        'wikilink'
     ],
-    toolbar: 'undo redo | formatselect | ' +
-        'bold italic backcolor | alignleft aligncenter ' +
-        'alignright alignjustify | bullist numlist outdent indent | ' +
-        'removeformat | wikilink | help',
+    toolbar: baseInit.toolbar + ' | wikilink',
     setup: (ed) => {
         editor.value = ed;
 
@@ -68,7 +61,6 @@ const editorConfig = computed(() => ({
                     showAutocomplete.value = true;
                     autocompleteQuery.value = query;
 
-                    // 计算自动完成框的位置
                     const rect = ed.selection.getBoundingClientRect();
                     autocompletePosition.value = {
                         position: 'absolute',

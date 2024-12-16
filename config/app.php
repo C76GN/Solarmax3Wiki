@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/config/app.php
+
 
 return [
 

@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/database/migrations/2024_12_15_032621_create_wiki_pages_and_categories_tables.php
+
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;

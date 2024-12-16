@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Nav/ResponsiveNav.vue
 <template>
     <!-- 整个导航容器 -->
     <div class="relative w-full bg-sky-400 bg-opacity-75 shadow-lg z-40 overflow-hidden">

@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Roles/Index.vue
 <template>
     <div class="container mx-auto py-6">
         <div class="flex justify-between items-center mb-6">
