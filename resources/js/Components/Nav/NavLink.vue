@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Nav/NavLink.vue
 <!-- 导航链接组件，支持不同的样式显示，基于当前链接的状态（活动或非活动）显示不同的样式 -->
 <template>
     <!-- 使用 Inertia.js 的 Link 组件，绑定动态样式和链接地址 -->

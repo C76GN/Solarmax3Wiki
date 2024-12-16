@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Wiki/CategoryNav.vue
 <template>
     <div class="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg p-4 mb-6">
         <h3 class="text-lg font-medium text-gray-900 mb-4">分类导航</h3>

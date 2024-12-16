@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Layouts/UserLayouts/AuthenticatedLayout.vue
 <template>
     <div class="min-h-screen relative"
         style="background-image: url('/images/BG2.webp'); background-attachment: fixed; background-size: cover; background-position: center">

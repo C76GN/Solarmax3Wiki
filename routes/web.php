@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/routes/web.php
+
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\HomeController;
@@ -44,6 +46,7 @@ Route::middleware(['auth'])->prefix('wiki')->name('wiki.')->group(function () {
     Route::post('/{page}/follow', [WikiPageController::class, 'toggleFollow'])
     ->middleware('auth')
     ->name('follow');
+    
     // 分类路由
     Route::prefix('categories')->name('categories.')->group(function () {
         Route::get('/', [WikiCategoryController::class, 'index'])->name('index');
@@ -58,6 +61,19 @@ Route::middleware(['auth'])->prefix('wiki')->name('wiki.')->group(function () {
         Route::delete('/{category}', [WikiCategoryController::class, 'destroy'])
             ->middleware('permission:wiki.category.delete')->name('destroy');
     });
+
+    // 回收站相关路由
+    Route::get('/trash', [WikiPageController::class, 'trash'])
+        ->middleware('permission:wiki.manage_trash')
+        ->name('trash');
+    
+    Route::post('/trash/{id}/restore', [WikiPageController::class, 'restore'])
+        ->middleware('permission:wiki.manage_trash')
+        ->name('restore');
+    
+    Route::delete('/trash/{id}', [WikiPageController::class, 'forceDelete'])
+        ->middleware('permission:wiki.manage_trash')
+        ->name('force-delete');
 });
 
 Route::middleware(['auth'])->group(function () {

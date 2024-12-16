@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/database/seeders/PermissionSeeder.php
+
 
 namespace Database\Seeders;
 
@@ -38,6 +40,12 @@ class PermissionSeeder extends Seeder
 
             // 日志权限
             ['name' => 'log.view', 'display_name' => '查看系统日志', 'group' => 'log'],
+
+            [
+                'name' => 'wiki.manage_trash',
+                'display_name' => '管理回收站',
+                'group' => 'wiki'
+            ],
         ];
 
         // 创建或更新权限

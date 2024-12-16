@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Roles/Edit.vue
 <template>
     <div class="container mx-auto py-6">
         <div class="max-w-3xl mx-auto">

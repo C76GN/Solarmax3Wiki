@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/app/Console/Commands/AssignUserRole.php
+
 
 namespace App\Console\Commands;
 

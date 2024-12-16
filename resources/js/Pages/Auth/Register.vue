@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Auth/Register.vue
 <template>
     <GuestLayout>
 

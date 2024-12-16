@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/app/Models/WikiPage.php
+
 
 namespace App\Models;
 

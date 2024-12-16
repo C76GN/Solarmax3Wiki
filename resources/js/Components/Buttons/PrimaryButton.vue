@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Buttons/PrimaryButton.vue
 <template>
     <button
         class="relative mt-4 inline-flex items-center overflow-hidden rounded-md border border-transparent bg-cyan-500 justify-center px-4 py-2 text-sm font-medium uppercase tracking-widest text-white transition duration-300 ease-in-out hover:bg-cyan-600 hover:ring-2 hover:ring-teal-800 focus:outline-none active:bg-cyan-700 active:scale-95"

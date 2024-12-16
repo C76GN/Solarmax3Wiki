@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Nav/NavBar.vue
 <!-- Components/Nav/Navbar.vue -->
 <template>
     <!-- 导航栏的主容器，设置背景颜色和透明度 -->

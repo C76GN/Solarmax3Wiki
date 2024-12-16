@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/app/Models/Role.php
+
 
 namespace App\Models;
 

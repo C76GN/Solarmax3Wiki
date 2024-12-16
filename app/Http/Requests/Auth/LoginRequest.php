@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/app/Http/Requests/Auth/LoginRequest.php
+
 
 namespace App\Http\Requests\Auth;
 

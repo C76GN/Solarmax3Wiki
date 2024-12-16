@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/resources/lang/zh/pagination.php
+
 
 return [
 

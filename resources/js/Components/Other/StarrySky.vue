@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Other/StarrySky.vue
 <template>
     <!-- 画布：用于显示星空效果 -->
     <canvas></canvas>

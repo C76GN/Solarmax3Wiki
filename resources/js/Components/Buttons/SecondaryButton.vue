@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Buttons/SecondaryButton.vue
 <!-- 还是按钮 -->
 <script setup>
 defineProps({

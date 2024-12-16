@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Other/Dropdown.vue
 <template>
     <div class="relative">
         <!-- 下拉菜单触发区域：点击切换菜单的显示状态 -->

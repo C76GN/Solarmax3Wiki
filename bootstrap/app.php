@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/bootstrap/app.php
+
 
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;

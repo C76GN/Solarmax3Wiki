@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Wiki/RelatedPages.vue
 <template>
     <div class="border-t border-gray-200 pt-6 mt-6">
         <h3 class="text-lg font-medium text-gray-900 mb-4">相关页面</h3>

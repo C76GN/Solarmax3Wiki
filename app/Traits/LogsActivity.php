@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/app/Traits/LogsActivity.php
+
 
 namespace App\Traits;
 

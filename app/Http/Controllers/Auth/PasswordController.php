@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/app/Http/Controllers/Auth/PasswordController.php
+
 
 namespace App\Http\Controllers\Auth;
 

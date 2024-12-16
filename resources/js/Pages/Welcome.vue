@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Welcome.vue
 <!-- 默认欢迎页面 -->
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';

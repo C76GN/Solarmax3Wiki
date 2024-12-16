@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Buttons/DangerButton.vue
 <!-- 一个“危险”按钮
 默认状态：深红色按钮 (bg-red-600)，白色文字。
 悬停效果：背景颜色变为浅红色 (hover:bg-red-500)。

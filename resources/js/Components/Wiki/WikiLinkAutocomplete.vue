@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Wiki/WikiLinkAutocomplete.vue
 <template>
     <div class="wiki-link-autocomplete" v-if="show">
         <div class="autocomplete-panel">

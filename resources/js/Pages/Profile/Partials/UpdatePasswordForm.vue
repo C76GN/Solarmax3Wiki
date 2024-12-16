@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Profile/Partials/UpdatePasswordForm.vue
 <!-- 更新用户密码 -->
 <script setup>
 import InputError from '@/Components/Other/InputError.vue';

@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Profile/Edit.vue
 <!-- 用户页面 -->
 <script setup>
 import AuthenticatedLayout from '@/Layouts/UserLayouts/AuthenticatedLayout.vue';

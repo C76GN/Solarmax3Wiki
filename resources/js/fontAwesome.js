@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/fontAwesome.js
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faSearch, faUser, faBell, faUserGroup, faBarsStaggered, faXmark, faLinkSlash,faDownload } from '@fortawesome/free-solid-svg-icons';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';

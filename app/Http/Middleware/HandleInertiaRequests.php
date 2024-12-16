@@ -1,4 +1,6 @@
 <?php
+// FileName: /var/www/Solarmax3Wiki/app/Http/Middleware/HandleInertiaRequests.php
+
 
 namespace App\Http\Middleware;
 

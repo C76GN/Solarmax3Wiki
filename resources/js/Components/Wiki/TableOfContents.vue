@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Wiki/TableOfContents.vue
 <template>
     <div class="wiki-toc">
         <h3 class="text-lg font-medium text-gray-900 mb-4">目录</h3>

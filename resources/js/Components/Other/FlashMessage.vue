@@ -1,3 +1,4 @@
+// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Other/FlashMessage.vue
 <template>
     <div class="fixed inset-x-0 bottom-0 z-50 space-y-4 pointer-events-none">
         <TransitionGroup enter-active-class="transition duration-300 ease-out"
