@@ -1,10 +1,6 @@
 <?php
 // FileName: /var/www/Solarmax3Wiki/app/Http/Controllers/WikiPageController.php
 
-// File: /var/www/Solarmax3Wiki/app/Http/Controllers/WikiPageController.php
-
-// File: /var/www/Solarmax3Wiki/app/Http/Controllers/WikiPageController.php
-
 
 namespace App\Http\Controllers;
 
@@ -281,8 +277,11 @@ class WikiPageController extends Controller
             ->paginate(20);
 
         return Inertia::render('Wiki/Revisions', [
-            'page' => $page,
-            'revisions' => $revisions
+            'page' => $page->only('id', 'title'),
+            'revisions' => $revisions,
+            'can' => [
+                'edit' => auth()->user()?->hasPermission('wiki.edit')
+            ]
         ]);
     }
 
@@ -293,33 +292,63 @@ class WikiPageController extends Controller
             ->with('creator')
             ->firstOrFail();
 
-        return Inertia::render('Wiki/ShowRevision', [
-            'page' => $page,
-            'revision' => $revision
+        return Inertia::render('Wiki/Show', [
+            'page' => array_merge($page->only('id', 'title', 'current_version'), [
+                'content' => $revision->content,
+                'revision' => $revision
+            ]),
+            'can' => [
+                'edit' => auth()->user()?->hasPermission('wiki.edit')
+            ]
         ]);
     }
 
     public function compareRevisions(WikiPage $page, $fromVersion, $toVersion)
     {
-        $diff = $page->getRevisionDiff($fromVersion, $toVersion);
+        $fromRevision = $page->revisions()
+            ->where('version', $fromVersion)
+            ->with('creator')
+            ->firstOrFail();
+            
+        $toRevision = $page->revisions()
+            ->where('version', $toVersion)
+            ->with('creator')
+            ->firstOrFail();
 
         return Inertia::render('Wiki/CompareRevisions', [
-            'page' => $page,
-            'diff' => $diff
+            'page' => $page->only('id', 'title'),
+            'oldRevision' => $fromRevision,
+            'newRevision' => $toRevision,
+            'fromVersion' => (int)$fromVersion,
+            'toVersion' => (int)$toVersion
         ]);
     }
 
     public function revertToVersion(Request $request, WikiPage $page, $version)
     {
-        $page->revertToVersion($version);
+        if (!auth()->user()->hasPermission('wiki.edit')) {
+            return $this->unauthorized();
+        }
 
-        return redirect()->route('wiki.show', $page->id)
-            ->with('flash', [
-                'message' => [
-                    'type' => 'success',
-                    'text' => "页面已恢复到版本 {$version}"
-                ]
-            ]);
+        try {
+            $page->revertToVersion($version);
+
+            return redirect()->route('wiki.show', $page->id)
+                ->with('flash', [
+                    'message' => [
+                        'type' => 'success',
+                        'text' => "页面已恢复到版本 {$version}"
+                    ]
+                ]);
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('flash', [
+                    'message' => [
+                        'type' => 'error',
+                        'text' => '恢复失败：' . $e->getMessage()
+                    ]
+                ]);
+        }
     }
 
     public function toggleFollow(WikiPage $page)
