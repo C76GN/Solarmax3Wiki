@@ -22,11 +22,13 @@ class WikiPageRevision extends Model
         'changes' => 'json'
     ];
 
+    // 关联到页面
     public function page()
     {
         return $this->belongsTo(WikiPage::class, 'wiki_page_id');
     }
 
+    // 关联到创建者
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -39,13 +41,13 @@ class WikiPageRevision extends Model
             return ['type' => 'create', 'content' => $this->content];
         }
 
-        // 这里使用简单的差异计算，可以根据需要使用更复杂的diff算法
+        // 基础的差异计算
         $changes = [];
         $oldLines = explode("\n", $previousContent);
         $newLines = explode("\n", $this->content);
         
-        $changes['added'] = array_diff($newLines, $oldLines);
-        $changes['removed'] = array_diff($oldLines, $newLines);
+        $changes['added'] = array_values(array_diff($newLines, $oldLines));
+        $changes['removed'] = array_values(array_diff($oldLines, $newLines));
         
         return $changes;
     }

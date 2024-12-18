@@ -19,6 +19,17 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Wiki 路由组
 Route::middleware(['auth'])->prefix('wiki')->name('wiki.')->group(function () {
+    Route::get('trash', [WikiPageController::class, 'trash'])
+        ->middleware('permission:wiki.manage_trash')
+        ->name('trash');
+    
+    Route::post('trash/{id}/restore', [WikiPageController::class, 'restore'])
+        ->middleware('permission:wiki.manage_trash')
+        ->name('restore');
+    
+    Route::delete('trash/{id}', [WikiPageController::class, 'forceDelete'])
+        ->middleware('permission:wiki.manage_trash')
+        ->name('force-delete');
     // 页面路由
     Route::get('/', [WikiPageController::class, 'index'])->name('index');
     Route::get('/create', [WikiPageController::class, 'create'])
@@ -63,17 +74,7 @@ Route::middleware(['auth'])->prefix('wiki')->name('wiki.')->group(function () {
     });
 
     // 回收站相关路由
-    Route::get('/trash', [WikiPageController::class, 'trash'])
-        ->middleware('permission:wiki.manage_trash')
-        ->name('trash');
     
-    Route::post('/trash/{id}/restore', [WikiPageController::class, 'restore'])
-        ->middleware('permission:wiki.manage_trash')
-        ->name('restore');
-    
-    Route::delete('/trash/{id}', [WikiPageController::class, 'forceDelete'])
-        ->middleware('permission:wiki.manage_trash')
-        ->name('force-delete');
 });
 
 Route::middleware(['auth'])->group(function () {
