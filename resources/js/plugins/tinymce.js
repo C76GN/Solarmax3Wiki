@@ -10,7 +10,7 @@ export const useEditor = () => {
         plugins: [
             'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
             'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-            'insertdatetime', 'media', 'table', 'help', 'wordcount', 'wikilink'
+            'insertdatetime', 'media', 'table', 'help', 'wordcount'
         ],
         toolbar: 'undo redo | bold italic underline strikethrough | ' +
             'fontfamily fontsize blocks | alignleft aligncenter alignright alignjustify | ' +

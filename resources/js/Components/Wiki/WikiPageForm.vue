@@ -39,7 +39,7 @@
 
         <!-- 表单操作 -->
         <div class="flex justify-end gap-4">
-            <Link :href="route('wiki.index')"
+            <Link :href="route('wiki.index',{prev_page_id: props.page?.id})"
                 class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition duration-150 ease-in-out">
             取消
             </Link>

@@ -16,8 +16,10 @@
 <script setup>
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import WikiPageForm from '@/Components/Wiki/WikiPageForm.vue';
+import {createInertiaApp, router} from "@inertiajs/vue3";
+import {onBeforeUnmount} from "vue";
 
-defineProps({
+let prop = defineProps({
     page: {
         type: Object,
         required: true
@@ -27,4 +29,14 @@ defineProps({
         required: true
     }
 });
+
+
+let timer = setInterval(() => {
+    router.post(route('wiki.lock'),{page_id:prop.page.id});
+},5000)
+
+onBeforeUnmount(()=>{
+    clearInterval(timer)
+})
+
 </script>

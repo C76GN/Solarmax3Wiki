@@ -22,7 +22,8 @@ class WikiPage extends Model
         'last_edited_by',
         'published_at',
         'view_count',
-        'current_version'
+        'current_version',
+        'status_message',
     ];
 
     protected $casts = [
@@ -96,7 +97,7 @@ class WikiPage extends Model
     public function revertToVersion($version)
     {
         $revision = $this->revisions()->where('version', $version)->firstOrFail();
-        
+
         $this->update([
             'title' => $revision->title,
             'content' => $revision->content,
@@ -171,15 +172,15 @@ class WikiPage extends Model
     {
         // 清除旧的引用关系
         $this->outgoingReferences()->delete();
-        
+
         // 解析内容中的Wiki链接
         preg_match_all('/\[\[([^\]]+)\]\]/', $this->content, $matches);
-        
+
         if (!empty($matches[1])) {
             foreach ($matches[1] as $title) {
                 // 查找被引用的页面
                 $referencedPage = WikiPage::where('title', $title)->first();
-                
+
                 // 如果页面存在，创建引用关系
                 if ($referencedPage && $referencedPage->id !== $this->id) {
                     WikiPageReference::create([

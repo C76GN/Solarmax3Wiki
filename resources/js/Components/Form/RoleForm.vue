@@ -130,3 +130,8 @@ const submit = () => {
     }
 }
 </script>
+<style>
+.text-gray-900,.text-gray-700{
+    color: #fff;
+}
+</style>

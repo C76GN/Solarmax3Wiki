@@ -17,22 +17,32 @@ use Inertia\Inertia;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
+Route::get('/wiki', [WikiPageController::class, 'index'])->name('wiki.index');
+Route::get('/wiki/{page}', [WikiPageController::class, 'show'])->name('wiki.show');
+
+
 // Wiki 路由组
 Route::middleware(['auth'])->prefix('wiki')->name('wiki.')->group(function () {
     Route::get('trash', [WikiPageController::class, 'trash'])
         ->middleware('permission:wiki.manage_trash')
         ->name('trash');
-    
+
+
+    Route::post('/issue', [WikiPageController::class, 'issue'])->name('issue');
+    Route::post('/audit', [WikiPageController::class, 'audit'])->name('audit');
+    Route::post('/lock', [WikiPageController::class, 'lock'])->name('lock');
+    Route::post('/issue_handle', [WikiPageController::class, 'issue_handle'])->name('issue_handle');
+
     Route::post('trash/{id}/restore', [WikiPageController::class, 'restore'])
         ->middleware('permission:wiki.manage_trash')
         ->name('restore');
-    
+
     Route::delete('trash/{id}', [WikiPageController::class, 'forceDelete'])
         ->middleware('permission:wiki.manage_trash')
         ->name('force-delete');
     // 页面路由
-    Route::get('/', [WikiPageController::class, 'index'])->name('index');
-    Route::get('/create', [WikiPageController::class, 'create'])
+//    Route::get('/', [WikiPageController::class, 'index']);
+    Route::get('/auth/create', [WikiPageController::class, 'create'])
         ->middleware('permission:wiki.create')->name('create');
     Route::post('/', [WikiPageController::class, 'store'])
         ->middleware('permission:wiki.create')->name('store');
@@ -44,7 +54,6 @@ Route::middleware(['auth'])->prefix('wiki')->name('wiki.')->group(function () {
         ->middleware('permission:wiki.delete')->name('destroy');
     Route::post('/{page}/publish', [WikiPageController::class, 'publish'])
         ->middleware('permission:wiki.publish')->name('publish');
-    Route::get('/{page}', [WikiPageController::class, 'show'])->name('show');
     Route::get('/{page}/revisions', [WikiPageController::class, 'revisions'])
         ->name('revisions');
     Route::get('/{page}/revisions/{version}', [WikiPageController::class, 'showRevision'])
@@ -57,10 +66,11 @@ Route::middleware(['auth'])->prefix('wiki')->name('wiki.')->group(function () {
     Route::post('/{page}/follow', [WikiPageController::class, 'toggleFollow'])
     ->middleware('auth')
     ->name('follow');
-    
+
     // 分类路由
     Route::prefix('categories')->name('categories.')->group(function () {
-        Route::get('/', [WikiCategoryController::class, 'index'])->name('index');
+        Route::get('/index', [WikiCategoryController::class, 'index'])->name('index');
+//        Route::get('/', [WikiCategoryController::class, 'index'])->name('index');
         Route::get('/create', [WikiCategoryController::class, 'create'])
             ->middleware('permission:wiki.category.create')->name('create');
         Route::post('/', [WikiCategoryController::class, 'store'])
@@ -74,7 +84,7 @@ Route::middleware(['auth'])->prefix('wiki')->name('wiki.')->group(function () {
     });
 
     // 回收站相关路由
-    
+
 });
 
 Route::middleware(['auth'])->group(function () {
@@ -86,7 +96,7 @@ Route::middleware(['auth'])->group(function () {
     // 用户管理路由
     Route::middleware('permission:user.view')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
-        
+
         Route::middleware('permission:user.edit')->group(function () {
             Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
             Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
@@ -96,20 +106,29 @@ Route::middleware(['auth'])->group(function () {
     // 角色管理路由
     Route::middleware('permission:role.view')->group(function () {
         Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
-        
+
         Route::middleware('permission:role.create')->group(function () {
             Route::get('/roles/create', [RoleController::class, 'create'])->name('roles.create');
             Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
         });
-        
+
         Route::middleware('permission:role.edit')->group(function () {
             Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
             Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
         });
-        
+
         Route::delete('/roles/{role}', [RoleController::class, 'destroy'])
             ->middleware('permission:role.delete')
             ->name('roles.destroy');
+    });
+
+    Route::middleware('permission:page.view')->prefix("wiki")->group(function () {
+        Route::get('/page/index', [WikiPageController::class, 'page'])->name('page.index');
+
+
+        Route::delete('/page_delete', [WikiPageController::class, 'page_delete'])
+            ->middleware('permission:page.delete')
+            ->name('page.destroy');
     });
 
 

@@ -1,5 +1,6 @@
 // FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Roles/Index.vue
 <template>
+    <MainLayout :navigationLinks="[{ href: '/users', label: '用户管理' }, { href: '/roles', label: '角色管理' }, { href: '/wiki/categories/index', label: '页面分类' }, { href: '#', label: '攻略专区' }, { href: '#', label: '论坛' }]">
     <div class="container mx-auto py-6">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold text-gray-900">角色管理</h1>
@@ -79,17 +80,19 @@
         <!-- 分页 -->
         <Pagination :links="roles.links" class="mt-6" />
     </div>
-
+        <ConfirmationModal :show="confirmingDeletion" title="确认删除角色" message="确定要删除该角色吗？此操作将同时移除该角色下所有用户的相关权限，且不可恢复。"
+                           @close="confirmingDeletion = false" @confirm="deleteRole" />
+    </MainLayout>
     <!-- 删除确认对话框 -->
-    <ConfirmationModal :show="confirmingDeletion" title="确认删除角色" message="确定要删除该角色吗？此操作将同时移除该角色下所有用户的相关权限，且不可恢复。"
-        @close="confirmingDeletion = false" @confirm="deleteRole" />
+
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import { Link } from '@inertiajs/vue3'
+import {Link, router} from '@inertiajs/vue3'
 import Pagination from '@/Components/Other/Pagination.vue'
 import ConfirmationModal from '@/Components/Modal/ConfirmationModal.vue'
+import MainLayout from "@/Layouts/MainLayouts/MainLayout.vue";
 
 defineProps({
     roles: {
@@ -102,8 +105,13 @@ const confirmingDeletion = ref(false)
 const roleToDelete = ref(null)
 
 const confirmDelete = (role) => {
-    roleToDelete.value = role
-    confirmingDeletion.value = true
+    router.delete(route('roles.destroy', role.id), {
+        onSuccess: () => {
+            alert("删除成功")
+        }
+    })
+    // roleToDelete.value = role
+    // confirmingDeletion.value = true
 }
 
 const deleteRole = () => {

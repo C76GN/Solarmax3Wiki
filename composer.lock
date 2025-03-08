@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ae017b28d1fa626cde7fbcc74d5c75f3",
+    "content-hash": "c01e2eb854f328f0ad79782fe066eaa4",
     "packages": [
         {
             "name": "brick/math",
@@ -520,7 +520,7 @@
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/fruitcake/php-cors/zipball/3d158f36e7875e2f040f37bc0573956240a5a38b",
+                "url": "https://mirrors.huaweicloud.com/repository/php/fruitcake/php-cors/v1.3.0/fruitcake-php-cors-v1.3.0.zip",
                 "reference": "3d158f36e7875e2f040f37bc0573956240a5a38b",
                 "shasum": ""
             },
@@ -544,7 +544,6 @@
                     "Fruitcake\\Cors\\": "src/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -565,10 +564,6 @@
                 "laravel",
                 "symfony"
             ],
-            "support": {
-                "issues": "https://github.com/fruitcake/php-cors/issues",
-                "source": "https://github.com/fruitcake/php-cors/tree/v1.3.0"
-            },
             "funding": [
                 {
                     "url": "https://fruitcake.nl",
@@ -9056,5 +9051,5 @@
         "php": "^8.2"
     },
     "platform-dev": [],
-    "plugin-api-version": "2.3.0"
+    "plugin-api-version": "2.6.0"
 }

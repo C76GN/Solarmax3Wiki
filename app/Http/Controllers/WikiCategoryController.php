@@ -14,7 +14,7 @@ class WikiCategoryController extends Controller
     public function index()
     {
         $categories = WikiCategory::with('parent')
-            ->withCount('articles')
+            ->withCount('pages')
             ->orderBy('order')
             ->get()
             ->map(function ($category) {
@@ -27,7 +27,7 @@ class WikiCategoryController extends Controller
                         'id' => $category->parent->id,
                         'name' => $category->parent->name
                     ] : null,
-                    'articles_count' => $category->articles_count,
+                    'articles_count' => $category->pages_count,
                     'created_at' => $category->created_at->format('Y-m-d H:i:s')
                 ];
             });
