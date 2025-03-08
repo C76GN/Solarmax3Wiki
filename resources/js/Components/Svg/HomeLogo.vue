@@ -3,13 +3,7 @@
 <template>
     <svg id="图层_1" data-name="图层 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
         viewBox="0 0 859.87 305.1">
-        <defs>
-            <style>
-                .cls-1 {
-                    opacity: 0;
-                }
-            </style>
-        </defs>
+
         <path
             d="M151.42,357.44q-1.24,11.85-13,11.85h-39q-11.69,0-10.43-11.85l3.24-30.9h19.39L108.81,353h23.7l2.67-25.44-35-36.78a12.53,12.53,0,0,1-3.14-10.36l3-28.83q1.26-11.92,12.94-11.93h39q11.76,0,10.53,11.77l-3,29H140.14L142.71,256H119l-2.46,23.45,35,36.62q3.81,4,3.12,10.52Z"
             transform="translate(-88.84 -239.63)" />
@@ -60,3 +54,9 @@
             xlink:href="/images/star.png" />
     </svg>
 </template>
+<style>
+.cls-1 {
+    opacity: 0;
+}
+</style>
+<script></script>

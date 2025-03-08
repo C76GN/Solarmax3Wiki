@@ -9,6 +9,7 @@
             ]">
             全部
             </Link>
+
             <Link v-for="category in categories" :key="category.id"
                 :href="route('wiki.index', { category: category.id })" :class="[
                     'px-3 py-1 rounded-full text-sm font-medium transition-colors duration-150',
@@ -17,7 +18,7 @@
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 ]">
             {{ category.name }}
-            <span class="text-xs ml-1">({{ category.articles_count || 0 }})</span>
+            <span class="text-xs ml-1">({{ category.pages_count  }})</span>
             </Link>
         </div>
     </div>
