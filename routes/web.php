@@ -5,7 +5,6 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\GameWikiController;
-use App\Http\Controllers\TextController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\WikiPageController;
 use App\Http\Controllers\WikiCategoryController;
@@ -21,6 +20,7 @@ Route::get('/wiki', [WikiPageController::class, 'index'])->name('wiki.index');
 Route::get('/wiki/{page}', [WikiPageController::class, 'show'])->name('wiki.show');
 
 
+
 // Wiki 路由组
 Route::middleware(['auth'])->prefix('wiki')->name('wiki.')->group(function () {
     Route::get('trash', [WikiPageController::class, 'trash'])
@@ -30,7 +30,6 @@ Route::middleware(['auth'])->prefix('wiki')->name('wiki.')->group(function () {
 
     Route::post('/issue', [WikiPageController::class, 'issue'])->name('issue');
     Route::post('/audit', [WikiPageController::class, 'audit'])->name('audit');
-    Route::post('/lock', [WikiPageController::class, 'lock'])->name('lock');
     Route::post('/issue_handle', [WikiPageController::class, 'issue_handle'])->name('issue_handle');
 
     Route::post('trash/{id}/restore', [WikiPageController::class, 'restore'])
@@ -134,9 +133,6 @@ Route::middleware(['auth'])->group(function () {
 
 });
 
-Route::get('/gamewiki', [GameWikiController::class, 'index'])->name('gamewiki');
-Route::get('/text', [TextController::class, 'index']);
-Route::get('/text2', [TextController::class, 'index2']);
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');

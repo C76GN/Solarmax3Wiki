@@ -3,3 +3,8 @@
 # *.log
 # tmp/
 public/tinymce
+resources/js/Components/Svg
+public/images
+public/favicon.ico
+composer.lock
+package-lock.json

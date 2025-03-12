@@ -14,13 +14,13 @@
                         <h2 class="text-2xl font-semibold text-gray-900">Wiki 页面</h2>
                         <div class="flex gap-2">
                             <Link v-if="$page.props.auth.user?.permissions.includes('wiki.manage_trash')"
-                                  :href="route('wiki.trash')"
-                                  class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition duration-150 ease-in-out">
-                                回收站
+                                :href="route('wiki.trash')"
+                                class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition duration-150 ease-in-out">
+                            回收站
                             </Link>
                             <Link v-if="can.create_page" :href="route('wiki.create')"
-                                  class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">
-                                创建新页面
+                                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out">
+                            创建新页面
                             </Link>
                         </div>
                     </div>
@@ -29,32 +29,45 @@
                     <div class="mb-6 flex gap-4 bg-gray-50 p-4 rounded-lg">
                         <div class="flex-1">
                             <input type="text" v-model="form.search" @input="search"
-                                   class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="搜索页面...">
+                                class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="搜索页面...">
                         </div>
+
+                        <!-- 状态筛选 -->
                         <div v-if="can.show_status">
-                            <select  v-model="form.status" @change="search"
-                                     class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <select v-model="form.status" @change="search"
+                                class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">所有状态</option>
                                 <option value="draft">草稿</option>
                                 <option value="published">已发布</option>
                             </select>
                         </div>
+
+                        <!-- 📌 新增排序筛选 -->
+                        <div>
+                            <select v-model="form.sort" @change="search"
+                                class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <option value="view_count">按浏览量排序</option>
+                                <option value="created_at">按创建时间排序</option>
+                                <option value="updated_at">按修改时间排序</option>
+                            </select>
+                        </div>
                     </div>
+
 
                     <!-- 页面列表 -->
                     <div class="space-y-6">
                         <div v-for="page in pages.data" :key="page.id"
-                             class="border-b border-gray-200 pb-6 last:border-0 last:pb-0">
+                            class="border-b border-gray-200 pb-6 last:border-0 last:pb-0">
                             <div class="flex justify-between items-start">
                                 <div>
                                     <Link :href="route('wiki.show', page.id)"
-                                          class="text-xl font-medium text-blue-600 hover:text-blue-800">
-                                        {{ page.title }}
+                                        class="text-xl font-medium text-blue-600 hover:text-blue-800">
+                                    {{ page.title }}
                                     </Link>
                                     <div class="mt-2 flex flex-wrap gap-2">
                                         <span v-for="category in page.categories" :key="category.id"
-                                              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                             {{ category.name }}
                                         </span>
                                     </div>
@@ -73,17 +86,19 @@
                                 </div>
                                 <div class="flex gap-2">
                                     <Link v-if="can.edit_page" :href="route('wiki.edit', page.id)"
-                                          class="text-blue-600 hover:text-blue-900">编辑</Link>
-                                    <button v-if="page.status === 'draft' && props.uid === +page.created_by" @click="confirmAudit(page)"
-                                            class="text-red-600 hover:text-red-900">提交审核</button>
+                                        class="text-blue-600 hover:text-blue-900">编辑</Link>
+                                    <button v-if="page.status === 'draft' && props.uid === +page.created_by"
+                                        @click="confirmAudit(page)"
+                                        class="text-red-600 hover:text-red-900">提交审核</button>
 
 
-                                    <button v-if="page.status === 'audit_failure' && props.uid === +page.created_by" @click="confirmAudit(page)"
-                                            class="text-red-600 hover:text-red-900">重新提交</button>
-                                    <button v-if="page.status === 'pending' && props.can.audit_page" @click="audit(page)"
-                                            class="text-red-600 hover:text-red-900">页面审核</button>
+                                    <button v-if="page.status === 'audit_failure' && props.uid === +page.created_by"
+                                        @click="confirmAudit(page)"
+                                        class="text-red-600 hover:text-red-900">重新提交</button>
+                                    <button v-if="page.status === 'pending' && props.can.audit_page"
+                                        @click="audit(page)" class="text-red-600 hover:text-red-900">页面审核</button>
                                     <button v-if="can.delete_page" @click="confirmDelete(page)"
-                                            class="text-red-600 hover:text-red-900">删除</button>
+                                        class="text-red-600 hover:text-red-900">删除</button>
                                 </div>
                             </div>
                         </div>
@@ -108,11 +123,11 @@
                 </p>
                 <div class="mt-5 flex justify-end gap-4">
                     <button type="button" @click="cancelDelete"
-                            class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                        class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
                         取消
                     </button>
                     <button type="button" @click="deleteConfirmed"
-                            class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                        class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
                         确认删除
                     </button>
                 </div>
@@ -126,11 +141,11 @@
                 </h3>
                 <div class="mt-5 flex justify-end gap-4">
                     <button type="button" @click="auditSuccess"
-                            class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                        class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
                         通过
                     </button>
                     <button type="button" @click="auditError"
-                            class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                        class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
                         不通过
                     </button>
                 </div>
@@ -147,11 +162,11 @@
                 </div>
                 <div class="mt-5 flex justify-end gap-4">
                     <button type="button" @click="auditErrorConfirm"
-                            class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                        class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
                         确认
                     </button>
                     <button type="button" @click="cancelShowAuditErrorModel"
-                            class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                        class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
                         取消
                     </button>
                 </div>
@@ -177,12 +192,12 @@ const props = defineProps({
     can: Object
 });
 
-// delete router.query.prev_page_id
 
 const form = reactive({
     search: props.filters.search || '',
     status: props.filters.status || '',
     category: props.filters.category || '',
+    sort: props.filters.sort || 'view_count', // 默认按浏览量排序
 });
 
 

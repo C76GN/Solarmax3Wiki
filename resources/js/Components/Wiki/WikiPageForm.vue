@@ -1,4 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Wiki/WikiPageForm.vue
 <template>
     <form @submit.prevent="submit" class="space-y-6">
         <!-- 标题输入 -->
@@ -39,7 +38,7 @@
 
         <!-- 表单操作 -->
         <div class="flex justify-end gap-4">
-            <Link :href="route('wiki.index',{prev_page_id: props.page?.id})"
+            <Link :href="route('wiki.index')"
                 class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition duration-150 ease-in-out">
             取消
             </Link>
@@ -53,7 +52,7 @@
 
 <script setup>
 import { useForm, Link } from '@inertiajs/vue3';
-import { onMounted, onUnmounted, ref, computed } from 'vue';
+import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
 import { useEditor } from '@/plugins/tinymce';
 
 const props = defineProps({
@@ -67,12 +66,15 @@ const props = defineProps({
     }
 });
 
+const emit = defineEmits(['content-changed']);
+
 const isEditing = computed(() => !!props.page);
 
 const form = useForm({
     title: props.page?.title || '',
     content: props.page?.content || '',
-    categories: props.page?.categories || []
+    categories: props.page?.categories || [],
+    last_check: props.page?.updated_at || ''
 });
 
 const editor = ref(null);
@@ -95,6 +97,7 @@ onMounted(() => {
             setup: (ed) => {
                 ed.on('input change', () => {
                     form.content = ed.getContent();
+                    emit('content-changed', ed.getContent());
                 });
             }
         };
@@ -118,8 +121,19 @@ onUnmounted(() => {
 
 // 提交表单处理
 const submit = () => {
+    // 添加最后检查时间戳
+    form.last_check = props.page?.updated_at || '';
+
     if (isEditing.value) {
-        form.put(route('wiki.update', props.page.id));
+        form.put(route('wiki.update', props.page.id), {
+            onError: (errors) => {
+                // 检查是否为冲突错误
+                if (errors.conflict) {
+                    // 可以在这里处理冲突
+                    console.error("内容冲突:", errors.message);
+                }
+            }
+        });
     } else {
         form.post(route('wiki.store'));
     }

@@ -9,7 +9,7 @@
                 <aside class="hidden lg:block w-64 flex-shrink-0">
                     <div class="sticky top-6">
                         <nav class="space-y-1" aria-label="页面导航">
-                            <TableOfContents :headers="pageHeaders"/>
+                            <TableOfContents :headers="pageHeaders" />
                         </nav>
                     </div>
                 </aside>
@@ -28,9 +28,9 @@
                                         <div>
                                             创建者: {{ page.creator?.name || '未知' }}
                                         </div>
-                                                                                <div>
-                                                                                    最后编辑: {{ formatDate(page.updated_at) }}
-                                                                                </div>
+                                        <div>
+                                            最后编辑: {{ formatDate(page.updated_at) }}
+                                        </div>
                                         <div>
                                             浏览量: {{ page.view_count }}
                                         </div>
@@ -42,9 +42,9 @@
                                     <!-- 分类标签 -->
                                     <div class="mt-4 flex flex-wrap gap-2">
                                         <Link v-for="category in page.categories" :key="category.id"
-                                              :href="route('wiki.index', { category: category.id })"
-                                              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200">
-                                            {{ category.name }}
+                                            :href="route('wiki.index', { category: category.id })"
+                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200">
+                                        {{ category.name }}
                                         </Link>
                                     </div>
                                 </div>
@@ -77,16 +77,16 @@
 
                                     <!-- 问题报告按钮 -->
                                     <button @click="reportIssue"
-                                            class="inline-flex items-center gap-1 text-gray-500 hover:text-gray-700">
-                                        <ExclamationTriangleIcon class="w-5 h-5"/>
+                                        class="inline-flex items-center gap-1 text-gray-500 hover:text-gray-700">
+                                        <ExclamationTriangleIcon class="w-5 h-5" />
                                         报告问题
                                     </button>
 
                                     <!-- 编辑按钮 -->
                                     <Link v-if="can.edit_page" :href="route('wiki.edit', page.id)"
-                                          class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800">
-                                        <PencilIcon class="w-5 h-5"/>
-                                        编辑
+                                        class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800">
+                                    <PencilIcon class="w-5 h-5" />
+                                    编辑
                                     </Link>
                                 </div>
                             </div>
@@ -99,26 +99,25 @@
                     </div>
                     <div class="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg overflow-hidden">
                         <div class="p-4">
-                            <input type="checkbox" id="no-handle" v-model="show_no_handle">
-                            <label for="no-handle">只看未处理</label>
-
+                            <input type="checkbox" id="no-handle" v-model="issueFilter" @change="applyFilter">
+                            <label for="no-handle">只看未解决</label>
                         </div>
-                        <div   v-for="v in page.issue" :key="v.id">
-                                <div class="p-4 mb-3" v-if="!show_no_handle || v.status === 'to_be_solved'">
-                                    <div>{{formatDate(v.created_at)}}
-                                    </div>
-                                    <div class="p-2">
-                                        <p>留言：</p>
-                                        <div v-html="v.content"></div>
-                                    </div>
-                                    <div>
-                                        <p v-if="v.status === 'to_be_solved'" >
-                                            <span style="color:red;">未解决</span>
-                                            <button @click="handle_issue(v.id)" v-if="page.can.issue" class="inline-flex items-center ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200">标志已处理</button>
-                                        </p>
-                                        <p v-else style="color:green;">已解决</p>
-                                    </div>
+                        <div v-for="v in page.issue" :key="v.id">
+                            <div class="p-4 mb-3" v-if="!issueFilter || v.status === 'to_be_solved'">
+                                <div>{{ formatDate(v.created_at) }}</div>
+                                <div class="p-2">
+                                    <p>留言：</p>
+                                    <div v-html="v.content"></div>
                                 </div>
+                                <div>
+                                    <p v-if="v.status === 'to_be_solved'">
+                                        <span style="color:red;">未解决</span>
+                                        <button @click="handle_issue(v.id)" v-if="page.can.issue"
+                                            class="inline-flex items-center ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200">标志已处理</button>
+                                    </p>
+                                    <p v-else style="color:green;">已解决</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -167,10 +166,11 @@
                 </div>
                 <div class="mt-4 flex justify-end gap-4">
                     <button type="button" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                            @click="showReportModal = false">
+                        @click="showReportModal = false">
                         取消
                     </button>
-                    <button type="button" @click="submitIssue" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                    <button type="button" @click="submitIssue"
+                        class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
                         提交
                     </button>
                 </div>
@@ -259,6 +259,17 @@ const props = defineProps({
     }
 });
 
+const applyFilter = () => {
+    let params = { page: props.page.id };
+    if (issueFilter.value) {
+        params.filter = 'unresolved';
+    }
+    router.get(route('wiki.show', params), {}, { preserveState: true });
+};
+
+
+const issueFilter = ref(route().params.filter === 'unresolved' ? true : false);
+
 
 const formatDate = (date) => {
     if (!date) return '';
@@ -301,10 +312,17 @@ const submitIssue = () => {
 };
 
 const handle_issue = (id) => {
-    router.post(route('wiki.issue_handle'), {
-        id
+    router.post(route('wiki.issue_handle'), { id }, {
+        onSuccess: () => {
+            issueFilter.value = true;  // 处理后默认切换到“只看未解决”
+            applyFilter();
+        },
+        onError: (error) => {
+            alert("处理失败: " + error.message);
+        }
     });
-}
+};
+
 
 const publishPage = () => {
     router.post(route('wiki.publish', props.page.id));

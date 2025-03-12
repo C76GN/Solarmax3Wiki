@@ -21,13 +21,22 @@ class WikiPageController extends Controller
 
     public function audit(Request $request)
     {
-        $validated = $request->validate(['id' => 'required', 'status' => 'required|string','status_message'=>'string']);
-        WikiPage::query()->where("id",$validated['id'])->update([
-            'status'=>$validated['status'],
-            'status_message'=>$validated['status_message']??"",
+        $validated = $request->validate([
+            'id' => 'required|exists:wiki_pages,id',
+            'status' => 'required|string|in:published,draft,pending,audit_failure',
+            'status_message' => 'nullable|string|max:255'
         ]);
-        return redirect()->route('wiki.index')->with('flash', ['message' => ['type' => 'success', 'text' => '提交成功']]);
+
+        WikiPage::where('id', $validated['id'])->update([
+            'status' => $validated['status'],
+            'status_message' => $validated['status_message'] ?? "",
+        ]);
+
+        return redirect()->route('wiki.index')->with('flash', [
+            'message' => ['type' => 'success', 'text' => '审核状态更新成功']
+        ]);
     }
+
 
 
     public function issue(Request $request)
@@ -40,14 +49,19 @@ class WikiPageController extends Controller
 
     public function issue_handle(Request $request)
     {
-        $validated = $request->validate(['id' => 'required']);
-        $w = WikiPageIssue::query()->find($validated['id']);
-
-        WikiPageIssue::query()->where("id", $validated['id'])->update([
-            'status' => 'handle'
+        $validated = $request->validate([
+            'id' => 'required|exists:wiki_page_issues,id',
         ]);
-        return redirect()->route('wiki.show', ['page' => $w['wiki_page_id']])->with('flash', ['message' => ['type' => 'success', 'text' => '提交成功']]);
+
+        $issue = WikiPageIssue::find($validated['id']);
+
+        $issue->update(['status' => WikiPageIssue::STATUS_HANDLED]);
+
+        return redirect()->route('wiki.show', ['page' => $issue->wiki_page_id])->with('flash', [
+            'message' => ['type' => 'success', 'text' => '提交成功']
+        ]);
     }
+
 
     public function create()
     {
@@ -64,14 +78,12 @@ class WikiPageController extends Controller
     {
         $query = WikiPage::with(['creator', 'lastEditor', 'categories']);
 
-        if ($request->has('prev_page_id') && $request->prev_page_id){
-            Cache::delete("editing_page:id:$request->prev_page_id");
-        }
 
         // 搜索条件
         if ($request->has('search') && $request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('title', 'like', '%' . $request->search . '%')->orWhere('content', 'like', '%' . $request->search . '%');
+                $q->where('title', 'like', '%' . $request->search . '%')
+                ->orWhere('content', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -87,16 +99,32 @@ class WikiPageController extends Controller
             });
         }
 
-        $uid = $request->user()?->id?:0;
+        $uid = $request->user()?->id ?: 0;
         $wikiAudit = $request->user()?->hasPermission('wiki.page_audit');
         $wikiAuditWhere = "";
-        if ($wikiAudit){
-            $wikiAuditWhere = " or (status = 'pending')";
+        if ($wikiAudit) {
+            $wikiAuditWhere = " OR (status = 'pending')";
         }
-        //wiki.page_audit
 
-        $pages = $query->orderBy("view_count",'desc')
-            ->whereRaw("( ((status='draft' or status = 'audit_failure') and created_by = $uid) or (status = 'published') $wikiAuditWhere )")
+        // 📌 **新增排序逻辑**
+        if ($request->has('sort')) {
+            if ($request->sort === 'created_at') {
+                $query->orderBy('created_at', 'desc');
+            } elseif ($request->sort === 'updated_at') {
+                $query->orderBy('updated_at', 'desc');
+            } elseif ($request->sort === 'view_count') {
+                $query->orderBy('view_count', 'desc');
+            }
+        } else {
+            // 默认按浏览量排序
+            $query->orderBy('view_count', 'desc');
+        }
+
+        $pages = $query
+            ->whereRaw(
+                "( ((status='draft' or status = 'audit_failure') and created_by = ?) or (status = 'published') $wikiAuditWhere )",
+                [$uid]
+            )
             ->paginate(10)
             ->through(fn($page) => [
                 'id' => $page->id,
@@ -105,62 +133,196 @@ class WikiPageController extends Controller
                 'status' => $page->status,
                 'created_by' => $page->created_by,
                 'creator' => $page->creator ? ['name' => $page->creator->name] : null,
-                'lastEditor' => $page->lastEditor ? ['name' => $page->lastEditor->name,] : null,
-                'categories' => $page->categories->map(fn($category) => ['id' => $category->id, 'name' => $category->name]), 'published_at' => $page->published_at, 'view_count' => $page->view_count, 'created_at' => $page->created_at,]);
+                'lastEditor' => $page->lastEditor ? ['name' => $page->lastEditor->name] : null,
+                'categories' => $page->categories->map(fn($category) => ['id' => $category->id, 'name' => $category->name]),
+                'published_at' => optional($page->published_at)->toDateTimeString(),
+                'view_count' => $page->view_count,
+                'created_at' => optional($page->created_at)->toDateTimeString(),
+            ]);
 
         // 获取所有分类用于筛选
         $categories = WikiCategory::orderBy('order')->withCount(["pages"])->get()->map(function ($category) {
-            return ['id' => $category->id, 'name' => $category->name, 'pages_count' => $category->pages_count,];
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+                'pages_count' => $category->pages_count,
+            ];
         });
 
-
-//        dump($categories->toArray());die;
         return Inertia::render('Wiki/Index', [
             'pages' => $pages,
             'categories' => $categories,
-            'uid'=>$uid,
-            'filters' => $request->only(['search', 'status', 'category']),
+            'uid' => $uid,
+            'filters' => $request->only(['search', 'status', 'category', 'sort']),
             'can' => [
                 'create_page' => $request->user()?->hasPermission('wiki.create'),
                 'edit_page' => $request->user()?->hasPermission('wiki.edit'),
                 'delete_page' => $request->user()?->hasPermission('wiki.delete'),
                 'show_status' => $request->user()?->hasPermission('wiki.status_show'),
                 'audit_page' => $wikiAudit,
-                ],
-            ]);
+            ],
+        ]);
     }
 
-    public function store(Request $request)
+    private function validateRequest(Request $request, $pageId = null)
     {
-        $validated = $request->validate(['title' => 'required|string|max:255|unique:wiki_pages', 'content' => 'required|string', 'categories' => 'array', 'categories.*' => 'exists:wiki_categories,id']);
+        return $request->validate([
+            'title' => ['required', 'string', 'max:255', Rule::unique('wiki_pages')->ignore($pageId)],
+            'content' => 'required|string',
+            'categories' => 'nullable|array',
+            'categories.*' => 'nullable|exists:wiki_categories,id'
+        ]);
+    }
 
-        $baseSlug = Str::slug($validated['title']);
+
+    private function generateUniqueSlug($title)
+    {
+        $baseSlug = Str::slug($title);
         $slug = $baseSlug;
         $counter = 1;
 
         while (WikiPage::where('slug', $slug)->exists()) {
-            $slug = $baseSlug . '-' . $counter;
+            $slug = "{$baseSlug}-{$counter}";
             $counter++;
         }
 
-        $page = WikiPage::create(['title' => $validated['title'], 'content' => $validated['content'], 'slug' => $slug, 'created_by' => auth()->id(), 'last_edited_by' => auth()->id(),]);
+        return $slug;
+    }
+
+
+    public function store(Request $request)
+    {
+        $validated = $this->validateRequest($request);
+
+        $slug = $this->generateUniqueSlug($validated['title']);
+
+        $page = WikiPage::create([
+            'title' => $validated['title'],
+            'content' => $validated['content'],
+            'slug' => $slug,
+            'created_by' => auth()->id(),
+            'last_edited_by' => auth()->id(),
+        ]);
 
         if (!empty($validated['categories'])) {
             $page->categories()->sync($validated['categories']);
         }
-        $page->updateReferences();
 
-        return redirect()->route('wiki.index')->with('flash', ['message' => ['type' => 'success', 'text' => '页面创建成功！']]);
+        return redirect()->route('wiki.index')->with('flash', [
+            'message' => ['type' => 'success', 'text' => '页面创建成功！']
+        ]);
     }
 
-
-    public function lock(Request $request)
+    /**
+     * 获取页面当前状态，包括是否有人正在编辑和是否有更新
+     */
+    public function getPageStatus(WikiPage $page, Request $request)
     {
-        Cache::put("editing_page:id:$request->page_id",session()->getId(),10);
+        // 确保用户已认证
+        if (!auth()->check()) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $lastCheck = $request->query('last_check');
+        
+        // 检查页面是否已被修改
+        $hasBeenModified = false;
+        if ($lastCheck) {
+            $hasBeenModified = $page->updated_at->greaterThan($lastCheck);
+        }
+        
+        // 获取当前正在编辑的用户列表（除了当前用户）
+        $currentEditors = Cache::get("editing_page:{$page->id}", []);
+        $currentUser = auth()->id();
+        
+        // 过滤掉当前用户和超过10分钟未活动的用户
+        $activeEditors = [];
+        $usernames = [];
+        
+        foreach ($currentEditors as $userId => $timestamp) {
+            if ($userId != $currentUser && now()->diffInMinutes($timestamp) < 10) {
+                $activeEditors[$userId] = $timestamp;
+                
+                // 获取用户名
+                $user = \App\Models\User::find($userId);
+                if ($user) {
+                    $usernames[] = $user->name;
+                }
+            }
+        }
+        
         return response()->json([
-            'message' => 'locking',
-        ], 200)->header('X-Inertia', true);
+            'hasBeenModified' => $hasBeenModified,
+            'currentEditors' => $usernames,
+            'lastModified' => $page->updated_at
+        ])->header('Content-Type', 'application/json');
     }
+
+    /**
+     * 通知系统用户正在编辑页面
+     */
+    public function notifyEditing(WikiPage $page)
+    {
+        $userId = auth()->id();
+        
+        // 获取当前编辑者列表
+        $currentEditors = Cache::get("editing_page:{$page->id}", []);
+        
+        // 更新当前用户的时间戳
+        $currentEditors[$userId] = now();
+        
+        // 存储更新后的列表，设置30分钟过期
+        Cache::put("editing_page:{$page->id}", $currentEditors, now()->addMinutes(30));
+        
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * 通知系统用户停止编辑页面
+     */
+    public function notifyStoppedEditing(WikiPage $page)
+    {
+        $userId = auth()->id();
+        
+        // 获取当前编辑者列表
+        $currentEditors = Cache::get("editing_page:{$page->id}", []);
+        
+        // 移除当前用户
+        if (isset($currentEditors[$userId])) {
+            unset($currentEditors[$userId]);
+        }
+        
+        // 更新缓存
+        if (count($currentEditors) > 0) {
+            Cache::put("editing_page:{$page->id}", $currentEditors, now()->addMinutes(30));
+        } else {
+            Cache::forget("editing_page:{$page->id}");
+        }
+        
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * 比较当前编辑中的版本与数据库中的版本
+     */
+    public function compareLive(WikiPage $page, Request $request)
+    {
+        $currentContent = $page->content;
+        $editingContent = $request->input('content');
+        
+        // 这里可以实现差异比较逻辑，但简单起见，我们直接返回一个视图
+        return Inertia::render('Wiki/CompareLive', [
+            'page' => $page->only('id', 'title'),
+            'databaseVersion' => [
+                'content' => $currentContent,
+                'updated_at' => $page->updated_at
+            ],
+            'editingVersion' => [
+                'content' => $editingContent
+            ]
+        ]);
+    }
+
 
     public function edit(WikiPage $page)
     {
@@ -168,40 +330,57 @@ class WikiPageController extends Controller
             return $this->unauthorized();
         }
 
-        $cacheSessionId = cache("editing_page:id:$page->id");
-//        var_dump($cacheSessionId,session()->getId() , $cacheSessionId);
-        if ($cacheSessionId && session()->getId() !== $cacheSessionId){
-            return $this->unauthorized("该页面正在编辑中，请稍后再试！");
-        }
-
-        //上锁
-        Cache::set("editing_page:id:$page->id",session()->getId(),10);
-
         // 确保加载所有必要的关联数据
         $page->load(['categories']);
 
-        $categories = WikiCategory::orderBy('order')->get()->map(fn($category) => ['id' => $category->id, 'name' => $category->name, 'description' => $category->description]);
+        $categories = WikiCategory::orderBy('order')->get()->map(fn($category) => [
+            'id' => $category->id, 
+            'name' => $category->name, 
+            'description' => $category->description
+        ]);
 
-        return Inertia::render('Wiki/Edit', ['page' => array_merge($page->toArray(), ['categories' => $page->categories->pluck('id')->toArray()]), 'categories' => $categories, 'canEdit' => true]);
+        return Inertia::render('Wiki/Edit', [
+            'page' => array_merge(
+                $page->toArray(), 
+                ['categories' => $page->categories->pluck('id')->toArray()]
+            ), 
+            'categories' => $categories, 
+            'canEdit' => true
+        ]);
     }
 
-    public function show(WikiPage $page)
+    public function show(WikiPage $page, Request $request)
     {
+        // 增加浏览量
         $page->incrementViewCount();
 
-//        dump(WikiPageIssue::query()->where("wiki_page_id", $page['id'])->get()->toArray());die;
+        // 获取留言查询
+        $issuesQuery = WikiPageIssue::query()->where("wiki_page_id", $page->id);
+
+        // 📌 **新增：筛选“未解决”留言**
+        if ($request->has('filter') && $request->filter === 'unresolved') {
+            $issuesQuery->where('status', 'to_be_solved');
+        }
+
+        // 获取留言数据
+        $issues = $issuesQuery->orderBy("created_at", 'desc')->get();
 
         return Inertia::render('Wiki/Show', [
             'page' => array_merge(
-                $page->load(['creator', 'lastEditor', 'categories', 'referencedPages', 'referencedByPages'])->toArray(),
+                $page->load([
+                    'creator', 'lastEditor', 'categories', 'referencedPages', 'referencedByPages'
+                ])->toArray(),
                 [
-                    'can'=>['issue' => auth()->user()?->hasPermission('wiki.issue')],
-                    'issue' => WikiPageIssue::query()->where("wiki_page_id", $page['id'])->orderBy("created_at", 'desc')->get()->toArray(),
+                    'can' => [
+                        'issue' => auth()->user()?->hasPermission('wiki.issue')
+                    ],
+                    'issue' => $issues->toArray(), // 📌 **留言数据**
                     'related_pages' => $page->getRelatedPages(),
                     'is_following' => $page->isFollowedByUser(auth()->id()),
                     'references_count' => $page->incomingReferences()->count(),
-                    'recent_revisions' => $page->revisions()->with('creator')->latest()->take(5)->get()
-                ])
+                    'recent_revisions' => $page->revisions()->with('creator:id,name')->latest()->take(5)->get(['id', 'version', 'created_by']),
+                ]
+            )
         ]);
     }
 
@@ -218,28 +397,17 @@ class WikiPageController extends Controller
             return $this->unauthorized();
         }
 
-        try {
-            // 开始事务
-            DB::beginTransaction();
-
-            // 删除相关的引用
+        DB::transaction(function () use ($page) {
             $page->outgoingReferences()->delete();
             $page->incomingReferences()->delete();
-
-            // 删除页面
             $page->delete();
+        });
 
-            // 提交事务
-            DB::commit();
-
-            return redirect()->route('wiki.index')->with('flash', ['message' => ['type' => 'success', 'text' => '页面删除成功！']]);
-        } catch (Exception $e) {
-            // 回滚事务
-            DB::rollback();
-
-            return redirect()->back()->with('flash', ['message' => ['type' => 'error', 'text' => '删除失败：' . $e->getMessage()]]);
-        }
+        return redirect()->route('wiki.index')->with('flash', [
+            'message' => ['type' => 'success', 'text' => '页面删除成功！']
+        ]);
     }
+
 
     public function publish(WikiPage $page)
     {
@@ -254,19 +422,53 @@ class WikiPageController extends Controller
 
     public function update(Request $request, WikiPage $page)
     {
-        $validated = $request->validate(['title' => ['required', 'string', 'max:255', Rule::unique('wiki_pages')->ignore($page->id)], 'content' => 'required|string', 'categories' => 'array', 'categories.*' => 'exists:wiki_categories,id']);
-
+        $validated = $this->validateRequest($request, $page->id);
         $validated['last_edited_by'] = auth()->id();
         $validated['status'] = 'pending';
+        
+        // 检查是否为强制更新
+        if (!$request->has('force_update')) {
+            // 检查页面是否已被他人修改
+            $lastUpdated = $page->updated_at;
+            if ($request->has('last_check') && $lastUpdated->greaterThan($request->input('last_check'))) {
+                return response()->json([
+                    'conflict' => true,
+                    'message' => '页面已被他人修改，请刷新后重试或选择强制更新'
+                ], 409);
+            }
+        }
+        
+        // 更新页面
         $page->update($validated);
         $page->categories()->sync($validated['categories'] ?? []);
         $page->updateReferences();
-
-        Cache::delete("editing_page:id:$page->id");
-
-
-        return redirect()->route('wiki.index')->with('flash', ['message' => ['type' => 'success', 'text' => '页面更新成功！']]);
+        
+        // 移除当前用户的编辑状态
+        $this->removeFromEditingList($page->id, auth()->id());
+        
+        return redirect()->route('wiki.index')->with('flash', [
+            'message' => ['type' => 'success', 'text' => '页面更新成功！']
+        ]);
     }
+
+    /**
+     * 从编辑列表中移除用户
+     */
+    private function removeFromEditingList($pageId, $userId)
+    {
+        $currentEditors = Cache::get("editing_page:{$pageId}", []);
+        
+        if (isset($currentEditors[$userId])) {
+            unset($currentEditors[$userId]);
+            
+            if (count($currentEditors) > 0) {
+                Cache::put("editing_page:{$pageId}", $currentEditors, now()->addMinutes(30));
+            } else {
+                Cache::forget("editing_page:{$pageId}");
+            }
+        }
+    }
+
 
     public function showRevision(WikiPage $page, $version)
     {
@@ -302,17 +504,16 @@ class WikiPageController extends Controller
     public function toggleFollow(WikiPage $page)
     {
         $user = auth()->user();
+        $isFollowing = $page->isFollowedByUser($user->id);
 
-        if ($page->isFollowedByUser($user->id)) {
-            $page->followers()->detach($user->id);
-            $message = '取消关注成功';
-        } else {
-            $page->followers()->attach($user->id);
-            $message = '关注成功';
-        }
+        $isFollowing ? $page->followers()->detach($user->id) : $page->followers()->attach($user->id);
 
-        return response()->json(['followed' => !$page->isFollowedByUser($user->id), 'message' => $message]);
+        return response()->json([
+            'followed' => !$isFollowing,
+            'message' => $isFollowing ? '取消关注成功' : '关注成功'
+        ]);
     }
+
 
     public function trash()
     {
