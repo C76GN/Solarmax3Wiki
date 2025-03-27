@@ -12,6 +12,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/scout": "^10.11",
         "laravel/tinker": "^2.9",
+        "mews/purifier": "^3.4",
         "tightenco/ziggy": "^2.0"
     },
     "require-dev": {

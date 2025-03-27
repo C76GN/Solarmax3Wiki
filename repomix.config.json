@@ -2,8 +2,8 @@
   "output": {
     "filePath": "repomix-output.txt",
     "style": "plain",
-    "removeComments": false,
-    "removeEmptyLines": false,
+    "removeComments": true,
+    "removeEmptyLines": true,
     "topFilesLength": 5,
     "showLineNumbers": false,
     "copyToClipboard": false

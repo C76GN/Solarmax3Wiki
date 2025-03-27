@@ -6,7 +6,7 @@
         "build": "vite build"
     },
     "devDependencies": {
-        "@inertiajs/vue3": "^1.0.0",
+        "@inertiajs/vue3": "^2.0.5",
         "@tailwindcss/forms": "^0.5.3",
         "@vitejs/plugin-vue": "^5.0.0",
         "autoprefixer": "^10.4.12",
@@ -22,10 +22,12 @@
         "@fortawesome/free-brands-svg-icons": "^6.6.0",
         "@fortawesome/free-solid-svg-icons": "^6.6.0",
         "@fortawesome/vue-fontawesome": "^3.0.8",
+        "@headlessui/vue": "^1.7.23",
         "@heroicons/vue": "^2.2.0",
         "@inertiajs/inertia": "^0.11.1",
         "@inertiajs/inertia-vue3": "^0.6.0",
         "diff": "^7.0.0",
+        "dompurify": "^3.2.4",
         "lodash": "^4.17.21",
         "tinymce": "^7.6.0"
     }

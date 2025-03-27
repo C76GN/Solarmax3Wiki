@@ -1,6 +1,4 @@
 <?php
-// FileName: /var/www/Solarmax3Wiki/app/Http/Controllers/Auth/NewPasswordController.php
-
 
 namespace App\Http\Controllers\Auth;
 
@@ -16,56 +14,65 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+* 新密码设置控制器
+* 
+* 处理用户密码重置流程的最后阶段
+*/
 class NewPasswordController extends Controller
 {
-    /**
-     * Display the password reset view.
-     */
-    public function create(Request $request): Response
-    {
-        return Inertia::render('Auth/ResetPassword', [
-            'email' => $request->email,
-            'token' => $request->route('token'),
-        ]);
-    }
+   /**
+    * 显示设置新密码的表单页面
+    *
+    * @param Request $request 请求对象
+    * @return Response
+    */
+   public function create(Request $request): Response
+   {
+       return Inertia::render('Auth/ResetPassword', [
+           'email' => $request->email,
+           'token' => $request->route('token'),
+       ]);
+   }
 
-    /**
-     * Handle an incoming new password request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function store(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+   /**
+    * 处理重置密码请求
+    *
+    * @param Request $request 请求对象
+    * @return RedirectResponse
+    * @throws ValidationException 当密码重置失败时抛出异常
+    */
+   public function store(Request $request): RedirectResponse
+   {
+       // 验证请求数据
+       $request->validate([
+           'token' => 'required',
+           'email' => 'required|email',
+           'password' => ['required', 'confirmed', Rules\Password::defaults()],
+       ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user) use ($request) {
-                $user->forceFill([
-                    'password' => Hash::make($request->password),
-                    'remember_token' => Str::random(60),
-                ])->save();
+       // 执行密码重置
+       $status = Password::reset(
+           $request->only('email', 'password', 'password_confirmation', 'token'),
+           function ($user) use ($request) {
+               $user->forceFill([
+                   'password' => Hash::make($request->password),
+                   'remember_token' => Str::random(60),
+               ])->save();
 
-                event(new PasswordReset($user));
-            }
-        );
+               // 触发密码重置事件
+               event(new PasswordReset($user));
+           }
+       );
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
-        if ($status == Password::PASSWORD_RESET) {
-            return redirect()->route('login')->with('status', __($status));
-        }
+       // 处理重置结果
+       if ($status == Password::PASSWORD_RESET) {
+           return redirect()->route('login')->with('status', __($status));
+       }
 
-        throw ValidationException::withMessages([
-            'email' => [trans($status)],
-        ]);
-    }
+       // 如果重置失败，抛出异常
+       throw ValidationException::withMessages([
+           'email' => [trans($status)],
+       ]);
+   }
 }

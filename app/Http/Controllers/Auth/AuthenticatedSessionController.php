@@ -1,6 +1,4 @@
 <?php
-// FileName: /var/www/Solarmax3Wiki/app/Http/Controllers/Auth/AuthenticatedSessionController.php
-
 
 namespace App\Http\Controllers\Auth;
 
@@ -13,10 +11,17 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * 用户认证会话控制器
+ * 
+ * 处理用户登录、退出等认证会话相关功能
+ */
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Display the login view.
+     * 显示登录页面
+     *
+     * @return Response
      */
     public function create(): Response
     {
@@ -27,28 +32,32 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Handle an incoming authentication request.
+     * 处理登录认证请求
+     *
+     * @param LoginRequest $request 登录请求对象
+     * @return RedirectResponse
      */
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-
         $request->session()->regenerate();
-
+        
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
     /**
-     * Destroy an authenticated session.
+     * 处理用户退出登录请求
+     *
+     * @param Request $request 请求对象
+     * @return RedirectResponse
      */
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
-
+        
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
-
+        
         return redirect('/');
     }
 }

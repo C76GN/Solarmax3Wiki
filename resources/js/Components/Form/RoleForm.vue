@@ -1,4 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Form/RoleForm.vue
 <template>
     <form @submit.prevent="submit">
         <div class="space-y-6">

@@ -1,4 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/consoleMessage.js
 console.log([
     "/***",
     " *                    _ooOoo_",

@@ -1,4 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Inputs/LoginInput.vue
 <template>
     <div class="form-control">
         <!-- 使用 :value 绑定 modelValue 并监听 input 事件发射 update:modelValue -->

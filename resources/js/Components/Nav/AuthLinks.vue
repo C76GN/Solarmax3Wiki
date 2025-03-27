@@ -1,4 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Nav/AuthLinks.vue
 <template>
     <!-- 登录和注册链接容器：用于放置两个链接按钮（登录和注册） -->
     <div class="flex space-x-4">

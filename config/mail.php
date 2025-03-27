@@ -1,118 +1,96 @@
 <?php
-// FileName: /var/www/Solarmax3Wiki/config/mail.php
 
-
+/**
+* 邮件配置
+*
+* 此文件定义应用程序的邮件发送配置，包括默认邮件发送驱动、
+* 可用的邮件发送驱动及其详细配置，以及默认发件人信息。
+*/
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Default Mailer
-    |--------------------------------------------------------------------------
-    |
-    | This option controls the default mailer that is used to send all email
-    | messages unless another mailer is explicitly specified when sending
-    | the message. All additional mailers can be configured within the
-    | "mailers" array. Examples of each type of mailer are provided.
-    |
+   /**
+    * 默认邮件发送驱动
+    *
+    * 指定应用程序默认使用的邮件发送驱动。
     */
+   'default' => env('MAIL_MAILER', 'log'),
 
-    'default' => env('MAIL_MAILER', 'log'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Mailer Configurations
-    |--------------------------------------------------------------------------
-    |
-    | Here you may configure all of the mailers used by your application plus
-    | their respective settings. Several examples have been configured for
-    | you and you are free to add your own as your application requires.
-    |
-    | Laravel supports a variety of mail "transport" drivers that can be used
-    | when delivering an email. You may specify which one you're using for
-    | your mailers below. You may also add additional mailers if needed.
-    |
-    | Supported: "smtp", "sendmail", "mailgun", "ses", "ses-v2",
-    |            "postmark", "resend", "log", "array",
-    |            "failover", "roundrobin"
-    |
+   /**
+    * 邮件发送驱动配置
+    *
+    * 定义可用的邮件发送驱动及其详细配置。
     */
+   'mailers' => [
+       // SMTP驱动 - 通过SMTP服务器发送邮件
+       'smtp' => [
+           'transport' => 'smtp',
+           'url' => env('MAIL_URL'),                               // 完整的SMTP服务器URL
+           'host' => env('MAIL_HOST', '127.0.0.1'),                // SMTP服务器地址
+           'port' => env('MAIL_PORT', 2525),                       // SMTP服务器端口
+           'encryption' => env('MAIL_ENCRYPTION', 'tls'),          // 加密方式
+           'username' => env('MAIL_USERNAME'),                     // SMTP用户名
+           'password' => env('MAIL_PASSWORD'),                     // SMTP密码
+           'timeout' => null,                                      // 连接超时时间
+           'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+       ],
 
-    'mailers' => [
+       // Amazon SES驱动
+       'ses' => [
+           'transport' => 'ses',
+       ],
 
-        'smtp' => [
-            'transport' => 'smtp',
-            'url' => env('MAIL_URL'),
-            'host' => env('MAIL_HOST', '127.0.0.1'),
-            'port' => env('MAIL_PORT', 2525),
-            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
-            'username' => env('MAIL_USERNAME'),
-            'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
-            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url(env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
-        ],
+       // Postmark驱动
+       'postmark' => [
+           'transport' => 'postmark',
+       ],
 
-        'ses' => [
-            'transport' => 'ses',
-        ],
+       // Resend驱动
+       'resend' => [
+           'transport' => 'resend',
+       ],
 
-        'postmark' => [
-            'transport' => 'postmark',
-            // 'message_stream_id' => env('POSTMARK_MESSAGE_STREAM_ID'),
-            // 'client' => [
-            //     'timeout' => 5,
-            // ],
-        ],
+       // Sendmail驱动 - 使用本地Sendmail程序
+       'sendmail' => [
+           'transport' => 'sendmail',
+           'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'), // Sendmail路径
+       ],
 
-        'resend' => [
-            'transport' => 'resend',
-        ],
+       // 日志驱动 - 将邮件写入日志文件
+       'log' => [
+           'transport' => 'log',
+           'channel' => env('MAIL_LOG_CHANNEL'),                   // 使用的日志通道
+       ],
 
-        'sendmail' => [
-            'transport' => 'sendmail',
-            'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),
-        ],
+       // 数组驱动 - 将邮件存储在数组中（用于测试）
+       'array' => [
+           'transport' => 'array',
+       ],
 
-        'log' => [
-            'transport' => 'log',
-            'channel' => env('MAIL_LOG_CHANNEL'),
-        ],
+       // 故障转移驱动 - 按顺序尝试多个邮件发送驱动
+       'failover' => [
+           'transport' => 'failover',
+           'mailers' => [                                          // 要尝试的邮件发送驱动
+               'smtp',
+               'log',
+           ],
+       ],
 
-        'array' => [
-            'transport' => 'array',
-        ],
+       // 轮询驱动 - 轮流使用多个邮件发送驱动
+       'roundrobin' => [
+           'transport' => 'roundrobin',
+           'mailers' => [                                          // 要轮流使用的邮件发送驱动
+               'ses',
+               'postmark',
+           ],
+       ],
+   ],
 
-        'failover' => [
-            'transport' => 'failover',
-            'mailers' => [
-                'smtp',
-                'log',
-            ],
-        ],
-
-        'roundrobin' => [
-            'transport' => 'roundrobin',
-            'mailers' => [
-                'ses',
-                'postmark',
-            ],
-        ],
-
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Global "From" Address
-    |--------------------------------------------------------------------------
-    |
-    | You may wish for all emails sent by your application to be sent from
-    | the same address. Here you may specify a name and address that is
-    | used globally for all emails that are sent by your application.
-    |
+   /**
+    * 全局发件人
+    *
+    * 发送邮件时使用的默认发件人地址和名称。
     */
-
-    'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', 'Example'),
-    ],
-
+   'from' => [
+       'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'), // 发件人邮箱地址
+       'name' => env('MAIL_FROM_NAME', 'Example'),                // 发件人名称
+   ],
 ];

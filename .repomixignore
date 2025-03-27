@@ -8,3 +8,6 @@ public/images
 public/favicon.ico
 composer.lock
 package-lock.json
+resources/lang/en
+resources/lang/zh
+READMEexample.md

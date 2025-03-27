@@ -1,4 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Wiki/Index.vue
 <template>
     <MainLayout
         :navigationLinks="[{ href: '/wiki', label: '游戏维基' }, { href: '#', label: '游戏历史&名人墙' }, { href: '#', label: '自制专区' }, { href: '#', label: '攻略专区' }, { href: '#', label: '论坛' }]">
@@ -13,8 +12,7 @@
                     <div class="mb-6 flex justify-between items-center">
                         <h2 class="text-2xl font-semibold text-gray-900">Wiki 页面</h2>
                         <div class="flex gap-2">
-                            <Link v-if="$page.props.auth.user?.permissions.includes('wiki.manage_trash')"
-                                :href="route('wiki.trash')"
+                            <Link v-if="can.manage_trash" :href="route('wiki.trash')"
                                 class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition duration-150 ease-in-out">
                             回收站
                             </Link>

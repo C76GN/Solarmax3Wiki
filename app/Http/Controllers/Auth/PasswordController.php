@@ -1,6 +1,4 @@
 <?php
-// FileName: /var/www/Solarmax3Wiki/app/Http/Controllers/Auth/PasswordController.php
-
 
 namespace App\Http\Controllers\Auth;
 
@@ -10,22 +8,33 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 
+/**
+* 密码管理控制器
+* 
+* 处理用户密码更新操作
+*/
 class PasswordController extends Controller
 {
-    /**
-     * Update the user's password.
-     */
-    public function update(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
-        ]);
+   /**
+    * 更新用户密码
+    *
+    * @param Request $request 请求对象
+    * @return RedirectResponse
+    */
+   public function update(Request $request): RedirectResponse
+   {
+       // 验证请求数据
+       $validated = $request->validate([
+           'current_password' => ['required', 'current_password'],
+           'password' => ['required', Password::defaults(), 'confirmed'],
+       ]);
 
-        $request->user()->update([
-            'password' => Hash::make($validated['password']),
-        ]);
+       // 更新用户密码
+       $request->user()->update([
+           'password' => Hash::make($validated['password']),
+       ]);
 
-        return back();
-    }
+       // 返回上一页
+       return back();
+   }
 }

@@ -1,14 +1,25 @@
 <?php
-// FileName: /var/www/Solarmax3Wiki/app/Models/ActivityLog.php
-
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * 活动日志模型
+ * 
+ * 记录系统中各种用户活动，包括创建、更新、删除等操作
+ * 支持多态关联到不同类型的主体对象
+ */
 class ActivityLog extends Model
 {
+    /**
+     * 可批量赋值的属性
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'user_id',
         'action',
@@ -19,23 +30,42 @@ class ActivityLog extends Model
         'user_agent'
     ];
 
+    /**
+     * 属性的类型转换
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'properties' => 'array'
     ];
 
-    // 用户关联
-    public function user()
+    /**
+     * 获取创建日志的用户
+     *
+     * @return BelongsTo 用户关联
+     */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    // 多态关联到操作对象
-    public function subject()
+    /**
+     * 获取日志关联的主体对象（多态关联）
+     *
+     * @return MorphTo 主体对象关联
+     */
+    public function subject(): MorphTo
     {
         return $this->morphTo();
     }
 
-    // 获取格式化的操作类型
+    /**
+     * 获取操作类型的文本表示
+     * 
+     * 将操作代码转换为可读的中文描述
+     *
+     * @return Attribute
+     */
     protected function actionText(): Attribute
     {
         return Attribute::make(
@@ -52,7 +82,13 @@ class ActivityLog extends Model
         );
     }
 
-    // 获取格式化的对象类型
+    /**
+     * 获取主体类型的文本表示
+     * 
+     * 将主体类型代码转换为可读的中文描述
+     *
+     * @return Attribute
+     */
     protected function subjectTypeText(): Attribute
     {
         return Attribute::make(
@@ -68,8 +104,17 @@ class ActivityLog extends Model
         );
     }
 
-    // 记录日志的静态方法
-    public static function log($action, $subject, $properties = null)
+    /**
+     * 创建一条新的活动日志
+     * 
+     * 记录用户、操作类型、操作主体和相关属性等信息
+     *
+     * @param string $action 操作类型
+     * @param Model $subject 操作主体对象
+     * @param array|null $properties 相关属性
+     * @return static 创建的日志实例
+     */
+    public static function log(string $action, Model $subject, ?array $properties = null): self
     {
         $request = request();
         

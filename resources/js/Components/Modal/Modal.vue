@@ -1,4 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Modal/Modal.vue
 <template>
     <!-- Teleport将内容渲染到body，以确保弹窗在整个视图层级之上 -->
     <Teleport to="body">

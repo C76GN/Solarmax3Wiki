@@ -1,85 +1,55 @@
 <?php
-// FileName: /var/www/Solarmax3Wiki/config/sanctum.php
-
 
 use Laravel\Sanctum\Sanctum;
 
+/**
+* Sanctum 配置
+*
+* 此文件配置 Laravel Sanctum 包，用于提供 API 令牌认证功能，
+* 管理 SPA 认证以及发放 API 令牌。
+*/
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Stateful Domains
-    |--------------------------------------------------------------------------
-    |
-    | Requests from the following domains / hosts will receive stateful API
-    | authentication cookies. Typically, these should include your local
-    | and production domains which access your API via a frontend SPA.
-    |
+   /**
+    * 状态维持域名
+    *
+    * 这些域名将被视为"状态维持"，Sanctum会为这些域名发起的请求维护会话状态。
+    * 这对于单页应用程序(SPA)与API认证的结合使用尤为重要。
     */
+   'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
+       '%s%s',
+       'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
+       Sanctum::currentApplicationUrlWithPort()
+   ))),
 
-    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
-        Sanctum::currentApplicationUrlWithPort()
-    ))),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Sanctum Guards
-    |--------------------------------------------------------------------------
-    |
-    | This array contains the authentication guards that will be checked when
-    | Sanctum is trying to authenticate a request. If none of these guards
-    | are able to authenticate the request, Sanctum will use the bearer
-    | token that's present on an incoming request for authentication.
-    |
+   /**
+    * 认证守卫
+    *
+    * Sanctum 使用的认证守卫，用于验证请求。
     */
+   'guard' => ['web'],
 
-    'guard' => ['web'],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Expiration Minutes
-    |--------------------------------------------------------------------------
-    |
-    | This value controls the number of minutes until an issued token will be
-    | considered expired. This will override any values set in the token's
-    | "expires_at" attribute, but first-party sessions are not affected.
-    |
+   /**
+    * 令牌过期时间
+    *
+    * 指定令牌过期的分钟数。如果设置为null，则令牌永不过期。
     */
+   'expiration' => null,
 
-    'expiration' => null,
-
-    /*
-    |--------------------------------------------------------------------------
-    | Token Prefix
-    |--------------------------------------------------------------------------
-    |
-    | Sanctum can prefix new tokens in order to take advantage of numerous
-    | security scanning initiatives maintained by open source platforms
-    | that notify developers if they commit tokens into repositories.
-    |
-    | See: https://docs.github.com/en/code-security/secret-scanning/about-secret-scanning
-    |
+   /**
+    * 令牌前缀
+    *
+    * 添加到令牌哈希前的前缀，可用于区分不同应用的令牌。
     */
+   'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
 
-    'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Sanctum Middleware
-    |--------------------------------------------------------------------------
-    |
-    | When authenticating your first-party SPA with Sanctum you may need to
-    | customize some of the middleware Sanctum uses while processing the
-    | request. You may change the middleware listed below as required.
-    |
+   /**
+    * Sanctum 中间件
+    *
+    * 这些中间件将应用于状态维持请求，以确保身份验证能够正常工作。
     */
-
-    'middleware' => [
-        'authenticate_session' => Laravel\Sanctum\Http\Middleware\AuthenticateSession::class,
-        'encrypt_cookies' => Illuminate\Cookie\Middleware\EncryptCookies::class,
-        'validate_csrf_token' => Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
-    ],
-
+   'middleware' => [
+       'authenticate_session' => Laravel\Sanctum\Http\Middleware\AuthenticateSession::class,
+       'encrypt_cookies' => Illuminate\Cookie\Middleware\EncryptCookies::class,
+       'validate_csrf_token' => Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+   ],
 ];

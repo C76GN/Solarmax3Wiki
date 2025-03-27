@@ -1,5 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Nav/NavBar.vue
-<!-- Components/Nav/Navbar.vue -->
 <template>
     <!-- 导航栏的主容器，设置背景颜色和透明度 -->
     <div class="relative p-4 w-full bg-sky-400 bg-opacity-75 shadow-lg z-50">
@@ -88,7 +86,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* 下拉菜单的进入和离开动画效果 */
 .slide-fade-enter-active,
 .slide-fade-leave-active {
     transition: opacity 0.3s ease, transform 0.3s ease;
@@ -97,8 +94,6 @@ onBeforeUnmount(() => {
 .slide-fade-enter-from,
 .slide-fade-leave-to {
     opacity: 0;
-    /* 从透明状态开始 */
     transform: translateY(-10px);
-    /* 从上方滑入 */
 }
 </style>

@@ -1,219 +1,127 @@
 <?php
-// FileName: /var/www/Solarmax3Wiki/config/session.php
-
 
 use Illuminate\Support\Str;
 
+/**
+* 会话配置
+*
+* 此文件定义应用程序的会话处理配置，包括会话存储驱动、
+* 会话生命周期、Cookie设置和安全选项。
+*/
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Default Session Driver
-    |--------------------------------------------------------------------------
-    |
-    | This option determines the default session driver that is utilized for
-    | incoming requests. Laravel supports a variety of storage options to
-    | persist session data. Database storage is a great default choice.
-    |
-    | Supported: "file", "cookie", "database", "apc",
-    |            "memcached", "redis", "dynamodb", "array"
-    |
+   /**
+    * 会话存储驱动
+    *
+    * 支持的驱动: "file", "cookie", "database", "apc",
+    * "memcached", "redis", "dynamodb", "array"
     */
+   'driver' => env('SESSION_DRIVER', 'database'),
 
-    'driver' => env('SESSION_DRIVER', 'database'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Session Lifetime
-    |--------------------------------------------------------------------------
-    |
-    | Here you may specify the number of minutes that you wish the session
-    | to be allowed to remain idle before it expires. If you want them
-    | to expire immediately when the browser is closed then you may
-    | indicate that via the expire_on_close configuration option.
-    |
+   /**
+    * 会话生命周期
+    *
+    * 会话过期的分钟数。设置为 0 表示会话将永久有效。
     */
+   'lifetime' => env('SESSION_LIFETIME', 120),
 
-    'lifetime' => env('SESSION_LIFETIME', 120),
-
-    'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Session Encryption
-    |--------------------------------------------------------------------------
-    |
-    | This option allows you to easily specify that all of your session data
-    | should be encrypted before it's stored. All encryption is performed
-    | automatically by Laravel and you may use the session like normal.
-    |
+   /**
+    * 关闭浏览器时过期
+    *
+    * 当设置为 true 时，关闭浏览器会使会话过期。
     */
+   'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 
-    'encrypt' => env('SESSION_ENCRYPT', false),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Session File Location
-    |--------------------------------------------------------------------------
-    |
-    | When utilizing the "file" session driver, the session files are placed
-    | on disk. The default storage location is defined here; however, you
-    | are free to provide another location where they should be stored.
-    |
+   /**
+    * 加密会话
+    *
+    * 当设置为 true 时，会话数据将被加密。
     */
+   'encrypt' => env('SESSION_ENCRYPT', false),
 
-    'files' => storage_path('framework/sessions'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Session Database Connection
-    |--------------------------------------------------------------------------
-    |
-    | When using the "database" or "redis" session drivers, you may specify a
-    | connection that should be used to manage these sessions. This should
-    | correspond to a connection in your database configuration options.
-    |
+   /**
+    * 文件存储位置
+    *
+    * 使用文件驱动时存储会话文件的位置。
     */
+   'files' => storage_path('framework/sessions'),
 
-    'connection' => env('SESSION_CONNECTION'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Session Database Table
-    |--------------------------------------------------------------------------
-    |
-    | When using the "database" session driver, you may specify the table to
-    | be used to store sessions. Of course, a sensible default is defined
-    | for you; however, you're welcome to change this to another table.
-    |
+   /**
+    * 数据库连接
+    *
+    * 使用数据库驱动时，指定要使用的数据库连接。
     */
+   'connection' => env('SESSION_CONNECTION'),
 
-    'table' => env('SESSION_TABLE', 'sessions'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Session Cache Store
-    |--------------------------------------------------------------------------
-    |
-    | When using one of the framework's cache driven session backends, you may
-    | define the cache store which should be used to store the session data
-    | between requests. This must match one of your defined cache stores.
-    |
-    | Affects: "apc", "dynamodb", "memcached", "redis"
-    |
+   /**
+    * 会话表名
+    *
+    * 使用数据库驱动时，指定存储会话的表名。
     */
+   'table' => env('SESSION_TABLE', 'sessions'),
 
-    'store' => env('SESSION_STORE'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Session Sweeping Lottery
-    |--------------------------------------------------------------------------
-    |
-    | Some session drivers must manually sweep their storage location to get
-    | rid of old sessions from storage. Here are the chances that it will
-    | happen on a given request. By default, the odds are 2 out of 100.
-    |
+   /**
+    * 会话存储器
+    *
+    * 使用自定义存储驱动时指定。
     */
+   'store' => env('SESSION_STORE'),
 
-    'lottery' => [2, 100],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Session Cookie Name
-    |--------------------------------------------------------------------------
-    |
-    | Here you may change the name of the session cookie that is created by
-    | the framework. Typically, you should not need to change this value
-    | since doing so does not grant a meaningful security improvement.
-    |
+   /**
+    * 会话垃圾回收概率
+    *
+    * 定义垃圾回收的概率，格式为 [x, y]，表示 y 分之 x 的概率进行回收。
     */
+   'lottery' => [2, 100],
 
-    'cookie' => env(
-        'SESSION_COOKIE',
-        Str::slug(env('APP_NAME', 'laravel'), '_').'_session'
-    ),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Session Cookie Path
-    |--------------------------------------------------------------------------
-    |
-    | The session cookie path determines the path for which the cookie will
-    | be regarded as available. Typically, this will be the root path of
-    | your application, but you're free to change this when necessary.
-    |
+   /**
+    * 会话 Cookie 名称
+    *
+    * 会话 Cookie 的名称，默认使用应用名称加上 "_session" 后缀。
     */
+   'cookie' => env(
+       'SESSION_COOKIE',
+       Str::slug(env('APP_NAME', 'laravel'), '_').'_session'
+   ),
 
-    'path' => env('SESSION_PATH', '/'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Session Cookie Domain
-    |--------------------------------------------------------------------------
-    |
-    | This value determines the domain and subdomains the session cookie is
-    | available to. By default, the cookie will be available to the root
-    | domain and all subdomains. Typically, this shouldn't be changed.
-    |
+   /**
+    * 会话 Cookie 路径
+    *
+    * Cookie 可用的路径，默认为根路径 "/"。
     */
+   'path' => env('SESSION_PATH', '/'),
 
-    'domain' => env('SESSION_DOMAIN'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | HTTPS Only Cookies
-    |--------------------------------------------------------------------------
-    |
-    | By setting this option to true, session cookies will only be sent back
-    | to the server if the browser has a HTTPS connection. This will keep
-    | the cookie from being sent to you when it can't be done securely.
-    |
+   /**
+    * 会话 Cookie 域名
+    *
+    * Cookie 可用的域名。
     */
+   'domain' => env('SESSION_DOMAIN'),
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | HTTP Access Only
-    |--------------------------------------------------------------------------
-    |
-    | Setting this value to true will prevent JavaScript from accessing the
-    | value of the cookie and the cookie will only be accessible through
-    | the HTTP protocol. It's unlikely you should disable this option.
-    |
+   /**
+    * HTTPS 专用
+    *
+    * 如果设置为 true，Cookie 只能通过 HTTPS 传输。
     */
+   'secure' => env('SESSION_SECURE_COOKIE'),
 
-    'http_only' => env('SESSION_HTTP_ONLY', true),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Same-Site Cookies
-    |--------------------------------------------------------------------------
-    |
-    | This option determines how your cookies behave when cross-site requests
-    | take place, and can be used to mitigate CSRF attacks. By default, we
-    | will set this value to "lax" to permit secure cross-site requests.
-    |
-    | See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
-    |
-    | Supported: "lax", "strict", "none", null
-    |
+   /**
+    * HTTP 专用
+    *
+    * 如果设置为 true，JavaScript 无法访问 Cookie。
     */
+   'http_only' => env('SESSION_HTTP_ONLY', true),
 
-    'same_site' => env('SESSION_SAME_SITE', 'lax'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Partitioned Cookies
-    |--------------------------------------------------------------------------
-    |
-    | Setting this value to true will tie the cookie to the top-level site for
-    | a cross-site context. Partitioned cookies are accepted by the browser
-    | when flagged "secure" and the Same-Site attribute is set to "none".
-    |
+   /**
+    * Same-Site Cookie
+    *
+    * 控制 Cookie 的 Same-Site 属性。可选值: lax, strict, none。
     */
+   'same_site' => env('SESSION_SAME_SITE', 'lax'),
 
-    'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
-
+   /**
+    * 分区 Cookie
+    *
+    * 是否启用 Cookie 分区。
+    */
+   'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
 ];

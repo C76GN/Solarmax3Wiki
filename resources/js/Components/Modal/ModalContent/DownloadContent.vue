@@ -1,4 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Modal/ModalContent/DownloadContent.vue
 <template>
     <div class="p-6 rounded-lg shadow-lg bg-sky-200 bg-opacity-80">
         <h2 class="text-xl font-bold whitespace-nowrap mb-4">游戏下载</h2>
