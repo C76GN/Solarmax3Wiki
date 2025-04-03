@@ -17,14 +17,17 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet">
     
     {{-- TinyMCE 编辑器 --}}
-    <script src="{{ asset('tinymce/tinymce.min.js') }}" referrerpolicy="origin" defer></script>
+    <script src="{{ asset('tinymce/tinymce.min.js') }}" referrerpolicy="origin"></script>
     <script>
         window.addEventListener('load', () => {
-            // 配置 TinyMCE 编辑器
-            window.tinymce?.overrideDefaults({
-                base_url: '{{ asset("tinymce") }}',
-                suffix: '.min'
-            });
+            if (window.tinymce) {
+                window.tinymce.overrideDefaults({
+                    base_url: '{{ asset("tinymce") }}',
+                    suffix: '.min'
+                });
+            } else {
+                console.error('TinyMCE 未能正确加载');
+            }
         });
     </script>
     

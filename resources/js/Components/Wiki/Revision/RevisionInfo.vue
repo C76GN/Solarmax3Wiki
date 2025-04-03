@@ -70,6 +70,8 @@
 </template>
 
 <script setup>
+import { formatDate } from '@/utils/formatters';
+
 const props = defineProps({
     revision: {
         type: Object,
@@ -90,14 +92,4 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['revert', 'compare']);
-
-const formatDate = (date) => {
-    return new Date(date).toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-};
 </script>

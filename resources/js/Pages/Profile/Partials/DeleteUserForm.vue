@@ -10,7 +10,7 @@
         </header>
 
         <!-- 触发删除账户的按钮 -->
-        <DangerButton @click="confirmUserDeletion">Delete Account</DangerButton>
+        <Button variant="danger" @click="confirmUserDeletion">Delete Account</Button>
 
         <!-- 使用新的 Modal 组件 -->
         <Modal :show="confirmingUserDeletion" @close="closeModal" maxWidth="lg">
@@ -30,11 +30,11 @@
                 </div>
 
                 <div class="mt-6 flex justify-end">
-                    <SecondaryButton @click="closeModal">Cancel</SecondaryButton>
-                    <DangerButton class="ms-3" :class="{ 'opacity-25': form.processing }" :disabled="form.processing"
-                        @click="deleteUser">
+                    <Button variant="secondary" @click="closeModal">Cancel</Button>
+                    <Button variant="danger" class="ms-3" :class="{ 'opacity-25': form.processing }"
+                        :disabled="form.processing" @click="deleteUser">
                         Delete Account
-                    </DangerButton>
+                    </Button>
                 </div>
             </div>
         </Modal>
@@ -42,11 +42,10 @@
 </template>
 
 <script setup>
-import DangerButton from '@/Components/Buttons/DangerButton.vue';
+import Button from '@/Components/Buttons/Button.vue';
 import InputError from '@/Components/Other/InputError.vue';
 import InputLabel from '@/Components/Other/InputLabel.vue';
 import Modal from '@/Components/Modal/Modal.vue';
-import SecondaryButton from '@/Components/Buttons/SecondaryButton.vue';
 import TextInput from '@/Components/Inputs/TextInput.vue';
 import { useForm } from '@inertiajs/vue3';
 import { nextTick, ref } from 'vue';

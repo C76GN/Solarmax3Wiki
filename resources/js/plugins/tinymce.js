@@ -1,23 +1,26 @@
-// 修改 resources/js/plugins/tinymce.js 文件，添加更多配置选项
-
-export const useEditor = () => {
-    const init = {
+export const useEditor = (customConfig = {}) => {
+    // 基础配置
+    const baseConfig = {
         language: 'zh_CN',
         base_url: '/tinymce',
+        suffix: '.min',
         skin: 'oxide',
         height: 500,
+        external_plugins: {
+            'wikilink': '/tinymce/plugins/wikilink/plugin.min.js'
+        },
         menubar: 'file edit view insert format tools table help',
         plugins: [
             'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
             'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
             'insertdatetime', 'media', 'table', 'help', 'wordcount', 'accordion', 'codesample', 'directionality',
-            'nonbreaking', 'pagebreak', 'save', 'visualchars', 'wikilink', 'autosave', 'quickbars', 'emoticons',
+            'nonbreaking', 'pagebreak', 'save', 'visualchars'
         ],
         toolbar: 'undo redo | styles | bold italic underline strikethrough | ' +
             'fontfamily fontsize blocks | alignleft aligncenter alignright alignjustify | ' +
             'outdent indent | numlist bullist | forecolor backcolor removeformat | ' +
             'charmap emoticons | paste code fullscreen preview | ' +
-            'image media table link anchor | tablecontrols | wikilink | accordion codesample directionality nonbreaking pagebreak save visualchars | help',
+            'image media table link anchor | tablecontrols',
         content_style: `
             body {
                 font-family: 'Segoe UI', Roboto, sans-serif;
@@ -76,16 +79,11 @@ export const useEditor = () => {
         autosave_prefix: '{path}{query}-{id}-',
         quickbars_selection_toolbar: 'bold italic | h2 h3 | blockquote link wikilink',
         quickbars_insert_toolbar: false,
-        setup: (editor) => {
-            editor.on('init', () => console.log('TinyMCE 初始化完成'));
-            editor.addShortcut('ctrl+s', '保存文章', () => console.log('保存文章'));
-            editor.on('change', () => console.log('内容发生变化'));
-
-            // 添加预览模式切换
+        setup: function (editor) {
             editor.ui.registry.addButton('previewToggle', {
                 icon: 'preview',
                 tooltip: '预览/编辑切换',
-                onAction: function (_) {
+                onAction: function () {
                     const container = editor.getContainer();
                     if (container.classList.contains('preview-mode')) {
                         container.classList.remove('preview-mode');
@@ -98,19 +96,26 @@ export const useEditor = () => {
             });
         },
         license_key: 'gpl',
-
-        // 自动生成文章目录
         toc_header: 'h2,h3,h4',
         toc_class: 'wiki-toc',
-
-        // 自动保存草稿
         autosave_restore_when_empty: true,
         autosave_ask_before_unload: true,
-
-        // Wiki特有样式
         formats: {
             wikilink: { inline: 'span', classes: 'mce-wikilink' }
         }
     };
+
+    // 合并自定义配置
+    const init = { ...baseConfig, ...customConfig };
+
+    // 如果提供了自定义 setup 函数，保留原始 setup 并合并
+    if (customConfig.setup) {
+        const baseSetup = baseConfig.setup;
+        init.setup = function (editor) {
+            baseSetup(editor);
+            customConfig.setup(editor);
+        };
+    }
+
     return { init };
 };

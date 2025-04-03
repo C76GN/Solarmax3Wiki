@@ -1,5 +1,3 @@
-// 修改文件: resources/js/Components/Wiki/WikiPageForm.vue
-
 <template>
     <form @submit.prevent="submit" class="space-y-6">
         <div>
@@ -138,13 +136,12 @@
 
         <div class="flex justify-end gap-4">
             <Link :href="route('wiki.index')"
-                class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition duration-150 ease-in-out">
+                class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-all duration-300">
             取消
             </Link>
-            <button type="submit" :disabled="form.processing || submitting"
-                class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-150 ease-in-out disabled:opacity-50">
+            <Button type="submit" variant="primary" :disabled="form.processing || submitting">
                 {{ isEditing ? '更新页面' : '创建页面' }}
-            </button>
+            </Button>
         </div>
     </form>
 </template>
@@ -157,6 +154,7 @@ import DOMPurify from 'dompurify';
 import { ExclamationTriangleIcon, InformationCircleIcon } from '@heroicons/vue/24/outline';
 import WikiEditor from '@/Components/Editor/WikiEditor.vue';
 import { useEditConflict } from '@/Composables/useEditConflict';
+import Button from '@/Components/Buttons/Button.vue';
 
 const props = defineProps({
     page: {

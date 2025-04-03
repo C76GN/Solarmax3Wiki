@@ -329,6 +329,7 @@ import { onMounted, onUnmounted, ref, watch, computed } from 'vue';
 import Modal from "@/Components/Modal/Modal.vue";
 import { useEditor } from '@/plugins/tinymce';
 import TableOfContents from '@/Components/Wiki/TableOfContents.vue';
+import { formatDate } from '@/utils/formatters';
 import {
     EyeIcon,
     ClockIcon,
@@ -579,17 +580,6 @@ const handle_issue = (id) => {
         onError: (error) => {
             alert("处理失败: " + error.message);
         }
-    });
-};
-
-const formatDate = (date) => {
-    if (!date) return '';
-    return new Date(date).toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
     });
 };
 

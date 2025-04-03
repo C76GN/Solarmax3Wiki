@@ -1,9 +1,7 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Profile/Partials/UpdatePasswordForm.vue
-<!-- 更新用户密码 -->
 <script setup>
 import InputError from '@/Components/Other/InputError.vue';
 import InputLabel from '@/Components/Other/InputLabel.vue';
-import PrimaryButton from '@/Components/Buttons/PrimaryButton.vue';
+import Button from '@/Components/Buttons/Button.vue';
 import TextInput from '@/Components/Inputs/TextInput.vue';
 import { useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
@@ -68,7 +66,7 @@ const updatePassword = () => {
             </div>
 
             <div class="flex items-center gap-4">
-                <PrimaryButton type="submit" :disabled="form.processing">Save</PrimaryButton>
+                <Button variant="primary" type="submit" :disabled="form.processing">Save</Button>
 
                 <Transition enter-active-class="transition ease-in-out" enter-from-class="opacity-0"
                     leave-active-class="transition ease-in-out" leave-to-class="opacity-0">

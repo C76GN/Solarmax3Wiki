@@ -37,7 +37,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:modelValue', 'auto-save']);
-
 const editor = ref(null);
 const showAutocomplete = ref(false);
 const autocompleteQuery = ref('');
@@ -52,22 +51,18 @@ const { init: baseInit } = useEditor();
 // 自动保存功能
 const autoSave = debounce(() => {
     if (!props.autoSaveKey) return;
-
     const content = editor.value ? editor.value.getContent() : '';
     const saveData = {
         content,
         timestamp: new Date().toISOString()
     };
-
     localStorage.setItem(props.autoSaveKey, JSON.stringify(saveData));
     autoSaveStatus.value = `草稿已自动保存 (${new Date().toLocaleTimeString()})`;
-
     // 添加闪烁效果
     autoSaveFlash.value = true;
     setTimeout(() => {
         autoSaveFlash.value = false;
     }, 1000);
-
     emit('auto-save', saveData);
 }, 2000);
 
@@ -96,72 +91,63 @@ const loadSavedContent = () => {
 };
 
 // 扩展编辑器配置
-const editorConfig = computed(() => ({
-    ...baseInit,
+const editorConfig = computed(() => {
+  return useEditor({
     selector: `textarea#${props.id}`,
-    plugins: [
-        ...baseInit.plugins,
-        'wikilink', 'autosave', 'pagebreak'
-    ],
+    plugins: [...baseInit.plugins, 'wikilink', 'autosave', 'pagebreak'],
     toolbar: baseInit.toolbar + ' | previewToggle',
     setup: (ed) => {
-        editor.value = ed;
-
-        ed.on('input change undo redo', () => {
-            emit('update:modelValue', ed.getContent());
-            autoSave();
-        });
-
-        ed.on('keyup', (e) => {
-            handleKeyup(e);
-        });
-
-        // 添加大纲视图
-        ed.ui.registry.addButton('outline', {
-            icon: 'unordered-list',
-            tooltip: '文章大纲',
-            onAction: function () {
-                const headings = [];
-                const content = ed.getContent();
-                const tempEl = document.createElement('div');
-                tempEl.innerHTML = content;
-
-                const headerEls = tempEl.querySelectorAll('h1, h2, h3, h4, h5, h6');
-                headerEls.forEach(el => {
-                    headings.push({
-                        level: parseInt(el.tagName.replace('H', '')),
-                        text: el.textContent,
-                        id: el.id || ''
-                    });
-                });
-
-                ed.windowManager.open({
-                    title: '文章大纲',
-                    body: {
-                        type: 'panel',
-                        items: [
-                            {
-                                type: 'htmlpanel',
-                                html: generateOutlineHtml(headings)
-                            }
-                        ]
-                    },
-                    buttons: [
-                        {
-                            type: 'cancel',
-                            text: '关闭'
-                        }
-                    ],
-                    width: 400,
-                    height: 300
-                });
-            }
-        });
+      editor.value = ed;
+      
+      ed.on('input change undo redo', () => {
+        emit('update:modelValue', ed.getContent());
+        autoSave();
+      });
+      
+      ed.on('keyup', handleKeyup);
+      
+      // 添加大纲按钮
+      ed.ui.registry.addButton('outline', {
+        icon: 'unordered-list',
+        tooltip: '文章大纲',
+        onAction: () => {
+          const headings = [];
+          const content = ed.getContent();
+          const tempEl = document.createElement('div');
+          tempEl.innerHTML = content;
+          
+          tempEl.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(el => {
+            headings.push({
+              level: parseInt(el.tagName.replace('H', '')),
+              text: el.textContent,
+              id: el.id || ''
+            });
+          });
+          
+          ed.windowManager.open({
+            title: '文章大纲',
+            body: {
+              type: 'panel',
+              items: [{
+                type: 'htmlpanel',
+                html: generateOutlineHtml(headings)
+              }]
+            },
+            buttons: [{
+              type: 'cancel',
+              text: '关闭'
+            }],
+            width: 400,
+            height: 300
+          });
+        }
+      });
     },
     autosave_ask_before_unload: true,
     autosave_interval: '30s',
     autosave_prefix: `wiki_${props.id}_`
-}));
+  }).init;
+});
 
 // 生成大纲HTML
 const generateOutlineHtml = (headings) => {

@@ -111,27 +111,8 @@
         </div>
 
         <!-- 删除确认对话框 -->
-        <Modal :show="showDeleteConfirmation" @close="cancelDelete">
-            <div class="p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">
-                    确认删除
-                </h3>
-                <p class="text-sm text-gray-500 mb-4">
-                    确定要删除"{{ pageToDelete?.title }}"吗？此操作无法撤销。
-                </p>
-                <div class="mt-5 flex justify-end gap-4">
-                    <button type="button" @click="cancelDelete"
-                        class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-                        取消
-                    </button>
-                    <button type="button" @click="deleteConfirmed"
-                        class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                        确认删除
-                    </button>
-                </div>
-            </div>
-        </Modal>
-
+        <ConfirmModal :show="showDeleteConfirmation" @close="cancelDelete" @confirm="deleteConfirmed" title="确认删除"
+            :message="'确定要删除' + pageToDelete?.title + '吗？此操作无法撤销。'" confirmText="确认删除" dangerAction />
         <Modal :show="showAuditModel" @close="cancelShowAuditModel">
             <div class="p-6">
                 <h3 class="text-lg font-medium  mb-4" style="color: #fff">
@@ -181,6 +162,7 @@ import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import CategoryNav from '@/Components/Wiki/CategoryNav.vue';
 import Pagination from '@/Components/Other/Pagination.vue';
 import Modal from '@/Components/Modal/Modal.vue';
+import ConfirmModal from '@/Components/Modal/ConfirmModal.vue';
 
 const props = defineProps({
     pages: Object,

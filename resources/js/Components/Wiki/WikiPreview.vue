@@ -38,6 +38,7 @@ const props = defineProps({
 const emit = defineEmits(['mode-change']);
 const previewMode = ref(props.initialMode === 'preview');
 
+// 安全处理HTML内容
 const sanitizedContent = computed(() => {
   return DOMPurify.sanitize(props.content, {
     ALLOWED_TAGS: [
@@ -56,11 +57,20 @@ const sanitizedContent = computed(() => {
   });
 });
 
+// 修改模式切换函数，防止异常退出
 const setMode = (mode) => {
-  previewMode.value = mode === 'preview';
-  emit('mode-change', mode);
+  // 添加防御性代码，确保模式切换安全
+  try {
+    previewMode.value = mode === 'preview';
+    emit('mode-change', mode);
+  } catch (error) {
+    console.error('模式切换错误:', error);
+    // 恢复到之前的模式
+    previewMode.value = !previewMode.value;
+  }
 };
 
+// 监听initialMode变化，确保与外部组件同步
 watch(() => props.initialMode, (newMode) => {
   previewMode.value = newMode === 'preview';
 });

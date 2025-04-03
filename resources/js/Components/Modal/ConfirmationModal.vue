@@ -10,7 +10,8 @@
                     <h3 class="text-lg font-medium text-gray-900">
                         导入模板
                     </h3>
-                    <button @click="closeModal" class="text-gray-400 hover:text-gray-500">
+                    <button @click="closeModal"
+                        class="text-gray-400 hover:text-gray-500 bg-transparent border-0 focus:outline-none">
                         <span class="text-2xl">&times;</span>
                     </button>
                 </div>
@@ -32,14 +33,12 @@
                     </div>
 
                     <div class="flex justify-end gap-4">
-                        <button type="button" @click="closeModal"
-                            class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                        <Button variant="outline" @click="closeModal">
                             取消
-                        </button>
-                        <button type="submit" :disabled="!hasFile"
-                            class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50">
+                        </Button>
+                        <Button variant="primary" type="submit" :disabled="!hasFile">
                             导入
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </div>
@@ -50,7 +49,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
-
+import Button from '@/Components/Buttons/Button.vue'
 const props = defineProps({
     isOpen: Boolean
 })

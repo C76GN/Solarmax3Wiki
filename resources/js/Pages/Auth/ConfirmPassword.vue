@@ -20,9 +20,10 @@
             </div>
 
             <div class="mt-6 flex flex-col items-center justify-center">
-                <LoginButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+                <Button variant="login" fullWidth type="submit" :class="{ 'opacity-25': form.processing }"
+                    :disabled="form.processing">
                     Confirm
-                </LoginButton>
+                </Button>
             </div>
         </form>
     </GuestLayout>
@@ -31,7 +32,7 @@
 <script setup>
 import GuestLayout from '@/Layouts/UserLayouts/GuestLayout.vue';
 import InputError from '@/Components/Other/InputError.vue';
-import LoginButton from '@/Components/Buttons/LoginButton.vue';
+import Button from '@/Components/Buttons/Button.vue';
 import LoginInput from '@/Components/Inputs/LoginInput.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 

@@ -113,50 +113,10 @@
                 </div>
             </div>
         </div>
-
-        <!-- 恢复确认对话框 -->
-        <Modal :show="showRestoreConfirmation" @close="cancelRestore">
-            <div class="p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">
-                    确认恢复
-                </h3>
-                <p class="text-sm text-gray-500 mb-4">
-                    确定要恢复"{{ pageToRestore?.title }}"吗？
-                </p>
-                <div class="mt-5 flex justify-end gap-4">
-                    <button type="button" @click="cancelRestore"
-                        class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-                        取消
-                    </button>
-                    <button type="button" @click="restoreConfirmed"
-                        class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-                        确认恢复
-                    </button>
-                </div>
-            </div>
-        </Modal>
-
-        <!-- 彻底删除确认对话框 -->
-        <Modal :show="showForceDeleteConfirmation" @close="cancelForceDelete">
-            <div class="p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">
-                    确认彻底删除
-                </h3>
-                <p class="text-sm text-gray-500 mb-4">
-                    确定要彻底删除"{{ pageToForceDelete?.title }}"吗？此操作无法撤销。
-                </p>
-                <div class="mt-5 flex justify-end gap-4">
-                    <button type="button" @click="cancelForceDelete"
-                        class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-                        取消
-                    </button>
-                    <button type="button" @click="forceDeleteConfirmed"
-                        class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                        彻底删除
-                    </button>
-                </div>
-            </div>
-        </Modal>
+        <ConfirmModal :show="showRestoreConfirmation" @close="cancelRestore" @confirm="restoreConfirmed" title="确认恢复"
+            :message="'确定要恢复' + pageToRestore?.title + '吗？'" confirmText="确认恢复" />
+        <ConfirmModal :show="showForceDeleteConfirmation" @close="cancelForceDelete" @confirm="forceDeleteConfirmed"
+            title="确认强制删除" :message="'确定要强制删除' + pageToForceDelete?.title + '吗？'" confirmText="确认删除" />
     </MainLayout>
 </template>
 
@@ -164,7 +124,7 @@
 import { ref, reactive, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
-import Modal from '@/Components/Modal/Modal.vue';
+import ConfirmModal from '@/Components/Modal/ConfirmModal.vue';
 import Pagination from '@/Components/Other/Pagination.vue';
 import { debounce } from 'lodash';
 

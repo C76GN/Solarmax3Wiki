@@ -1,4 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Wiki/Revision/RevisionList.vue
 <template>
     <div class="space-y-4">
         <div v-for="revision in revisions" :key="revision.version" class="border-b border-gray-200 pb-4 last:border-0">
@@ -39,6 +38,7 @@
 
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import { formatDate } from '@/utils/formatters';
 
 const props = defineProps({
     revisions: {
@@ -58,10 +58,6 @@ const props = defineProps({
         default: false
     }
 });
-
-const formatDate = (date) => {
-    return new Date(date).toLocaleString('zh-CN');
-};
 
 defineEmits(['revert']);
 </script>

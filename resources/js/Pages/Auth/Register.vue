@@ -38,9 +38,10 @@
 
             <!-- 修改此处，增加 margin-top 和 flex 布局 -->
             <div class="mt-6 flex flex-col items-center justify-center">
-                <LoginButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+                <Button variant="login" fullWidth type="submit" :class="{ 'opacity-25': form.processing }"
+                    :disabled="form.processing">
                     Register
-                </LoginButton>
+                </Button>
 
                 <!-- 确保文字在父容器中居中 -->
                 <Link :href="route('login')"
@@ -56,7 +57,7 @@
 import { ref, onMounted } from 'vue';
 import GuestLayout from '@/Layouts/UserLayouts/GuestLayout.vue';
 import InputError from '@/Components/Other/InputError.vue';
-import LoginButton from '@/Components/Buttons/LoginButton.vue';
+import Button from '@/Components/Buttons/Button.vue';
 import LoginInput from '@/Components/Inputs/LoginInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 

@@ -1,56 +1,40 @@
 <template>
     <button :type="type" :class="[
-        'relative mt-4 inline-flex items-center overflow-hidden rounded-md border border-transparent justify-center px-4 py-2 text-sm font-medium uppercase tracking-widest transition duration-300 ease-in-out focus:outline-none active:scale-95',
+        'relative inline-flex items-center overflow-hidden rounded-md border border-transparent justify-center font-medium uppercase tracking-widest transition duration-300 ease-in-out focus:outline-none active:scale-95',
         variantClasses,
+        sizeClasses,
         fullWidth ? 'w-full' : '',
         className
     ]" @click="createRipple">
         <slot />
     </button>
 </template>
-
 <script setup>
 import { computed } from 'vue';
-
-/**
- * BaseButton 组件
- * 
- * 基础按钮组件，支持多种样式变体、全宽选项和涟漪效果
- */
 const props = defineProps({
-    /**
-     * 按钮类型
-     * @type {'button'|'submit'|'reset'}
-     */
     type: {
         type: String,
         default: 'button',
     },
-    /**
-     * 按钮样式变体
-     * @type {'primary'|'secondary'|'danger'|'login'}
-     */
     variant: {
         type: String,
         default: 'primary',
         validator: (value) => ['primary', 'secondary', 'danger', 'login'].includes(value)
     },
-    /**
-     * 是否全宽显示
-     */
     fullWidth: {
         type: Boolean,
         default: false
     },
-    /**
-     * 额外的自定义样式类
-     */
     className: {
         type: String,
         default: ''
-    }
+    },
+    size: {
+        type: String,
+        default: 'md',
+        validator: (value) => ['sm', 'md', 'lg'].includes(value)
+    },
 });
-
 /**
  * 根据variant属性计算对应的样式类
  */
@@ -59,40 +43,39 @@ const variantClasses = computed(() => {
         primary: 'bg-cyan-500 text-white hover:bg-cyan-600 hover:ring-2 hover:ring-teal-800 active:bg-cyan-700',
         secondary: 'bg-black text-white hover:bg-gray-900 hover:ring-2 hover:ring-black active:bg-gray-950',
         danger: 'bg-red-600 text-white hover:bg-red-500 hover:ring-2 hover:ring-rose-600 active:bg-red-700',
-        login: 'bg-cyan-500 text-white hover:bg-cyan-600 hover:ring-2 hover:ring-teal-800 active:bg-cyan-700'
+        login: 'bg-cyan-500 text-white hover:bg-cyan-600 hover:ring-2 hover:ring-teal-800 active:bg-cyan-700',
+        outline: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 shadow-sm',
+        success: 'bg-green-600 text-white hover:bg-green-500 hover:ring-2 hover:ring-green-700 active:bg-green-700',
+        info: 'bg-blue-500 text-white hover:bg-blue-600 hover:ring-2 hover:ring-blue-700 active:bg-blue-700',
+        text: 'bg-transparent text-gray-700 hover:text-gray-900 hover:bg-gray-100'
     };
-
     return variants[props.variant] || variants.primary;
 });
 
-/**
- * 创建点击涟漪效果
- * @param {MouseEvent} event - 鼠标点击事件
- */
+const sizeClasses = computed(() => {
+    const sizes = {
+        sm: 'px-2 py-1 text-xs',
+        md: 'px-4 py-2 text-sm',
+        lg: 'px-6 py-3 text-base'
+    };
+    return sizes[props.size] || sizes.md;
+});
+
 const createRipple = (event) => {
     const button = event.currentTarget;
-
-    // 计算点击位置相对于按钮的坐标
     const rect = button.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-
-    // 创建涟漪元素
     const circle = document.createElement('span');
     circle.classList.add('circle');
     circle.style.top = `${y}px`;
     circle.style.left = `${x}px`;
-
-    // 添加到按钮中
     button.appendChild(circle);
-
-    // 动画结束后移除元素
     circle.addEventListener('animationend', () => {
         circle.remove();
     });
 };
 </script>
-
 <style scoped>
 :deep(.circle) {
     position: absolute;

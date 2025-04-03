@@ -26,9 +26,10 @@
         "@heroicons/vue": "^2.2.0",
         "@inertiajs/inertia": "^0.11.1",
         "@inertiajs/inertia-vue3": "^0.6.0",
+        "@tinymce/tinymce-vue": "^6.1.0",
         "diff": "^7.0.0",
         "dompurify": "^3.2.4",
         "lodash": "^4.17.21",
-        "tinymce": "^7.6.0"
+        "tinymce": "^7.7.2"
     }
 }

@@ -1,4 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Auth/Login.vue
 <template>
     <GuestLayout>
 
@@ -32,9 +31,10 @@
             </div>
 
             <div class="mt-6 flex flex-col items-center justify-center">
-                <LoginButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+                <Button variant="login" fullWidth type="submit" :class="{ 'opacity-25': form.processing }"
+                    :disabled="form.processing">
                     Log in
-                </LoginButton>
+                </Button>
                 <Link v-if="canResetPassword" :href="route('password.request')"
                     class="mt-4 text-white text-center text-sm underline hover:text-cyan-300 focus:outline-none">
                 Forgot your password?
@@ -53,7 +53,7 @@ import { ref, onMounted } from 'vue';
 import Checkbox from '@/Components/Other/Checkbox.vue';
 import GuestLayout from '@/Layouts/UserLayouts/GuestLayout.vue';
 import InputError from '@/Components/Other/InputError.vue';
-import LoginButton from '@/Components/Buttons/LoginButton.vue';
+import Button from '@/Components/Buttons/Button.vue';
 import LoginInput from '@/Components/Inputs/LoginInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 

@@ -1,29 +1,16 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Wiki/Revisions/Revisions.vue
 <template>
     <MainLayout
         :navigationLinks="[{ href: '/wiki', label: '游戏维基' }, { href: '#', label: '游戏历史&名人墙' }, { href: '#', label: '自制专区' }, { href: '#', label: '攻略专区' }, { href: '#', label: '论坛' }]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- 页面头部 -->
-            <div class="bg-white/80 backdrop-blur-sm shadow-lg rounded-lg mb-6">
-                <div class="px-6 py-4">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <h1 class="text-2xl font-bold text-gray-900">
-                                {{ page.title }} - 版本历史
-                            </h1>
-                            <p class="mt-1 text-sm text-gray-500">
-                                共 {{ revisions.total }} 个版本
-                            </p>
-                        </div>
-                        <div class="flex gap-4">
-                            <Link :href="route('wiki.show', page.id)"
-                                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50">
-                            返回页面
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <WikiPageHeader :title="`${page.title} - 版本历史`" :description="`共 ${revisions.total} 个版本`">
+                <template #actions>
+                    <Link :href="route('wiki.show', page.id)"
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50">
+                    返回页面
+                    </Link>
+                </template>
+            </WikiPageHeader>
 
             <!-- 版本比较工具 -->
             <div v-if="selectedVersions.length > 0" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -140,6 +127,8 @@ import { Link, router } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import Modal from '@/Components/Modal/Modal.vue';
 import Pagination from '@/Components/Other/Pagination.vue';
+import WikiPageHeader from '@/Components/Wiki/WikiPageHeader.vue'; // 引入新组件
+import { formatDate } from '@/utils/formatters';
 
 const props = defineProps({
     page: {
@@ -160,15 +149,6 @@ const selectedVersions = ref([]);
 const showConfirmRevert = ref(false);
 const versionToRevert = ref(null);
 
-const formatDate = (date) => {
-    return new Date(date).toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-};
 
 const isCurrentVersion = (version) => {
     return props.page.current_version === version;
