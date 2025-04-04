@@ -5,31 +5,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    
     {{-- 网站标题 --}}
     <title inertia>{{ config('app.name', 'Laravel') }}</title>
-    
     {{-- 网站图标 --}}
     <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
-    
     {{-- 字体加载 --}}
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet">
-    
-    {{-- TinyMCE 编辑器 --}}
-    <script src="{{ asset('tinymce/tinymce.min.js') }}" referrerpolicy="origin"></script>
-    <script>
-        window.addEventListener('load', () => {
-            if (window.tinymce) {
-                window.tinymce.overrideDefaults({
-                    base_url: '{{ asset("tinymce") }}',
-                    suffix: '.min'
-                });
-            } else {
-                console.error('TinyMCE 未能正确加载');
-            }
-        });
-    </script>
     
     {{-- Inertia & Vite 资源 --}}
     @routes

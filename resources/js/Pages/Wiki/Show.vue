@@ -267,8 +267,8 @@
         <Modal :show="showReportModal" @close="showReportModal = false">
             <div class="p-6">
                 <h3 class="text-lg font-medium text-white mb-4">报告页面问题</h3>
-                <div ref="editorContainer">
-                    <textarea id="textarea" v-model="issueContent"></textarea>
+                <div class="editor-container">
+                    <WikiEditor v-model="issueContent" />
                 </div>
                 <div class="mt-4 flex justify-end gap-4">
                     <button type="button" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
@@ -327,7 +327,6 @@ import { Link, router } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import { onMounted, onUnmounted, ref, watch, computed } from 'vue';
 import Modal from "@/Components/Modal/Modal.vue";
-import { useEditor } from '@/plugins/tinymce';
 import TableOfContents from '@/Components/Wiki/TableOfContents.vue';
 import { formatDate } from '@/utils/formatters';
 import {
@@ -347,6 +346,7 @@ import {
     FolderIcon,
     CalendarIcon
 } from '@heroicons/vue/24/outline';
+import { processTiptapContent, parseHeadings } from '@/utils/contentProcessor';
 
 const editor = ref(null);
 const editorContainer = ref(null);
@@ -372,15 +372,9 @@ const shareOptions = [
     { id: 'linkedin', icon: 'div', label: 'LinkedIn' }
 ];
 
-const { init: editorConfig } = useEditor();
-
 const cleanup = () => {
-    if (editor.value) {
-        editor.value.destroy();
-        editor.value = null;
-    }
+    // 如果有其他需要清理的资源可以在这里处理
 }
-
 const parseHeaders = (content) => {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = content;
@@ -397,16 +391,14 @@ const parseHeaders = (content) => {
 };
 
 const processContent = (content) => {
-    const headers = parseHeaders(content);
-    pageHeaders.value = headers;
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = content;
-    tempDiv.querySelectorAll('h2, h3, h4').forEach((header, index) => {
-        if (headers[index]) {
-            header.id = headers[index].id;
+    if (!content) return '';
+
+    // 使用内容处理器处理 HTML
+    return processTiptapContent(content, {
+        setHeadings: (headers) => {
+            pageHeaders.value = headers;
         }
     });
-    return tempDiv.innerHTML;
 };
 
 // 获取分享URL
@@ -585,21 +577,6 @@ const handle_issue = (id) => {
 
 const reportIssue = () => {
     showReportModal.value = true;
-    setTimeout(() => {
-        const config = {
-            ...editorConfig,
-            selector: '#textarea',
-            init_instance_callback: (ed) => {
-                editor.value = ed;
-            },
-            setup: (ed) => {
-                ed.on('input change', () => {
-                    issueContent.value = ed.getContent();
-                });
-            }
-        };
-        window.tinymce?.init(config);
-    }, 300);
 };
 
 const submitIssue = () => {
@@ -764,7 +741,7 @@ const submitIssue = () => {
 }
 
 /* Wiki链接样式 */
-.wiki-content .mce-wikilink {
+.wiki-content .wiki-link {
     color: #0645ad;
     text-decoration: none;
     background-color: #eaf3ff;
@@ -772,7 +749,7 @@ const submitIssue = () => {
     border-radius: 2px;
 }
 
-.wiki-content .mce-wikilink:hover {
+.wiki-content .wiki-link:hover {
     text-decoration: underline;
 }
 

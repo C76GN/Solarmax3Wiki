@@ -1,5 +1,3 @@
-// 修改 resources/js/app.js 文件，添加必要的组件注册
-
 import '../css/app.css';
 import './bootstrap';
 import './consoleMessage.js';
@@ -21,7 +19,7 @@ createInertiaApp({
     setup({ el, App, props, plugin }) {
         const app = createApp({ render: () => h(App, props) });
 
-        // 异步加载组件
+        // 异步组件加载
         app.component('WikiEditor', defineAsyncComponent(() =>
             import('./Components/Editor/WikiEditor.vue')
         ));

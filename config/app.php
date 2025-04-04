@@ -7,14 +7,6 @@
 * 时区、本地化以及特定组件（如TinyMCE编辑器）的配置。
 */
 return [
-   /**
-    * TinyMCE编辑器配置
-    */
-   'tinymce' => [
-       'path' => '/tinymce',                         // TinyMCE资源路径
-       'upload_path' => public_path('uploads/images'), // 上传图片的存储路径
-       'upload_url' => '/uploads/images',            // 上传图片的访问URL
-   ],
 
    /**
     * 应用名称

@@ -1,62 +1,42 @@
 <?php
-
 namespace App\Repositories;
-
 use App\Models\WikiPage;
 use App\Models\WikiCategory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-
-/**
- * Wiki页面仓库类
- * 
- * 负责处理 Wiki 页面和分类的数据访问逻辑，
- * 包括查询、缓存、修改等操作。
- */
 class WikiPageRepository
 {
-    /**
-     * 根据过滤条件获取页面列表
-     *
-     * @param array $filters 过滤条件数组
-     * @param int|null $userId 当前用户ID
-     * @param bool $hasAuditPermission 是否拥有审核权限
-     * @return LengthAwarePaginator 分页后的页面列表
-     */
-    public function getPagesList(array $filters, ?int $userId, bool $hasAuditPermission): LengthAwarePaginator
+    public function getPagesList(array $filters, ?int $userId): LengthAwarePaginator
     {
         $query = WikiPage::with(['creator', 'lastEditor', 'categories']);
-
-        // 处理搜索条件
+        
         if (isset($filters['search']) && $filters['search']) {
             $query->where(function ($q) use ($filters) {
                 $q->where('title', 'like', '%' . $filters['search'] . '%')
                   ->orWhere('content', 'like', '%' . $filters['search'] . '%');
             });
         }
-
-        // 处理状态过滤
+        
         if (isset($filters['status']) && $filters['status']) {
             $query->where('status', $filters['status']);
         }
-
-        // 处理分类过滤
+        
         if (isset($filters['category']) && $filters['category']) {
             $query->whereHas('categories', function ($q) use ($filters) {
                 $q->where('wiki_categories.id', $filters['category']);
             });
         }
-
-        // 处理权限过滤
+        
         $userId = $userId ?: 0;
-        $auditWhere = $hasAuditPermission ? " OR (status = 'pending')" : "";
+        
+        // 简化查询，移除审核条件
         $query->whereRaw(
-            "( ((status='draft' or status = 'audit_failure') and created_by = ?) or (status = 'published') $auditWhere )",
+            "( ((status='draft') and created_by = ?) or (status = 'published') )",
             [$userId]
         );
-
+        
         // 处理排序
         if (isset($filters['sort'])) {
             if ($filters['sort'] === 'created_at') {
@@ -69,10 +49,10 @@ class WikiPageRepository
         } else {
             $query->orderBy('view_count', 'desc');
         }
-
+        
         return $query->paginate(10);
     }
-
+    
     /**
      * 获取回收站中的页面列表
      *
@@ -85,7 +65,7 @@ class WikiPageRepository
             ->latest('deleted_at')
             ->paginate(10);
     }
-
+    
     /**
      * 获取所有分类并缓存结果
      *
@@ -99,7 +79,7 @@ class WikiPageRepository
                 ->get();
         });
     }
-
+    
     /**
      * 从回收站恢复页面
      *
@@ -111,7 +91,7 @@ class WikiPageRepository
         $page = WikiPage::onlyTrashed()->findOrFail($id);
         return $page->restore();
     }
-
+    
     /**
      * 永久删除页面及其关联数据
      *
@@ -125,7 +105,7 @@ class WikiPageRepository
         $page->incomingReferences()->forceDelete();
         return $page->forceDelete();
     }
-
+    
     /**
      * 查找标题相似的页面
      *
@@ -141,7 +121,7 @@ class WikiPageRepository
             ->limit($limit)
             ->get(['id', 'title', 'slug']);
     }
-
+    
     /**
      * 生成唯一的页面slug
      *
@@ -153,16 +133,14 @@ class WikiPageRepository
         $baseSlug = Str::slug($title);
         $slug = $baseSlug;
         $counter = 1;
-        
         // 循环检查slug是否存在，如果存在则添加数字后缀
         while (WikiPage::where('slug', $slug)->exists()) {
             $slug = "{$baseSlug}-{$counter}";
             $counter++;
         }
-        
         return $slug;
     }
-
+    
     /**
      * 清除页面编辑者的缓存
      *

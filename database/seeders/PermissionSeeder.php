@@ -166,6 +166,9 @@ class PermissionSeeder extends Seeder
             ['name' => 'wiki.delete', 'display_name' => '删除Wiki页面', 'group' => self::GROUP_WIKI],
             ['name' => 'wiki.publish', 'display_name' => '发布Wiki页面', 'group' => self::GROUP_WIKI],
             ['name' => 'wiki.manage_trash', 'display_name' => '管理回收站', 'group' => self::GROUP_WIKI],
+            ['name' => 'wiki.unlock_any', 'display_name' => '解锁任何页面', 'group' => self::GROUP_WIKI],
+            ['name' => 'wiki.issue', 'display_name' => '报告页面问题', 'group' => self::GROUP_WIKI],
+            ['name' => 'wiki.issue_handle', 'display_name' => '处理页面问题', 'group' => self::GROUP_WIKI],
             
             // Wiki分类权限
             ['name' => 'wiki.category.view', 'display_name' => '查看Wiki分类', 'group' => self::GROUP_WIKI],

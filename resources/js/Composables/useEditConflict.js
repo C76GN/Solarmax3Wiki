@@ -52,7 +52,7 @@ export function useEditConflict(pageId, initialContent) {
         }
     };
 
-    // 检查页面是否已被他人修改
+    // 检查页面是否有更新
     const checkForUpdates = async () => {
         try {
             const response = await fetch(`/api/wiki/${pageId}/status?last_check=${encodeURIComponent(lastCheckTimestamp.value)}`, {
@@ -72,50 +72,44 @@ export function useEditConflict(pageId, initialContent) {
             const data = await response.json();
 
             if (data.hasBeenModified) {
-                // 显示冲突警告
                 showConflictWarning.value = true;
             }
 
-            // 更新最后检查时间
             if (data.lastModified) {
                 lastCheckTimestamp.value = data.lastModified;
             }
 
-            // 更新其他编辑者列表
             currentEditors.value = data.currentEditors || [];
         } catch (error) {
             console.error('检查页面更新状态时出错:', error);
         }
     };
 
-    // 查看差异
+    // 查看冲突内容差异
     const viewDiff = (content) => {
         router.get(`/wiki/${pageId}/compare-live`, {
             content: content || modifiedContent.value
         });
     };
 
-    // 强制提交
+    // 强制提交（覆盖其他人的修改）
     const forceSubmit = (formData) => {
         formData.force_update = true;
         router.put(`/wiki/${pageId}`, formData);
     };
 
-    // 初始化
+    // 初始化编辑跟踪
     const initEditTracking = () => {
-        // 初始化时保存当前时间戳
         lastCheckTimestamp.value = new Date().toISOString();
-
-        // 通知服务器用户开始编辑
         notifyEditing();
 
-        // 定期通知服务器用户仍在编辑，并检查其他编辑者
+        // 设置定时器，定期检查更新和通知编辑状态
         editorCheckInterval.value = setInterval(() => {
             notifyEditing();
             checkForUpdates();
         }, 60000); // 每分钟检查一次
 
-        // 页面可见性变化时更新编辑状态
+        // 监听页面可见性变化
         document.addEventListener('visibilitychange', handleVisibilityChange);
     };
 
@@ -129,25 +123,23 @@ export function useEditConflict(pageId, initialContent) {
 
     // 清理资源
     const cleanup = () => {
-        // 清除定时器
         if (editorCheckInterval.value) {
             clearInterval(editorCheckInterval.value);
         }
-
-        // 通知服务器用户停止编辑
         notifyStoppedEditing();
-
-        // 移除事件监听器
         document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
 
-    // 更新内容
+    // 更新当前内容
     const updateContent = (content) => {
         modifiedContent.value = content;
     };
 
+    // 生命周期钩子
     onMounted(() => {
-        initEditTracking();
+        if (pageId) {
+            initEditTracking();
+        }
     });
 
     onBeforeUnmount(() => {
@@ -165,4 +157,6 @@ export function useEditConflict(pageId, initialContent) {
         notifyStoppedEditing,
         checkForUpdates,
     };
+
+
 }

@@ -100,6 +100,23 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { diffLines, diffWords } from 'diff';
+import { processTiptapContent } from '@/utils/contentProcessor';
+
+const processRevisionContent = (content) => {
+  if (!content) return '';
+  return processTiptapContent(content, {
+    addTableClasses: true
+  });
+};
+
+// 计算属性更新
+const processedOldContent = computed(() => {
+  return processRevisionContent(props.oldRevision.content);
+});
+
+const processedNewContent = computed(() => {
+  return processRevisionContent(props.newRevision.content);
+});
 
 const props = defineProps({
     oldRevision: {

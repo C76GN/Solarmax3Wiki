@@ -45,3 +45,12 @@ Route::middleware('web')->prefix('wiki')->group(function () {
     // 获取页面实时对比
     Route::get('/{page}/compare-live', [WikiPageController::class, 'compareLive']);
 });
+
+Route::middleware('auth:sanctum')->post('/upload-image', function (Request $request) {
+    if ($request->hasFile('image') && $request->file('image')->isValid()) {
+        $path = $request->file('image')->store('uploads/images', 'public');
+        return response()->json(['url' => asset('storage/' . $path)]);
+    }
+    
+    return response()->json(['error' => '图片上传失败'], 400);
+});

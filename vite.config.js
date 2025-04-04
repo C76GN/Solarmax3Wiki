@@ -1,5 +1,3 @@
-// 修改 vite.config.js 文件
-
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import vue from '@vitejs/plugin-vue';
@@ -24,15 +22,17 @@ export default defineConfig({
             '@': '/resources/js',
         },
     },
-    build: {
-        rollupOptions: {
-            external: [
-                'tinymce/tinymce',
-                '/tinymce/plugins/wikilink/plugin.min.js'
-            ]
-        }
-    },
     optimizeDeps: {
-        include: ['lodash', 'diff', 'dompurify']
+        include: [
+            'lodash',
+            'diff',
+            'dompurify',
+            '@tiptap/vue-3',
+            '@tiptap/starter-kit',
+            '@tiptap/extension-link',
+            '@tiptap/extension-image',
+            '@tiptap/extension-placeholder',
+            '@tiptap/extension-underline'
+        ]
     }
 });

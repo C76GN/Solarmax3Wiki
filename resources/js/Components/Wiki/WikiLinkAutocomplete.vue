@@ -1,12 +1,9 @@
-// 修改文件: resources/js/Components/Wiki/WikiLinkAutocomplete.vue
-
 <template>
     <div class="wiki-link-autocomplete" v-if="show">
         <div class="autocomplete-header">
             <span class="autocomplete-title">Wiki页面搜索</span>
             <button class="autocomplete-close" @click="$emit('hide')">&times;</button>
         </div>
-
         <div class="autocomplete-panel">
             <div v-if="loading" class="autocomplete-loading">
                 <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg"
@@ -18,7 +15,6 @@
                 </svg>
                 <span>搜索中...</span>
             </div>
-
             <div v-else-if="filteredPages.length" class="autocomplete-results">
                 <div v-for="page in filteredPages" :key="page.id" class="autocomplete-item"
                     :class="{ active: selectedIndex === page.id }" @click="selectPage(page)"
@@ -33,7 +29,6 @@
                     </div>
                 </div>
             </div>
-
             <div v-else class="no-results">
                 <p>找不到匹配 "{{ query }}" 的结果</p>
                 <div class="create-new" @click="createNewPage">
@@ -42,7 +37,6 @@
                 </div>
             </div>
         </div>
-
         <div class="autocomplete-footer">
             <div class="autocomplete-tips">
                 <span class="tip"><kbd>↑</kbd><kbd>↓</kbd> 导航</span>
@@ -82,14 +76,16 @@ const searchPages = debounce(async (query) => {
     if (!query || query.length < 2) return;
 
     loading.value = true;
+
     try {
         const response = await fetch(`/api/wiki/search?q=${encodeURIComponent(query)}`);
+
         if (!response.ok) {
             throw new Error('搜索请求失败');
         }
+
         pages.value = await response.json();
 
-        // 如果有结果并且没有选中项，则选择第一项
         if (pages.value.length > 0 && selectedIndex.value === null) {
             selectedIndex.value = pages.value[0].id;
         }
@@ -105,7 +101,6 @@ const selectPage = (page) => {
 };
 
 const createNewPage = () => {
-    // 发出创建新页面的事件
     emit('create-page', props.query);
     emit('hide');
 };
