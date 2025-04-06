@@ -29,14 +29,6 @@ return [
            'AutoFormat.RemoveEmpty'   => true,  // 删除空标签
        ],
 
-       // Wiki 配置 - 允许更多的 HTML 元素，适用于 Wiki 内容
-       'wiki' => [
-           'HTML.Allowed' => 'h1,h2,h3,h4,h5,h6,b,strong,i,em,a[href|title],ul,ol,li,p[style],br,span[style],img[width|height|alt|src],code,pre,table[border|cellpadding|cellspacing],tr,th,td,hr,sup,sub,div',
-           'CSS.AllowedProperties' => 'font,font-size,font-weight,font-style,font-family,text-decoration,padding-left,color,background-color,text-align',
-           'AutoFormat.AutoParagraph' => true,
-           'AutoFormat.RemoveEmpty' => true,
-       ],
-
        // 测试配置 - 启用 ID 属性
        'test' => [
            'Attr.EnableID' => 'true',

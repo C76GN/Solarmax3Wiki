@@ -4,18 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Traits\LogsActivity;
 
-class WikiPageDraft extends Model
+class WikiComment extends Model
 {
+    use LogsActivity;
+    
     protected $fillable = [
         'wiki_page_id',
         'user_id',
+        'parent_id',
         'content',
-        'last_saved_at'
+        'is_hidden'
     ];
     
     protected $casts = [
-        'last_saved_at' => 'datetime'
+        'is_hidden' => 'boolean'
     ];
     
     // 关联页面
@@ -28,5 +33,17 @@ class WikiPageDraft extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+    
+    // 关联父评论
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(WikiComment::class, 'parent_id');
+    }
+    
+    // 关联子评论
+    public function replies(): HasMany
+    {
+        return $this->hasMany(WikiComment::class, 'parent_id');
     }
 }

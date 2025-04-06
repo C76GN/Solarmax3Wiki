@@ -3,7 +3,7 @@ import './bootstrap';
 import './consoleMessage.js';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import { createApp, h, defineAsyncComponent } from 'vue';
+import { createApp, h } from 'vue';
 import { FontAwesomeIcon } from './fontAwesome';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 
@@ -18,23 +18,6 @@ createInertiaApp({
         ),
     setup({ el, App, props, plugin }) {
         const app = createApp({ render: () => h(App, props) });
-
-        // 异步组件加载
-        app.component('WikiEditor', defineAsyncComponent(() =>
-            import('./Components/Editor/WikiEditor.vue')
-        ));
-
-        app.component('WikiPreview', defineAsyncComponent(() =>
-            import('./Components/Wiki/WikiPreview.vue')
-        ));
-
-        app.component('TableOfContents', defineAsyncComponent(() =>
-            import('./Components/Wiki/TableOfContents.vue')
-        ));
-
-        app.component('RevisionCompare', defineAsyncComponent(() =>
-            import('./Components/Wiki/Revision/RevisionCompare.vue')
-        ));
 
         return app
             .use(plugin)

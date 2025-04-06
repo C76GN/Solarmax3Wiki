@@ -24,15 +24,7 @@ export default defineConfig({
     },
     optimizeDeps: {
         include: [
-            'lodash',
-            'diff',
-            'dompurify',
-            '@tiptap/vue-3',
-            '@tiptap/starter-kit',
-            '@tiptap/extension-link',
-            '@tiptap/extension-image',
-            '@tiptap/extension-placeholder',
-            '@tiptap/extension-underline'
+            'lodash'
         ]
     }
 });

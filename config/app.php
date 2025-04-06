@@ -1,5 +1,5 @@
 <?php
-
+App\Providers\BroadcastServiceProvider::class;
 /**
 * 应用程序配置
 *

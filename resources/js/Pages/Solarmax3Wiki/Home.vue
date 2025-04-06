@@ -1,5 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Solarmax3Wiki/Home.vue
-<!-- Home.vue -->
 <template>
 
   <Head title="Home" />

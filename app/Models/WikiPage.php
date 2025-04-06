@@ -1,193 +1,195 @@
 <?php
+
 namespace App\Models;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Builder;
 use App\Traits\LogsActivity;
-use App\Services\WikiContentService;
-use Carbon\Carbon;
+
 class WikiPage extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
-    const STATUS_DRAFT = 'draft';
-    const STATUS_PENDING = 'pending';
-    const STATUS_PUBLISHED = 'published';
+    use LogsActivity;
     
     protected $fillable = [
         'title',
         'slug',
-        'content',
         'status',
+        'template_id',
         'created_by',
-        'last_edited_by',
-        'published_at',
-        'view_count',
-        'current_version',
+        'current_version_id',
+        'is_locked',
+        'locked_by',
+        'locked_until',
+        'parent_id',
+        'order',
+        'meta'
     ];
+    
     protected $casts = [
-        'published_at' => 'datetime',
-        'view_count' => 'integer',
-        'current_version' => 'integer',
+        'is_locked' => 'boolean',
+        'locked_until' => 'datetime',
+        'meta' => 'array'
     ];
-    public static function getStatuses(): array
+    
+    // 状态常量
+    const STATUS_DRAFT = 'draft';
+    const STATUS_PUBLISHED = 'published';
+    const STATUS_CONFLICT = 'conflict';
+    
+    // 关联当前版本
+    public function currentVersion(): BelongsTo
     {
-        return [
-            self::STATUS_DRAFT => '草稿',
-            self::STATUS_PENDING => '等待审核',
-            self::STATUS_PUBLISHED => '已发布',
-        ];
+        return $this->belongsTo(WikiVersion::class, 'current_version_id');
     }
+    
+    // 关联所有版本
+    public function versions(): HasMany
+    {
+        return $this->hasMany(WikiVersion::class);
+    }
+    
+    // 关联创建者
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-    public function lastEditor(): BelongsTo
+    
+    // 关联锁定者
+    public function locker()
     {
-        return $this->belongsTo(User::class, 'last_edited_by');
+        return $this->belongsTo(User::class, 'locked_by');
     }
-    public function scopePublished(Builder $query): Builder
-    {
-        return $query->where('status', self::STATUS_PUBLISHED)
-                    ->whereNotNull('published_at');
-    }
-    public function incrementViewCount(): void
-    {
-        $this->increment('view_count');
-    }
+    
+    // 关联分类
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(WikiCategory::class, 'wiki_page_category');
     }
-    public function revisions(): HasMany
+    
+    // 关联标签
+    public function tags(): BelongsToMany
     {
-        return $this->hasMany(WikiPageRevision::class, 'wiki_page_id')->orderBy('version', 'desc');
+        return $this->belongsToMany(WikiTag::class, 'wiki_page_tag');
     }
-    public function issues(): HasMany
+    
+    // 关联评论
+    public function comments(): HasMany
     {
-        return $this->hasMany(WikiPageIssue::class, 'wiki_page_id');
+        return $this->hasMany(WikiComment::class);
     }
-    public function createRevision(?string $comment = null): WikiPageRevision
+    
+    // 关联草稿
+    public function drafts(): HasMany
     {
-        $latestVersion = $this->current_version + 1;
-        $previousRevision = $this->revisions()->latest('version')->first();
-        $previousContent = $previousRevision ? $previousRevision->content : null;
-        $revision = $this->revisions()->create([
-            'title' => $this->title,
-            'content' => $this->content,
-            'comment' => $comment,
-            'created_by' => auth()->id(),
-            'version' => $latestVersion
-        ]);
-        $revision->changes = $revision->calculateChanges($previousContent);
-        $revision->save();
-        $this->update(['current_version' => $latestVersion]);
-        return $revision;
+        return $this->hasMany(WikiPageDraft::class);
     }
-    public function revertToVersion(int $version): WikiPageRevision
+    
+    // 关联父页面
+    public function parent(): BelongsTo
     {
-        $revision = $this->revisions()->where('version', $version)->firstOrFail();
+        return $this->belongsTo(WikiPage::class, 'parent_id');
+    }
+    
+    // 关联子页面
+    public function children(): HasMany
+    {
+        return $this->hasMany(WikiPage::class, 'parent_id')->orderBy('order');
+    }
+    
+    // 关联模板
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(WikiTemplate::class, 'template_id');
+    }
+    
+    // 检查页面是否被锁定
+    public function isLocked(): bool
+    {
+        return $this->is_locked && $this->locked_until && $this->locked_until > now();
+    }
+    
+    // 锁定页面
+    public function lock(User $user, int $minutes = 30): void
+    {
         $this->update([
-            'title' => $revision->title,
-            'content' => $revision->content,
-            'last_edited_by' => auth()->id()
+            'is_locked' => true,
+            'locked_by' => $user->id,
+            'locked_until' => now()->addMinutes($minutes)
         ]);
-        return $this->createRevision("Reverted to version {$version}");
+        
+        // 记录锁定活动
+        ActivityLog::log('lock', $this, [
+            'locked_by' => $user->id,
+            'expires_at' => now()->addMinutes($minutes)->toDateTimeString()
+        ]);
     }
-    public function updateReferences(): void
+    
+    // 解锁页面
+    public function unlock(): void
     {
-        $contentService = app(WikiContentService::class);
-        $this->outgoingReferences()->delete();
-        $links = $contentService->parseWikiLinks($this->content);
-        foreach ($links as $title) {
-            $referencedPage = self::where('title', $title)->first();
-            if ($referencedPage && $referencedPage->id !== $this->id) {
-                WikiPageReference::create([
-                    'source_page_id' => $this->id,
-                    'target_page_id' => $referencedPage->id,
-                    'context' => $contentService->extractReferenceContext($this->content, $title)
-                ]);
-            }
+        // 记录解锁活动前获取锁定者信息
+        $lockedBy = $this->locked_by;
+        
+        $this->update([
+            'is_locked' => false,
+            'locked_by' => null,
+            'locked_until' => null
+        ]);
+        
+        // 如果之前是锁定状态，记录解锁活动
+        if ($lockedBy) {
+            ActivityLog::log('unlock', $this, [
+                'unlocked_by' => auth()->id() ?? null,
+                'previously_locked_by' => $lockedBy
+            ]);
         }
     }
-    public function outgoingReferences(): HasMany
+
+    public function refreshLock(int $minutes = 30): void
     {
-        return $this->hasMany(WikiPageReference::class, 'source_page_id');
+        if ($this->is_locked && $this->locked_by) {
+            $this->update([
+                'locked_until' => now()->addMinutes($minutes)
+            ]);
+        }
     }
-    public function incomingReferences(): HasMany
+    
+    public function tryLock(User $user): bool
     {
-        return $this->hasMany(WikiPageReference::class, 'target_page_id');
+        // 如果页面未锁定或锁已过期
+        if (!$this->isLocked()) {
+            $this->lock($user);
+            return true;
+        }
+        
+        // 如果是当前用户已锁定
+        if ($this->locked_by === $user->id) {
+            $this->refreshLock();
+            return true;
+        }
+        
+        return false;
     }
-    public function referencedPages(): BelongsToMany
+
+    // 更新页面状态为冲突
+    public function markAsConflict(): void
     {
-        return $this->belongsToMany(
-            WikiPage::class,
-            'wiki_page_references',
-            'source_page_id',
-            'target_page_id'
-        )->withTimestamps();
+        $this->update([
+            'status' => self::STATUS_CONFLICT,
+            'is_locked' => true
+        ]);
     }
-    public function referencedByPages(): BelongsToMany
+    
+    // 解决冲突
+    public function resolveConflict(): void
     {
-        return $this->belongsToMany(
-            WikiPage::class,
-            'wiki_page_references',
-            'target_page_id',
-            'source_page_id'
-        )->withTimestamps();
-    }
-    public function followers(): BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'wiki_page_follows')
-            ->withTimestamps();
-    }
-    public function isFollowedByUser(?int $userId): bool
-    {
-        if (!$userId) return false;
-        return $this->followers()->where('user_id', $userId)->exists();
-    }
-    public function getRelatedPages(int $limit = 5): Collection
-    {
-        return WikiPage::where('id', '!=', $this->id)
-            ->where(function ($query) {
-                $query->whereHas('categories', function ($q) {
-                    $q->whereIn('wiki_categories.id', $this->categories->pluck('id'));
-                })
-                ->orWhereIn('id', function ($q) {
-                    $q->select('target_page_id')
-                        ->from('wiki_page_references')
-                        ->whereIn('source_page_id', $this->referencedByPages->pluck('id'));
-                });
-            })
-            ->withCount([
-                'incomingReferences',
-                'categories' => function ($query) {
-                    $query->whereIn('wiki_categories.id', $this->categories->pluck('id'));
-                }
-            ])
-            ->orderByDesc('categories_count')
-            ->orderByDesc('incoming_references_count')
-            ->limit($limit)
-            ->get();
-    }
-    public function getFormattedCreatedAtAttribute(): ?string
-    {
-        return $this->created_at ? Carbon::parse($this->created_at)->format('Y-m-d H:i:s') : null;
-    }
-    public function getFormattedUpdatedAtAttribute(): ?string
-    {
-        return $this->updated_at ? Carbon::parse($this->updated_at)->format('Y-m-d H:i:s') : null;
-    }
-    public function getFormattedPublishedAtAttribute(): ?string
-    {
-        return $this->published_at ? Carbon::parse($this->published_at)->format('Y-m-d H:i:s') : null;
-    }
-    public function getStatusTextAttribute(): string
-    {
-        return self::getStatuses()[$this->status] ?? $this->status;
+        $this->update([
+            'status' => self::STATUS_PUBLISHED,
+            'is_locked' => false,
+            'locked_by' => null,
+            'locked_until' => null
+        ]);
     }
 }
