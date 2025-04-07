@@ -13,7 +13,6 @@ class WikiTagController extends Controller
     // 显示标签列表
     public function index(): Response
     {
-        $this->authorize('wiki.manage_tags');
         
         $tags = WikiTag::withCount('pages')->get();
         
@@ -25,7 +24,6 @@ class WikiTagController extends Controller
     // 存储新标签
     public function store(Request $request)
     {
-        $this->authorize('wiki.manage_tags');
         
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:wiki_tags,name'
@@ -51,7 +49,6 @@ class WikiTagController extends Controller
     // 更新标签
     public function update(Request $request, WikiTag $tag)
     {
-        $this->authorize('wiki.manage_tags');
         
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:wiki_tags,name,' . $tag->id
@@ -77,7 +74,6 @@ class WikiTagController extends Controller
     // 删除标签
     public function destroy(WikiTag $tag)
     {
-        $this->authorize('wiki.manage_tags');
         
         $tag->delete();
         

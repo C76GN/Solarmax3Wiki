@@ -32,3 +32,18 @@ export const formatDateShort = (date) => {
         day: 'numeric'
     });
 };
+
+
+export const formatDateTime = (date, options = {}) => {
+    if (!date) return '';
+    const defaultOptions = {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    };
+    const mergedOptions = { ...defaultOptions, ...options };
+    return new Date(date).toLocaleString('zh-CN', mergedOptions);
+};

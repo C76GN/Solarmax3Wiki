@@ -13,7 +13,6 @@ class WikiCategoryController extends Controller
     // 显示分类列表
     public function index(): Response
     {
-        $this->authorize('wiki.manage_categories');
         
         $categories = WikiCategory::withCount('pages')
             ->with('parent')
@@ -28,7 +27,6 @@ class WikiCategoryController extends Controller
     // 显示创建分类表单
     public function create(): Response
     {
-        $this->authorize('wiki.manage_categories');
         
         $categories = WikiCategory::all();
         
@@ -40,7 +38,6 @@ class WikiCategoryController extends Controller
     // 存储新分类
     public function store(Request $request)
     {
-        $this->authorize('wiki.manage_categories');
         
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -77,7 +74,6 @@ class WikiCategoryController extends Controller
     // 显示编辑分类表单
     public function edit(WikiCategory $category): Response
     {
-        $this->authorize('wiki.manage_categories');
         
         $categories = WikiCategory::where('id', '!=', $category->id)->get();
         
@@ -90,7 +86,6 @@ class WikiCategoryController extends Controller
     // 更新分类
     public function update(Request $request, WikiCategory $category)
     {
-        $this->authorize('wiki.manage_categories');
         
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -123,7 +118,6 @@ class WikiCategoryController extends Controller
     // 删除分类
     public function destroy(WikiCategory $category)
     {
-        $this->authorize('wiki.manage_categories');
         
         // 检查是否有子分类
         if ($category->children()->exists()) {

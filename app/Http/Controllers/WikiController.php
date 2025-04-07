@@ -107,7 +107,6 @@ class WikiController extends Controller
     // 显示创建页面表单
     public function create(): Response
     {
-        $this->authorize('wiki.create');
         
         $categories = WikiCategory::all();
         $tags = WikiTag::all();
@@ -120,9 +119,7 @@ class WikiController extends Controller
     
     // 存储新页面
     public function store(Request $request)
-    {
-        $this->authorize('wiki.create');
-        
+    {   
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
@@ -194,7 +191,6 @@ class WikiController extends Controller
     // 显示编辑页面表单
     public function edit(WikiPage $page)
     {
-        $this->authorize('wiki.edit');
         
         // 如果页面处于冲突状态，仅允许有解决冲突权限的用户访问
         if ($page->status === WikiPage::STATUS_CONFLICT && !auth()->user()->hasPermission('wiki.resolve_conflict')) {
@@ -265,7 +261,6 @@ class WikiController extends Controller
      */
     public function refreshLock(Request $request)
     {
-        $this->authorize('wiki.edit');
         
         $validated = $request->validate([
             'page_id' => 'required|exists:wiki_pages,id'
@@ -293,7 +288,6 @@ class WikiController extends Controller
     // 保存页面草稿
     public function saveDraft(Request $request, WikiPage $page)
     {
-        $this->authorize('wiki.edit');
         
         $validated = $request->validate([
             'content' => 'required|string'
@@ -328,7 +322,6 @@ class WikiController extends Controller
     // 更新页面
     public function update(Request $request, WikiPage $page)
     {
-        $this->authorize('wiki.edit');
         
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -449,7 +442,6 @@ class WikiController extends Controller
     // 解锁页面
     public function unlock(Request $request)
     {
-        $this->authorize('wiki.edit');
         
         $validated = $request->validate([
             'page_id' => 'required|exists:wiki_pages,id'
@@ -476,7 +468,6 @@ class WikiController extends Controller
     // 删除页面
     public function destroy(WikiPage $page)
     {
-        $this->authorize('wiki.delete');
         
         // 软删除页面
         $page->delete();
@@ -541,7 +532,6 @@ class WikiController extends Controller
     // 恢复到指定版本
     public function revertToVersion(Request $request, WikiPage $page, int $version)
     {
-        $this->authorize('wiki.edit');
         
         $versionRecord = WikiVersion::where('wiki_page_id', $page->id)
             ->where('version_number', $version)
@@ -591,7 +581,6 @@ class WikiController extends Controller
     // 解决冲突
     public function resolveConflict(Request $request, WikiPage $page)
     {
-        $this->authorize('wiki.resolve_conflict');
         
         $validated = $request->validate([
             'content' => 'required|string',
@@ -651,7 +640,6 @@ class WikiController extends Controller
 
     public function showConflicts(WikiPage $page)
     {
-        $this->authorize('wiki.resolve_conflict');
         
         if ($page->status !== WikiPage::STATUS_CONFLICT) {
             return redirect()->route('wiki.show', $page->slug)
@@ -780,7 +768,6 @@ class WikiController extends Controller
      */
     public function sendDiscussionMessage(Request $request, WikiPage $page)
     {
-        $this->authorize('wiki.comment');
         
         $validated = $request->validate([
             'message' => 'required|string|max:500'

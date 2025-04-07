@@ -21,13 +21,41 @@ class PermissionSeeder extends Seeder
         $this->createPermissions();
         $adminRole = $this->createAdminRole();
         $editorRole = $this->createEditorRole();
-        $resolverRole = $this->createConflictResolverRole(); // 添加这一行
+        $resolverRole = $this->createConflictResolverRole();
         
-        $this->assignRoleToTestUser($adminRole);
+        // 为不同用户分配角色
+        $this->assignRoles($adminRole, $editorRole, $resolverRole);
         
         $this->command->info('系统权限与角色初始化完成！');
     }
 
+    private function assignRoles(Role $adminRole, Role $editorRole, Role $resolverRole): void
+    {
+        // 为管理员用户分配管理员角色
+        $adminUser = User::where('email', 'admin@example.com')->first();
+        if ($adminUser) {
+            $adminUser->roles()->sync([$adminRole->id]);
+            $this->command->info("已为用户 admin@example.com 分配管理员角色");
+        }
+        
+        // 为编辑者用户分配编辑者角色
+        $editorUser = User::where('email', 'editor@example.com')->first();
+        if ($editorUser) {
+            $editorUser->roles()->sync([$editorRole->id]);
+            $this->command->info("已为用户 editor@example.com 分配编辑者角色");
+        }
+        
+        // 为冲突解决者用户分配冲突解决者角色
+        $resolverUser = User::where('email', 'resolver@example.com')->first();
+        if ($resolverUser) {
+            $resolverUser->roles()->sync([$resolverRole->id]);
+            $this->command->info("已为用户 resolver@example.com 分配冲突解决者角色");
+        }
+        
+        // 普通用户不分配特殊角色
+        $this->command->info("用户 user@example.com 未分配特殊角色");
+    }
+    
     private function createPermissions(): void
     {
         $permissions = $this->getPermissionsConfig();

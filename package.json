@@ -40,11 +40,12 @@
         "@tiptap/pm": "^2.0.0",
         "@tiptap/starter-kit": "^2.0.0",
         "@tiptap/vue-3": "^2.0.0",
+        "date-fns": "^4.1.0",
         "diff-match-patch": "^1.0.5",
         "highlight.js": "^11.7.0",
+        "laravel-echo": "^1.15.3",
         "lodash": "^4.17.21",
         "lowlight": "^2.9.0",
-        "laravel-echo": "^1.15.3",
         "pusher-js": "^8.4.0"
     }
 }
