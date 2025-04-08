@@ -1,10 +1,7 @@
 <template>
-    <!-- Teleport将内容渲染到body，以确保弹窗在整个视图层级之上 -->
     <Teleport to="body">
-        <!-- Transition 包裹整个弹窗，控制显示和隐藏时的动画效果 -->
         <Transition leave-active-class="duration-200">
             <div v-show="show" class="fixed inset-0 z-50 px-4 py-6 sm:px-0" :class="positionClass">
-                <!-- 背景遮罩，点击背景触发关闭 -->
                 <Transition enter-active-class="ease-out duration-300" enter-from-class="opacity-0"
                     enter-to-class="opacity-100" leave-active-class="ease-in duration-200"
                     leave-from-class="opacity-100" leave-to-class="opacity-0">
@@ -12,18 +9,38 @@
                         <div class="absolute inset-0 bg-black opacity-50" />
                     </div>
                 </Transition>
-
-                <!-- 弹窗内容区域，含过渡效果 -->
                 <Transition enter-active-class="ease-out duration-300"
                     enter-from-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                     enter-to-class="opacity-100 translate-y-0 sm:scale-100" leave-active-class="ease-in duration-200"
                     leave-from-class="opacity-100 translate-y-0 sm:scale-100"
                     leave-to-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
                     <div v-show="show"
-                        class="dialog-content mb-6 transform overflow-auto rounded-lg bg-cyan-900 shadow-xl transition-all sm:w-full"
+                        class="dialog-content mb-6 transform overflow-auto rounded-lg bg-white shadow-xl transition-all sm:w-full"
                         :class="maxWidthClass">
-                        <!-- 使用 slot 动态传入弹窗内容 -->
-                        <slot v-if="show" />
+                        <div v-if="title" class="p-4 border-b flex justify-between items-center">
+                            <h3 class="text-lg font-medium text-gray-900">{{ title }}</h3>
+                            <button v-if="closeable" @click="close" class="text-gray-500 hover:text-gray-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                    fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                        <slot />
+                        <div v-if="showFooter" class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+                            <button v-if="showCancel" @click="close"
+                                class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                                {{ cancelText }}
+                            </button>
+                            <button v-if="showConfirm" @click="confirm" :class="[
+                                'px-4 py-2 text-white rounded',
+                                dangerAction ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
+                            ]">
+                                {{ confirmText }}
+                            </button>
+                        </div>
                     </div>
                 </Transition>
             </div>
@@ -34,7 +51,6 @@
 <script setup>
 import { computed, onMounted, onUnmounted } from 'vue';
 
-// 接收父组件传入的 props，包括控制弹窗显示、宽度、是否可关闭、位置等
 const props = defineProps({
     show: {
         type: Boolean,
@@ -42,40 +58,72 @@ const props = defineProps({
     },
     maxWidth: {
         type: String,
-        default: '2xl', // 默认最大宽度为 2xl
+        default: '2xl',
     },
     closeable: {
         type: Boolean,
-        default: true, // 控制是否允许关闭弹窗
+        default: true,
     },
     position: {
         type: String,
-        default: 'center', // 默认居中显示
+        default: 'center',
     },
     customPosition: {
-        type: Object,  // 自定义位置，例如 { top: '10px', left: '20px' }
+        type: Object,
         default: null,
+    },
+    title: {
+        type: String,
+        default: '',
+    },
+    showFooter: {
+        type: Boolean,
+        default: false,
+    },
+    showCancel: {
+        type: Boolean,
+        default: true,
+    },
+    showConfirm: {
+        type: Boolean,
+        default: true,
+    },
+    cancelText: {
+        type: String,
+        default: '取消',
+    },
+    confirmText: {
+        type: String,
+        default: '确认',
+    },
+    dangerAction: {
+        type: Boolean,
+        default: false,
+    },
+    message: {
+        type: String,
+        default: '',
     },
 });
 
-// 定义触发事件，用于告诉父组件关闭弹窗
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'confirm']);
 
-// 定义关闭弹窗的函数
 const close = () => {
     if (props.closeable && props.show) {
         emit('close');
     }
 };
 
-// 监听键盘的 Esc 按键，允许用户通过按下 Esc 关闭弹窗
+const confirm = () => {
+    emit('confirm');
+};
+
 const closeOnEscape = (e) => {
     if (e.key === 'Escape' && props.show) {
         close();
     }
 };
 
-// 组件挂载时添加键盘事件监听器，组件销毁时移除监听器
 onMounted(() => {
     document.addEventListener('keydown', closeOnEscape);
 });
@@ -84,7 +132,6 @@ onUnmounted(() => {
     document.removeEventListener('keydown', closeOnEscape);
 });
 
-// 动态计算弹窗的最大宽度类，根据传入的 maxWidth 值进行调整
 const maxWidthClass = computed(() => ({
     sm: 'sm:max-w-sm',
     md: 'sm:max-w-md',
@@ -93,10 +140,8 @@ const maxWidthClass = computed(() => ({
     '2xl': 'sm:max-w-2xl',
 }[props.maxWidth]));
 
-// 动态计算弹窗的定位类，根据传入的预设位置或自定义位置进行设置
 const positionClass = computed(() => {
     if (props.customPosition) return ''; // 自定义位置时不使用预设位置的类
-
     const presetPositions = {
         center: 'flex items-center justify-center',
         'top-center': 'flex items-start justify-center',
@@ -106,36 +151,30 @@ const positionClass = computed(() => {
         'bottom-left': 'flex items-end justify-start',
         'bottom-right': 'flex items-end justify-end',
     };
-
     return presetPositions[props.position] || presetPositions.center;
 });
 
-// 当自定义位置时，使用 absolute 定位并应用自定义的 top 和 left
 const customStyle = computed(() => props.customPosition ? { position: 'absolute', ...props.customPosition } : {});
 </script>
 
 <style scoped>
-/* 默认情况下，弹窗不会缩放 */
 .dialog-content {
     transform: scale(1);
     transition: transform 0.3s ease-out, opacity 0.3s ease-out;
 }
 
-/* 当屏幕宽度小于640px时，缩小弹窗到80% */
 @media (max-width: 640px) {
     .dialog-content {
         transform: scale(0.8);
     }
 }
 
-/* 当屏幕宽度小于480px时，进一步缩小弹窗到70% */
 @media (max-width: 320px) {
     .dialog-content {
         transform: scale(0.7);
     }
 }
 
-/* 允许弹窗根据屏幕大小做出响应式调整 */
 @media (min-width: 640px) {
     .sm\:w-full {
         width: 100%;

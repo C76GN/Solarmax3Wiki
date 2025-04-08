@@ -178,7 +178,14 @@ class WikiPage extends Model
     {
         $this->update([
             'status' => self::STATUS_CONFLICT,
-            'is_locked' => true
+            'is_locked' => true,
+            'locked_by' => null,
+            'locked_until' => null
+        ]);
+        
+        // 记录冲突日志
+        ActivityLog::log('conflict_detected', $this, [
+            'previous_status' => $this->getOriginal('status')
         ]);
     }
     
@@ -190,6 +197,11 @@ class WikiPage extends Model
             'is_locked' => false,
             'locked_by' => null,
             'locked_until' => null
+        ]);
+        
+        // 记录冲突解决日志
+        ActivityLog::log('conflict_resolved', $this, [
+            'resolved_by' => auth()->id()
         ]);
     }
 }

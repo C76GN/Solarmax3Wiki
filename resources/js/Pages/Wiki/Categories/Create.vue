@@ -91,12 +91,9 @@
 import { Link, useForm } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 
-const navigationLinks = [
-    { href: '/wiki', label: 'Wiki' },
-    { href: '/wiki/categories', label: '分类管理' },
-    { href: '/wiki/tags', label: '标签管理' },
-    { href: '#', label: '模板管理' },
-];
+import { adminNavigationLinks } from '@/config/navigationConfig';
+
+const navigationLinks = adminNavigationLinks;
 
 const props = defineProps({
     categories: {

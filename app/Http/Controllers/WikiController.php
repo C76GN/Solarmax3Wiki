@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Mews\Purifier\Facades\Purifier;
+use App\Models\ActivityLog;
+use App\Services\DiffService;
+use App\Services\CollaborationService;
+use App\Models\WikiTemplate;
 
 class WikiController extends Controller
 {
@@ -61,7 +66,6 @@ class WikiController extends Controller
     // 显示特定Wiki页面
     public function show(WikiPage $page): Response
     {
-        // 检查页面状态
         if ($page->status === WikiPage::STATUS_CONFLICT && !auth()->user()?->hasPermission('wiki.resolve_conflict')) {
             return Inertia::render('Wiki/Conflict', [
                 'page' => $page->load('currentVersion'),
@@ -69,29 +73,33 @@ class WikiController extends Controller
             ]);
         }
         
-        // 加载页面相关数据
         $page->load([
-            'currentVersion', 
-            'creator', 
+            'currentVersion',
+            'creator',
             'categories',
             'tags',
+            'template', // 加载模板信息
             'comments' => function($query) {
                 $query->whereNull('parent_id')
-                      ->with(['user', 'replies.user'])
-                      ->latest();
+                    ->with(['user', 'replies.user'])
+                    ->latest();
             }
         ]);
         
-        // 检查是否有编辑锁定
         $isLocked = $page->isLocked();
         $lockedBy = $isLocked ? $page->locker : null;
-        
-        // 检查当前用户是否有草稿
         $draft = null;
+        
         if (auth()->check()) {
             $draft = WikiPageDraft::where('wiki_page_id', $page->id)
                 ->where('user_id', auth()->id())
                 ->first();
+        }
+        
+        // 获取所有模板
+        $templates = [];
+        if (auth()->user()?->hasPermission('wiki.create')) {
+            $templates = WikiTemplate::all();
         }
         
         return Inertia::render('Wiki/Show', [
@@ -100,7 +108,8 @@ class WikiController extends Controller
             'lockedBy' => $lockedBy,
             'draft' => $draft,
             'canEdit' => auth()->user()?->hasPermission('wiki.edit'),
-            'canResolveConflict' => auth()->user()?->hasPermission('wiki.resolve_conflict')
+            'canResolveConflict' => auth()->user()?->hasPermission('wiki.resolve_conflict'),
+            'templates' => $templates
         ]);
     }
     
@@ -119,7 +128,7 @@ class WikiController extends Controller
     
     // 存储新页面
     public function store(Request $request)
-    {   
+    {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
@@ -127,13 +136,14 @@ class WikiController extends Controller
             'category_ids.*' => 'exists:wiki_categories,id',
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'exists:wiki_tags,id',
-            'parent_id' => 'nullable|exists:wiki_pages,id'
+            'parent_id' => 'nullable|exists:wiki_pages,id',
+            'template_id' => 'nullable|exists:wiki_templates,id',
+            'template_fields' => 'nullable|array'
         ]);
+
+        $validated['content'] = Purifier::clean($validated['content']);
         
-        // 生成slug
         $slug = Str::slug($validated['title']);
-        
-        // 检查slug是否存在，如果存在则添加随机字符串
         if (WikiPage::where('slug', $slug)->exists()) {
             $slug = $slug . '-' . Str::random(5);
         }
@@ -148,9 +158,11 @@ class WikiController extends Controller
                 'status' => WikiPage::STATUS_DRAFT,
                 'created_by' => auth()->id(),
                 'parent_id' => $validated['parent_id'] ?? null,
+                'template_id' => $validated['template_id'] ?? null,
+                'meta' => $validated['template_fields'] ?? null, // 保存模板字段数据
             ]);
             
-            // 创建第一个版本
+            // 创建版本
             $version = WikiVersion::create([
                 'wiki_page_id' => $page->id,
                 'content' => $validated['content'],
@@ -159,19 +171,22 @@ class WikiController extends Controller
                 'is_current' => true,
             ]);
             
-            // 更新页面的当前版本
+            // 更新页面状态
             $page->update([
                 'current_version_id' => $version->id,
                 'status' => WikiPage::STATUS_PUBLISHED
             ]);
             
-            // 关联分类
+            // 分配分类和标签
             $page->categories()->attach($validated['category_ids']);
-            
-            // 关联标签
             if (!empty($validated['tag_ids'])) {
                 $page->tags()->attach($validated['tag_ids']);
             }
+            
+            // 记录活动日志
+            ActivityLog::log('create', $page, [
+                'template_used' => $validated['template_id'] ?? null
+            ]);
             
             DB::commit();
             
@@ -318,11 +333,21 @@ class WikiController extends Controller
             'draft_id' => $draft->id
         ]);
     }
-    
+    public function getPageTree()
+    {
+        $pages = WikiPage::where('status', WikiPage::STATUS_PUBLISHED)
+            ->select(['id', 'title', 'slug', 'parent_id', 'order'])
+            ->orderBy('order')
+            ->get();
+            
+        return response()->json([
+            'pages' => $pages
+        ]);
+    }
     // 更新页面
+
     public function update(Request $request, WikiPage $page)
     {
-        
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
@@ -333,32 +358,33 @@ class WikiController extends Controller
             'comment' => 'nullable|string|max:255'
         ]);
         
-        // 检查页面是否被锁定
+        $validated['content'] = Purifier::clean($validated['content']);
+        
+        // 锁定检查
         if ($page->isLocked() && $page->locked_by !== auth()->id()) {
             throw ValidationException::withMessages([
                 'general' => ['该页面正在被其他用户编辑，请稍后再试。']
             ]);
         }
         
-        // 获取当前版本内容
+        // 冲突检测
         $currentVersion = $page->currentVersion;
-        $currentContent = $currentVersion->content;
+        $lastEditVersionId = $request->version_id;
         
-        // 检查是否有其他人在这期间更新了内容
-        if ($currentVersion->id !== $request->version_id) {
-            // 使用DiffService检测冲突
-            $diffService = new \App\Services\DiffService();
-            $lastCommonVersion = WikiVersion::find($request->version_id);
+        // 如果用户编辑的不是最新版本，需要检查冲突
+        if ($currentVersion->id !== $lastEditVersionId) {
+            $diffService = app(DiffService::class);
+            $lastCommonVersion = WikiVersion::find($lastEditVersionId);
             
             if ($lastCommonVersion && $diffService->hasConflict(
                 $lastCommonVersion->content,
-                $currentContent,
+                $currentVersion->content,
                 $validated['content']
             )) {
                 // 标记页面为冲突状态
                 $page->markAsConflict();
                 
-                // 保存当前用户的编辑为新版本，但标记为非当前版本
+                // 保存冲突版本，但不设为当前版本
                 $latestVersion = $page->versions()->latest('version_number')->first();
                 $newVersionNumber = $latestVersion->version_number + 1;
                 
@@ -371,6 +397,13 @@ class WikiController extends Controller
                     'is_current' => false,
                 ]);
                 
+                // 记录冲突日志
+                ActivityLog::log('conflict_detected', $page, [
+                    'user_id' => auth()->id(),
+                    'current_version' => $currentVersion->version_number,
+                    'edit_from_version' => $lastCommonVersion->version_number
+                ]);
+                
                 return redirect()->route('wiki.show', $page->slug)
                     ->with('flash', [
                         'message' => [
@@ -381,10 +414,11 @@ class WikiController extends Controller
             }
         }
         
+        // 没有冲突，正常更新页面
         try {
             DB::beginTransaction();
             
-            // 页面标题更新
+            // 更新页面标题
             $page->update([
                 'title' => $validated['title']
             ]);
@@ -402,12 +436,12 @@ class WikiController extends Controller
                 'is_current' => true,
             ]);
             
-            // 更新所有其他版本为非当前版本
+            // 将其他版本标记为非当前版本
             WikiVersion::where('wiki_page_id', $page->id)
                 ->where('id', '!=', $version->id)
                 ->update(['is_current' => false]);
             
-            // 更新页面的当前版本
+            // 更新页面当前版本
             $page->update([
                 'current_version_id' => $version->id
             ]);

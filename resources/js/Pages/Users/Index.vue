@@ -1,7 +1,6 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Users/Index.vue
 <template>
     <MainLayout
-        :navigationLinks="[{ href: '/users', label: '用户管理' }, { href: '/roles', label: '角色管理' }, {href: '/wiki/categories/index', label: '页面分类'}]">
+        :navigationLinks="navigationLinks">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="container mx-auto py-6">
                 <div class="flex justify-between items-center mb-6">
@@ -79,6 +78,10 @@
 import { Link } from '@inertiajs/vue3'
 import Pagination from '@/Components/Other/Pagination.vue'
 import MainLayout from "@/Layouts/MainLayouts/MainLayout.vue";
+
+import { adminNavigationLinks } from '@/config/navigationConfig';
+
+const navigationLinks = adminNavigationLinks;
 
 defineProps({
     users: {

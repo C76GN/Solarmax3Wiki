@@ -27,6 +27,7 @@ import CharacterCount from '@tiptap/extension-character-count';
 import MenuBar from './EditorMenuBar.vue';
 import { useForm } from '@inertiajs/vue3';
 import axios from 'axios';
+import { debounce } from 'lodash';
 
 const props = defineProps({
     modelValue: {
@@ -54,14 +55,16 @@ const props = defineProps({
         default: 30000 // 30秒
     }
 });
-
 const emit = defineEmits(['update:modelValue', 'saved']);
-
 const isEditable = ref(props.editable);
 const charCount = ref(0);
 const isAutosaving = ref(false);
 const autosaveMessage = ref('');
 const lastSavedContent = ref(props.modelValue);
+const hasUnsavedChanges = ref(false);
+const lastModified = ref(Date.now());
+
+
 
 const toggleEdit = () => {
     isEditable.value = !isEditable.value;
@@ -91,25 +94,37 @@ const editor = useEditor({
         const html = editor.getHTML();
         emit('update:modelValue', html);
         charCount.value = editor.storage.characterCount.characters();
+        hasUnsavedChanges.value = true;
+        lastModified.value = Date.now();
     },
     onCreate: ({ editor }) => {
         charCount.value = editor.storage.characterCount.characters();
     }
 });
+
+const debouncedSaveDraft = debounce(async (content) => {
+    if (!props.pageId || !isEditable.value) return;
+    await saveDraft(content);
+}, 2000);
+
 let autosaveTimer = null;
 // 监听内容变化，进行自动保存
 watch(
     () => props.modelValue,
     async (newValue, oldValue) => {
+        // 如果内容有变更且开启了自动保存
         if (props.autosave && props.pageId && isEditable.value && lastSavedContent.value !== newValue) {
-            // 清除之前的计时器
-            if (autosaveTimer) {
-                clearTimeout(autosaveTimer);
+            hasUnsavedChanges.value = true;
+
+            // 使用防抖函数来避免频繁保存
+            debouncedSaveDraft(newValue);
+
+            // 如果上次修改时间超过指定的间隔，则立即保存
+            const timeSinceLastSave = Date.now() - lastModified.value;
+            if (timeSinceLastSave > props.autosaveInterval) {
+                debouncedSaveDraft.cancel();
+                await saveDraft(newValue);
             }
-            // 设置新的计时器
-            autosaveTimer = setTimeout(() => {
-                saveDraft(newValue);
-            }, props.autosaveInterval);
         }
     }
 );
@@ -118,30 +133,85 @@ watch(
 const saveDraft = async (content) => {
     if (!props.pageId || !isEditable.value) return;
 
+    if (content === lastSavedContent.value) {
+        return;
+    }
+
     isAutosaving.value = true;
     autosaveMessage.value = '正在保存草稿...';
 
     try {
-        const response = await axios.post(route('wiki.save-draft', props.pageId), {
-            content: content
-        });
+        const maxRetries = 3;
+        let retryCount = 0;
+        let saveSuccess = false;
 
-        lastSavedContent.value = content;
-        autosaveMessage.value = '草稿已保存于 ' + response.data.saved_at;
-        emit('saved', response.data);
+        while (!saveSuccess && retryCount < maxRetries) {
+            try {
+                const response = await axios.post(route('wiki.save-draft', props.pageId), {
+                    content: content
+                });
 
-        // 5秒后隐藏保存提示
-        setTimeout(() => {
-            isAutosaving.value = false;
-        }, 5000);
+                lastSavedContent.value = content;
+                hasUnsavedChanges.value = false;
+                autosaveMessage.value = '草稿已保存于 ' + response.data.saved_at;
+                emit('saved', response.data);
+
+                saveSuccess = true;
+
+                setTimeout(() => {
+                    if (autosaveMessage.value.includes('草稿已保存')) {
+                        isAutosaving.value = false;
+                    }
+                }, 5000);
+            } catch (error) {
+                retryCount++;
+                console.warn(`保存草稿失败，正在重试 (${retryCount}/${maxRetries})...`, error);
+
+                // 如果是网络错误，尝试延迟后重试
+                if (error.message.includes('Network Error')) {
+                    await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+                } else {
+                    break; // 非网络错误不重试
+                }
+            }
+        }
+
+        if (!saveSuccess) {
+            throw new Error('草稿保存多次尝试失败');
+        }
     } catch (error) {
         console.error('保存草稿失败:', error);
-        autosaveMessage.value = '保存草稿失败: ' + (error.response?.data?.message || '未知错误');
+        autosaveMessage.value = '保存草稿失败: ' + (error.response?.data?.message || error.message || '未知错误');
 
-        // 10秒后隐藏错误提示
         setTimeout(() => {
-            isAutosaving.value = false;
+            if (autosaveMessage.value.includes('保存草稿失败')) {
+                isAutosaving.value = false;
+            }
         }, 10000);
+
+        // 十秒后再次尝试保存
+        setTimeout(() => {
+            if (hasUnsavedChanges.value) {
+                saveDraft(props.modelValue);
+            }
+        }, 10000);
+    }
+};
+
+const setupAutosaveTimer = () => {
+    if (props.autosave && props.pageId && isEditable.value) {
+        // 清除之前的定时器
+        if (autosaveTimer) {
+            clearInterval(autosaveTimer);
+        }
+
+        // 设置新的定时器，精确30秒
+        autosaveTimer = setInterval(() => {
+            if (hasUnsavedChanges.value) {
+                saveDraft(props.modelValue);
+                console.log("Auto-saving draft...");
+            }
+        }, 30000); // 严格30秒
     }
 };
 
@@ -160,7 +230,6 @@ watch(
 watch(
     () => props.modelValue,
     (newValue) => {
-        // 只有当编辑器内容与传入值不同时才更新
         const currentContent = editor.value?.getHTML() || '';
         if (newValue !== currentContent) {
             editor.value?.commands.setContent(newValue, false);
@@ -171,23 +240,39 @@ watch(
 onMounted(() => {
     // 初始监听页面关闭事件，提示保存
     window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // 设置自动保存定时器
+    setupAutosaveTimer();
+
+    // 监听网络状态变化
+    window.addEventListener('online', handleOnline);
 });
 
 onBeforeUnmount(() => {
-    if (autosaveTimer) {
-        clearTimeout(autosaveTimer);
+    // 清理事件监听和定时器
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.removeEventListener('online', handleOnline);
 
-        // 如果还有未保存的内容，尝试保存
-        if (props.autosave && props.pageId && isEditable.value &&
-            lastSavedContent.value !== props.modelValue) {
-            saveDraft(props.modelValue);
-        }
+    if (autosaveTimer) {
+        clearInterval(autosaveTimer);
+    }
+
+    // 离开页面前最后保存一次
+    if (props.autosave && props.pageId && isEditable.value &&
+        lastSavedContent.value !== props.modelValue && hasUnsavedChanges.value) {
+        saveDraft(props.modelValue);
     }
 });
 
+const handleOnline = () => {
+    if (hasUnsavedChanges.value) {
+        saveDraft(props.modelValue);
+    }
+};
+
 // 页面关闭时提示
 const handleBeforeUnload = (event) => {
-    if (isEditable.value && editor.value && editor.value.getHTML() !== lastSavedContent.value) {
+    if (isEditable.value && hasUnsavedChanges.value) {
         event.preventDefault();
         event.returnValue = '您有未保存的更改，确定要离开吗？';
     }

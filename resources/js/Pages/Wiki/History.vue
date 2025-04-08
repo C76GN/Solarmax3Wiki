@@ -136,14 +136,9 @@ import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import Pagination from '@/Components/Other/Pagination.vue';
 import Modal from '@/Components/Modal/Modal.vue';
 import { formatDate, formatDateTime } from '@/utils/formatters';
+import { mainNavigationLinks } from '@/config/navigationConfig';
 
-const navigationLinks = [
-    { href: '/wiki', label: 'Wiki' },
-    { href: '#', label: '游戏历史&名人墙' },
-    { href: '#', label: '自制专区' },
-    { href: '#', label: '攻略专区' },
-    { href: '#', label: '论坛' }
-];
+const navigationLinks = mainNavigationLinks;
 
 const props = defineProps({
     page: {

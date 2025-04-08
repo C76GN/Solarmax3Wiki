@@ -95,9 +95,12 @@
         </div>
 
         <!-- 删除确认对话框 -->
-        <ConfirmModal :show="showDeleteConfirm" title="确认删除标签"
-            :message="'确定要删除标签 ' + tagToDelete?.name + ' 吗？此操作不可恢复，相关页面的标签关联也将被删除。'" confirm-text="删除" cancel-text="取消"
-            :danger-action="true" @close="cancelDelete" @confirm="deleteTag" />
+        <Modal :show="showDeleteConfirm" @close="cancelDelete" @confirm="deleteTag" title="确认删除标签" :showFooter="true"
+            :dangerAction="true" confirmText="删除" cancelText="取消">
+            <div class="p-6">
+                <p class="mb-4 text-gray-600">确定要删除标签 {{ tagToDelete?.name }} 吗？此操作不可恢复，相关页面的标签关联也将被删除。</p>
+            </div>
+        </Modal>
     </MainLayout>
 </template>
 
@@ -105,14 +108,11 @@
 import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
-import ConfirmModal from '@/Components/Modal/ConfirmModal.vue';
+import Modal from '@/Components/Modal/Modal.vue'
 
-const navigationLinks = [
-    { href: '/wiki', label: 'Wiki' },
-    { href: '/wiki/categories', label: '分类管理' },
-    { href: '/wiki/tags', label: '标签管理' },
-    { href: '#', label: '模板管理' },
-];
+import { adminNavigationLinks } from '@/config/navigationConfig';
+
+const navigationLinks = adminNavigationLinks;
 
 const props = defineProps({
     tags: {

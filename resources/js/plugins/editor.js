@@ -1,22 +1,12 @@
-// resources/js/plugins/editor.js
-// Tiptap编辑器配置
-import { getExtensions } from '@/extensions';
+import { getEditorConfig } from '@/extensions';
 
 export const useEditor = () => {
-    const defaultOptions = {
-        extensions: getExtensions(),
-        content: '',
-        autofocus: true,
-        editable: true
-    };
-
     return {
-        // 可以在这里添加更多配置选项
         init: (options = {}) => {
-            return { ...defaultOptions, ...options };
+            return getEditorConfig(options);
         },
         getOptions: (customOptions = {}) => {
-            return { ...defaultOptions, ...customOptions };
+            return getEditorConfig(customOptions);
         }
     };
 };

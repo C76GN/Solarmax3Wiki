@@ -1,75 +1,135 @@
 <?php
-
 namespace App\Services;
 
-/**
- * 差异对比服务
- * 用于比较文本差异，主要应用于检测Wiki页面内容的编辑冲突
- */
 class DiffService
 {
     /**
-     * 检测两个文本内容之间是否存在冲突
-     * 
-     * @param string $baseContent 基准内容
-     * @param string $userAContent 用户A的内容
-     * @param string $userBContent 用户B的内容
-     * @return bool 是否存在冲突
+     * 检查是否存在冲突
      */
     public function hasConflict(string $baseContent, string $userAContent, string $userBContent): bool
     {
-        // 获取用户A和基准内容的差异行
-        $diffA = $this->getDiffLines($baseContent, $userAContent);
+        // 更精确的冲突检测算法
+        $baseLines = explode("\n", $baseContent);
+        $userALines = explode("\n", $userAContent);
+        $userBLines = explode("\n", $userBContent);
         
-        // 获取用户B和基准内容的差异行
-        $diffB = $this->getDiffLines($baseContent, $userBContent);
+        $changesA = $this->calculateChanges($baseLines, $userALines);
+        $changesB = $this->calculateChanges($baseLines, $userBLines);
         
-        // 检查是否有重叠的修改行
-        return $this->hasOverlappingChanges($diffA, $diffB);
+        // 检查是否有重叠修改
+        foreach ($changesA as $lineNum => $changeType) {
+            if (isset($changesB[$lineNum]) && $changeType != 'unchanged') {
+                // 如果A和B都修改了同一行，检查修改是否相同
+                if ($userALines[$lineNum] !== $userBLines[$lineNum]) {
+                    return true; // 存在冲突
+                }
+            }
+        }
+        
+        // 检查新增行是否导致冲突
+        $addedLinesA = array_filter($changesA, function($change) {
+            return $change === 'added';
+        });
+        
+        $addedLinesB = array_filter($changesB, function($change) {
+            return $change === 'added';
+        });
+        
+        $addedLineConflict = array_intersect_key($addedLinesA, $addedLinesB);
+        if (!empty($addedLineConflict)) {
+            return true;
+        }
+        
+        return false;
     }
-    
+
+    private function calculateChanges(array $oldLines, array $newLines): array
+    {
+        $changes = [];
+        $max = max(count($oldLines), count($newLines));
+        
+        for ($i = 0; $i < $max; $i++) {
+            if ($i >= count($oldLines)) {
+                $changes[$i] = 'added';
+            } elseif ($i >= count($newLines)) {
+                $changes[$i] = 'deleted';
+            } elseif ($oldLines[$i] !== $newLines[$i]) {
+                $changes[$i] = 'modified';
+            } else {
+                $changes[$i] = 'unchanged';
+            }
+        }
+        
+        return $changes;
+    }
+
+    private function calculateLineDifferences(array $oldLines, array $newLines): array
+    {
+        $changes = [];
+        $max = max(count($oldLines), count($newLines));
+        
+        for ($i = 0; $i < $max; $i++) {
+            $oldLine = $oldLines[$i] ?? '';
+            $newLine = $newLines[$i] ?? '';
+            
+            if ($oldLine !== $newLine) {
+                $changes[$i] = $newLine;
+            }
+        }
+        
+        return $changes;
+    }
+
     /**
-     * 获取两个文本之间的差异行数组
-     * 
-     * @param string $oldContent 旧内容
-     * @param string $newContent 新内容
-     * @return array 差异行数组
+     * 获取两个内容之间的差异行
      */
     public function getDiffLines(string $oldContent, string $newContent): array
     {
         $oldLines = explode("\n", $oldContent);
         $newLines = explode("\n", $newContent);
         
-        // 使用PHP内置的diff函数比较数组
-        $diff = array_diff($newLines, $oldLines);
+        // 获取更精确的行差异
+        $differ = new \Diff_TextDiffer();
+        $diff = $differ->diff($oldLines, $newLines);
         
-        return array_keys($diff);
+        $changedLines = [];
+        foreach ($diff as $index => $change) {
+            if ($change[1] !== 0) { // 有变化的行
+                $changedLines[] = $index;
+            }
+        }
+        
+        return $changedLines;
     }
-    
+
     /**
-     * 检查两个差异集是否有重叠的修改行
-     * 
-     * @param array $diffA 差异集A
-     * @param array $diffB 差异集B
-     * @return bool 是否有重叠
+     * 检查两个差异集是否有重叠
      */
     private function hasOverlappingChanges(array $diffA, array $diffB): bool
     {
-        // 计算两个数组的交集
         $intersection = array_intersect($diffA, $diffB);
-        
-        // 如果有交集，则存在冲突
         return !empty($intersection);
+    }
+
+    /**
+     * 生成更详细的HTML差异视图
+     */
+    public function generateDiffHtml(string $oldContent, string $newContent): string
+    {
+        // 使用更专业的差异比较库
+        require_once base_path('vendor/phpspec/php-diff/lib/Diff.php');
+        require_once base_path('vendor/phpspec/php-diff/lib/Diff/Renderer/Html/SideBySide.php');
+        
+        $diff = new \Diff(explode("\n", $oldContent), explode("\n", $newContent), []);
+        $renderer = new \Diff_Renderer_Html_SideBySide();
+        
+        return $diff->render($renderer);
     }
     
     /**
-     * 生成内容差异的HTML
-     * 
-     * @param string $oldContent 旧内容
-     * @param string $newContent 新内容
-     * @return string 包含差异标记的HTML
+     * 生成行内差异HTML
      */
-    public function generateDiffHtml(string $oldContent, string $newContent): string
+    public function generateInlineDiffHtml(string $oldContent, string $newContent): string
     {
         $oldLines = explode("\n", $oldContent);
         $newLines = explode("\n", $newContent);
@@ -83,18 +143,99 @@ class DiffService
             
             if ($oldLine !== $newLine) {
                 if (empty($oldLine)) {
-                    $diff[] = '<ins class="bg-green-200">' . htmlspecialchars($newLine) . '</ins>';
+                    $diff[] = '<div class="line-added"><ins class="bg-green-200">' . htmlspecialchars($newLine) . '</ins></div>';
                 } elseif (empty($newLine)) {
-                    $diff[] = '<del class="bg-red-200">' . htmlspecialchars($oldLine) . '</del>';
+                    $diff[] = '<div class="line-removed"><del class="bg-red-200">' . htmlspecialchars($oldLine) . '</del></div>';
                 } else {
-                    $diff[] = '<del class="bg-red-200">' . htmlspecialchars($oldLine) . '</del>';
-                    $diff[] = '<ins class="bg-green-200">' . htmlspecialchars($newLine) . '</ins>';
+                    // 尝试进行词语级别的差异对比
+                    $wordDiff = $this->generateWordLevelDiff($oldLine, $newLine);
+                    $diff[] = '<div class="line-changed">' . $wordDiff . '</div>';
                 }
             } else {
-                $diff[] = htmlspecialchars($oldLine);
+                $diff[] = '<div class="line-unchanged">' . htmlspecialchars($oldLine) . '</div>';
             }
         }
         
-        return implode("<br>\n", $diff);
+        return implode("\n", $diff);
+    }
+    
+    /**
+     * 生成词语级别的差异
+     */
+    private function generateWordLevelDiff(string $oldLine, string $newLine): string
+    {
+        $oldWords = preg_split('/(\s+)/', $oldLine, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $newWords = preg_split('/(\s+)/', $newLine, -1, PREG_SPLIT_DELIM_CAPTURE);
+        
+        $diffWords = $this->computeWordDiff($oldWords, $newWords);
+        
+        $result = '';
+        foreach ($diffWords as [$op, $text]) {
+            if ($op === -1) {
+                $result .= '<del class="bg-red-200">' . htmlspecialchars($text) . '</del>';
+            } elseif ($op === 1) {
+                $result .= '<ins class="bg-green-200">' . htmlspecialchars($text) . '</ins>';
+            } else {
+                $result .= htmlspecialchars($text);
+            }
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * 计算词语级别的差异
+     */
+    private function computeWordDiff(array $oldWords, array $newWords): array
+    {
+        // 这里使用简单的LCS (最长公共子序列) 算法
+        // 实际项目中可以使用更专业的差异算法库
+        
+        $matrix = [];
+        $maxlen = 0;
+        $omax = 0;
+        $nmax = 0;
+        
+        foreach ($oldWords as $oindex => $ovalue) {
+            foreach ($newWords as $nindex => $nvalue) {
+                if ($ovalue === $nvalue) {
+                    $value = ($matrix[$oindex - 1][$nindex - 1] ?? 0) + 1;
+                    $matrix[$oindex][$nindex] = $value;
+                    
+                    if ($value > $maxlen) {
+                        $maxlen = $value;
+                        $omax = $oindex - $maxlen + 1;
+                        $nmax = $nindex - $maxlen + 1;
+                    }
+                } else {
+                    $matrix[$oindex][$nindex] = 0;
+                }
+            }
+        }
+        
+        if ($maxlen === 0) {
+            $result = [];
+            foreach ($oldWords as $word) {
+                $result[] = [-1, $word];
+            }
+            foreach ($newWords as $word) {
+                $result[] = [1, $word];
+            }
+            return $result;
+        }
+        
+        return array_merge(
+            $this->computeWordDiff(
+                array_slice($oldWords, 0, $omax),
+                array_slice($newWords, 0, $nmax)
+            ),
+            array_map(function ($i) use ($oldWords, $omax) {
+                return [0, $oldWords[$omax + $i]];
+            }, range(0, $maxlen - 1)),
+            $this->computeWordDiff(
+                array_slice($oldWords, $omax + $maxlen),
+                array_slice($newWords, $nmax + $maxlen)
+            )
+        );
     }
 }

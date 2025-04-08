@@ -137,13 +137,9 @@ import { formatDateTime } from '@/utils/formatters';
 import EditorsList from '@/Components/Wiki/EditorsList.vue';
 import Discussion from '@/Components/Wiki/Discussion.vue';
 
-const navigationLinks = [
-    { href: '/wiki', label: 'Wiki' },
-    { href: '#', label: '游戏历史&名人墙' },
-    { href: '#', label: '自制专区' },
-    { href: '#', label: '攻略专区' },
-    { href: '#', label: '论坛' }
-];
+import { mainNavigationLinks } from '@/config/navigationConfig';
+
+const navigationLinks = mainNavigationLinks;
 
 const props = defineProps({
     page: {
