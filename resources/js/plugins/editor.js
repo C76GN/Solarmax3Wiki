@@ -1,5 +1,4 @@
-import { getEditorConfig } from '@/extensions';
-
+import { getEditorConfig, getExtensions, createBasicEditorConfig } from '@/extensions';
 export const useEditor = () => {
     return {
         init: (options = {}) => {
@@ -7,8 +6,13 @@ export const useEditor = () => {
         },
         getOptions: (customOptions = {}) => {
             return getEditorConfig(customOptions);
+        },
+        createContent: (content, callback, focusPosition = 'end') => {
+            return createBasicEditorConfig(content, callback, focusPosition);
+        },
+        getExtensions: (options = {}) => {
+            return getExtensions(options);
         }
     };
 };
-
 export default useEditor;
