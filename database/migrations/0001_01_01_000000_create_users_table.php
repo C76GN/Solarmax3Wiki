@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * 用户系统基础数据表迁移
- * 
+ *
  * 创建用户认证和会话管理所需的基础表结构
  * 包括：用户表、密码重置令牌表、会话表
  */
@@ -14,10 +14,8 @@ return new class extends Migration
 {
     /**
      * 执行迁移
-     * 
+     *
      * 创建用户认证系统所需的所有数据表
-     * 
-     * @return void
      */
     public function up(): void
     {
@@ -52,10 +50,8 @@ return new class extends Migration
 
     /**
      * 回滚迁移
-     * 
+     *
      * 按照依赖关系的反序删除所有创建的表
-     * 
-     * @return void
      */
     public function down(): void
     {

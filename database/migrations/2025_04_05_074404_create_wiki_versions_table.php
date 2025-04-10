@@ -18,19 +18,19 @@ return new class extends Migration
             $table->boolean('is_current')->default(false);
             $table->json('diff_from_previous')->nullable();
             $table->timestamps();
-            
+
             $table->index('wiki_page_id');
             $table->index('version_number');
             $table->index('is_current');
             $table->unique(['wiki_page_id', 'version_number']);
         });
-        
+
         // 添加current_version_id外键
         Schema::table('wiki_pages', function (Blueprint $table) {
             $table->foreign('current_version_id')
-                  ->references('id')
-                  ->on('wiki_versions')
-                  ->nullOnDelete();
+                ->references('id')
+                ->on('wiki_versions')
+                ->nullOnDelete();
         });
     }
 
@@ -39,7 +39,7 @@ return new class extends Migration
         Schema::table('wiki_pages', function (Blueprint $table) {
             $table->dropForeign(['current_version_id']);
         });
-        
+
         Schema::dropIfExists('wiki_versions');
     }
 };

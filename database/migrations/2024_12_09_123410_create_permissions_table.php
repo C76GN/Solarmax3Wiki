@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * 权限表迁移
- * 
+ *
  * 创建权限管理系统所需的权限表，用于存储系统的各项权限定义
  * 该表是RBAC（基于角色的访问控制）模型的基础组成部分
  */
@@ -14,10 +14,8 @@ return new class extends Migration
 {
     /**
      * 执行迁移
-     * 
+     *
      * 创建权限表及其相关字段结构
-     * 
-     * @return void
      */
     public function up(): void
     {
@@ -33,10 +31,8 @@ return new class extends Migration
 
     /**
      * 回滚迁移
-     * 
+     *
      * 删除权限表
-     * 
-     * @return void
      */
     public function down(): void
     {

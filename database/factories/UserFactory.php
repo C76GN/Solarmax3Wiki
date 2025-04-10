@@ -2,30 +2,27 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
  * 用户模型工厂类
- * 
+ *
  * 该类负责为测试和数据填充生成用户数据
- * 
+ *
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
  */
 class UserFactory extends Factory
 {
     /**
      * 默认密码缓存
-     * 
-     * @var string|null
      */
     protected static ?string $password;
 
     /**
      * 定义用户模型的默认状态
-     * 
+     *
      * @return array<string, mixed> 用户属性数组
      */
     public function definition(): array
@@ -41,8 +38,6 @@ class UserFactory extends Factory
 
     /**
      * 将用户的邮箱验证状态标记为未验证
-     * 
-     * @return static
      */
     public function unverified(): static
     {

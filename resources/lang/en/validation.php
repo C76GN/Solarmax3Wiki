@@ -1,6 +1,6 @@
 <?php
-// FileName: /var/www/Solarmax3Wiki/resources/lang/en/validation.php
 
+// FileName: /var/www/Solarmax3Wiki/resources/lang/en/validation.php
 
 return [
 

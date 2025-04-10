@@ -21,12 +21,13 @@
     "require-dev": {
         "fakerphp/faker": "^1.23",
         "laravel/breeze": "^2.2",
-        "laravel/pint": "^1.13",
+        "laravel/pint": "^1.22",
         "laravel/sail": "^1.26",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.0",
         "pestphp/pest": "^3.2",
-        "pestphp/pest-plugin-laravel": "^3.0"
+        "pestphp/pest-plugin-laravel": "^3.0",
+        "phpspec/php-diff": "^1.1"
     },
     "autoload": {
         "psr-4": {

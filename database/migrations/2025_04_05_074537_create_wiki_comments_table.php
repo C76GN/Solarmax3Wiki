@@ -16,18 +16,18 @@ return new class extends Migration
             $table->text('content');
             $table->boolean('is_hidden')->default(false);
             $table->timestamps();
-            
+
             $table->index('wiki_page_id');
             $table->index('user_id');
             $table->index('parent_id');
         });
-        
+
         // 添加自引用关系
         Schema::table('wiki_comments', function (Blueprint $table) {
             $table->foreign('parent_id')
-                  ->references('id')
-                  ->on('wiki_comments')
-                  ->nullOnDelete();
+                ->references('id')
+                ->on('wiki_comments')
+                ->nullOnDelete();
         });
     }
 

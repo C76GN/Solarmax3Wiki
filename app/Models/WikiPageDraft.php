@@ -11,19 +11,19 @@ class WikiPageDraft extends Model
         'wiki_page_id',
         'user_id',
         'content',
-        'last_saved_at'
+        'last_saved_at',
     ];
-    
+
     protected $casts = [
-        'last_saved_at' => 'datetime'
+        'last_saved_at' => 'datetime',
     ];
-    
+
     // 关联页面
     public function page(): BelongsTo
     {
         return $this->belongsTo(WikiPage::class, 'wiki_page_id');
     }
-    
+
     // 关联用户
     public function user(): BelongsTo
     {

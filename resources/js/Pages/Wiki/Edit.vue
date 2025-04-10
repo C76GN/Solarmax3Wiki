@@ -4,92 +4,89 @@
             <div class="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg p-6">
                 <h1 class="text-2xl font-bold mb-6">编辑 Wiki 页面: {{ page.title }}</h1>
 
-                <!-- 锁定提示 -->
-                <div v-if="lockInfo && lockInfo.isLocked && lockInfo.lockedBy?.id !== pageProps.auth.user?.id"
+                <!-- 冲突状态提示 -->
+                <div v-if="isConflict && !canResolveConflict"
+                    class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md">
+                    <div class="flex items-center">
+                        <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="mr-2" />
+                        <p>该页面当前存在编辑冲突，您无法编辑。请等待有权限的人员解决冲突。</p>
+                        <Link :href="route('wiki.show', page.slug)"
+                            class="ml-auto px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 whitespace-nowrap">
+                        查看页面
+                        </Link>
+                    </div>
+                </div>
+                <div v-else-if="isConflict && canResolveConflict"
                     class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-md">
                     <div class="flex items-center">
-                        <font-awesome-icon :icon="['fas', 'lock']" class="mr-2" />
-                        <p>
-                            此页面当前正由 <strong>{{ lockInfo.lockedBy?.name || '其他用户' }}</strong> 编辑中，暂时无法编辑。
-                            <span v-if="lockInfo.lockedUntil">锁将于 {{ formatDateTime(lockInfo.lockedUntil) }}
-                                自动解除。</span>
+                        <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="mr-2" />
+                        <p>该页面处于冲突状态。您可以编辑下方内容以解决冲突，或
+                            <Link :href="route('wiki.show-conflicts', page.slug)"
+                                class="font-bold underline hover:text-yellow-800">前往冲突解决页面</Link> 进行对比和合并。
                         </p>
-                        <button v-if="canForceUnlock" @click="forceUnlockPage"
-                            class="ml-auto px-2 py-1 text-xs bg-yellow-500 text-white rounded hover:bg-yellow-600">强制解锁
-                        </button>
                     </div>
                 </div>
 
                 <!-- 编辑者列表 -->
-                <EditorsList :pageId="page.id" v-if="isEditable" />
+                <EditorsList :pageId="page.id" class="mb-4" />
 
                 <!-- 草稿提示 -->
-                <div v-if="hasDraft && lastSaved"
+                <div v-if="hasDraft && localLastSaved"
                     class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-md">
                     <div class="flex items-center">
                         <font-awesome-icon :icon="['fas', 'info-circle']" class="mr-2" />
                         <p>
-                            检测到本地草稿，已自动加载。最后自动保存于 {{ formatDateTime(lastSaved) }}。
+                            检测到本地草稿，已自动加载。最后自动保存于 {{ formatDateTime(localLastSaved) }}。
                         </p>
                     </div>
                 </div>
 
+                <!-- 表单 -->
                 <form @submit.prevent="savePage">
                     <div class="space-y-6">
+                        <!-- 标题 -->
                         <div>
                             <label for="title" class="block text-sm font-medium text-gray-700 mb-1">
                                 标题 <span class="text-red-500">*</span>
                             </label>
                             <input id="title" v-model="form.title" type="text"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                                 :disabled="!isEditable" required />
                             <InputError class="mt-1" :message="form.errors.title" />
                         </div>
 
+                        <!-- 编辑器 -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                 内容 <span class="text-red-500">*</span>
                             </label>
-                            <Editor v-model="form.content" :editable="isEditable" :autosave="true" :pageId="page.id"
-                                @saved="onDraftSaved" @statusUpdate="handleEditorStatusUpdate" placeholder="开始编辑页面内容..."
-                                ref="tiptapEditorRef" />
+                            <Editor v-model="form.content" :editable="isEditable" :autosave="isEditable"
+                                :pageId="page.id" @saved="onDraftSaved" @statusUpdate="handleEditorStatusUpdate"
+                                placeholder="开始编辑页面内容..." ref="tiptapEditorRef" />
                             <InputError class="mt-1" :message="form.errors.content" />
-                            <div class="mt-1 text-xs text-gray-500 flex justify-end items-center">
+                            <!-- 自动保存状态 -->
+                            <div v-if="isEditable"
+                                class="mt-1 text-xs text-gray-500 flex justify-end items-center min-h-[20px]">
                                 <span v-if="autosaveStatus" :class="autosaveStatusClass" class="ml-2 flex items-center">
                                     <font-awesome-icon :icon="autosaveStatusIcon"
                                         :spin="autosaveStatus.type === 'pending'" class="mr-1" />
                                     {{ autosaveStatus.message }}
                                 </span>
-                                <span v-else class="ml-2 text-gray-400 italic">草稿未更改</span>
+                                <span v-else class="ml-2 text-gray-400 italic"></span>
                             </div>
                         </div>
 
-                        <!-- 移除父页面选择 -->
-                        <!-- <div>
-                            <label for="parent_id" class="block text-sm font-medium text-gray-700 mb-1">
-                                父页面
-                            </label>
-                            <select id="parent_id" v-model="form.parent_id"
-                                    :disabled="!isEditable"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                <option :value="null">无 (顶级页面)</option>
-                                <option v-for="parentOption in pages" :key="parentOption.id" :value="parentOption.id">
-                                    {{ parentOption.title }}
-                                </option>
-                            </select>
-                            <InputError class="mt-1" :message="form.errors.parent_id"/>
-                        </div> -->
-
+                        <!-- 分类 -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                分类 <span class="text-red-500">*</span>
+                                分类 <span class="text-red-500">*</span> (至少选择一个)
                             </label>
-                            <div
-                                class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2 max-h-60 overflow-y-auto p-2 border rounded">
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2 max-h-60 overflow-y-auto p-2 border rounded"
+                                :class="{ 'bg-gray-100 opacity-70': !isEditable }">
                                 <div v-for="category in categories" :key="category.id" class="flex items-center">
                                     <input type="checkbox" :id="`category-${category.id}`" :value="category.id"
                                         v-model="form.category_ids" :disabled="!isEditable"
-                                        class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                                        class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:cursor-not-allowed" />
                                     <label :for="`category-${category.id}`" class="ml-2 text-sm text-gray-700">
                                         {{ category.name }}
                                     </label>
@@ -98,16 +95,17 @@
                             <InputError class="mt-1" :message="form.errors.category_ids" />
                         </div>
 
+                        <!-- 标签 -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                标签
+                                标签 (可选)
                             </label>
-                            <div
-                                class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2 max-h-60 overflow-y-auto p-2 border rounded">
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2 max-h-60 overflow-y-auto p-2 border rounded"
+                                :class="{ 'bg-gray-100 opacity-70': !isEditable }">
                                 <div v-for="tag in tags" :key="tag.id" class="flex items-center">
                                     <input type="checkbox" :id="`tag-${tag.id}`" :value="tag.id" v-model="form.tag_ids"
                                         :disabled="!isEditable"
-                                        class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                                        class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:cursor-not-allowed" />
                                     <label :for="`tag-${tag.id}`" class="ml-2 text-sm text-gray-700">
                                         {{ tag.name }}
                                     </label>
@@ -116,16 +114,18 @@
                             <InputError class="mt-1" :message="form.errors.tag_ids" />
                         </div>
 
+                        <!-- 提交说明 -->
                         <div>
                             <label for="comment" class="block text-sm font-medium text-gray-700 mb-1">
                                 提交说明 <span class="text-xs text-gray-500">(本次修改的简要描述)</span>
                             </label>
                             <textarea id="comment" v-model="form.comment" rows="2" :disabled="!isEditable"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                                 placeholder="例如：修正了XX数据，添加了YY说明..."></textarea>
                             <InputError class="mt-1" :message="form.errors.comment" />
                         </div>
 
+                        <!-- 操作按钮 -->
                         <div class="flex justify-end space-x-3 pt-4 border-t">
                             <Link :href="route('wiki.show', page.slug)"
                                 class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
@@ -139,7 +139,11 @@
                                 {{ form.processing ? '正在保存...' : '保存页面' }}
                             </button>
                         </div>
-                        <InputError class="mt-1 text-right text-red-600 font-medium" :message="form.errors.general" />
+                        <!-- 通用错误 -->
+                        <div v-if="form.errors.general" class="mt-1 text-sm text-red-600 text-right font-medium">
+                            <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="mr-1" />
+                            {{ form.errors.general }}
+                        </div>
                     </div>
                 </form>
             </div>
@@ -148,7 +152,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import { Link, useForm, usePage, router } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import Editor from '@/Components/Wiki/Editor.vue';
@@ -166,9 +170,10 @@ const props = defineProps({
     content: { type: String, required: true },
     categories: { type: Array, required: true },
     tags: { type: Array, required: true },
-    // pages: { type: Array, required: true }, // 移除父页面列表
     hasDraft: { type: Boolean, default: false },
-    lockInfo: { type: Object, default: () => ({ isLocked: false, lockedBy: null, lockedUntil: null }) },
+    lastSaved: { type: String, default: null }, // ISO string
+    canResolveConflict: { type: Boolean, default: false },
+    isConflict: { type: Boolean, default: false }, // Explicitly pass conflict status
     errors: Object
 });
 
@@ -177,22 +182,21 @@ const tiptapEditorRef = ref(null);
 
 const form = useForm({
     title: props.page.title,
-    content: props.content, // 使用传入的 content 初始化
-    category_ids: props.page.categories?.map(c => c.id) || [],
-    tag_ids: props.page.tags?.map(t => t.id) || [],
+    content: props.content,
+    category_ids: props.page.category_ids || [],
+    tag_ids: props.page.tag_ids || [],
     comment: '',
-    version_id: props.page.current_version_id, // 传递基础版本 ID
-    // parent_id: props.page.parent_id || null, // 移除
+    version_id: props.page.current_version_id,
 });
 
 const lastSaved = ref(props.hasDraft ? new Date() : null); // Track last saved time from draft
 const autosaveStatus = ref(null);
+const localLastSaved = ref(props.lastSaved ? new Date(props.lastSaved) : null);
 
 // --- Computed Properties ---
 const isEditable = computed(() => {
-    const lockedByOther = props.lockInfo.isLocked && props.lockInfo.lockedBy?.id !== pageProps.auth.user?.id;
-    const inConflict = props.page.status === 'conflict' && !pageProps.auth.user?.permissions?.includes('wiki.resolve_conflict');
-    return !lockedByOther && !inConflict;
+    // 可编辑条件：页面不是冲突状态，或者页面冲突但当前用户有权解决
+    return !props.isConflict || props.canResolveConflict;
 });
 
 const canForceUnlock = computed(() => {
@@ -252,56 +256,25 @@ const savePage = () => {
         preserveScroll: true,
         onError: (pageErrors) => {
             console.error("Page save failed:", pageErrors);
+            if (pageErrors.general) {
+                // Keep general errors from backend
+            } else {
+                form.setError('general', '保存页面时出错，请检查下方具体错误信息。');
+            }
             // Keep form.errors reactive updates from Inertia
         },
         onSuccess: () => {
-            // Optionally clear local draft status if save succeeds
-            lastSaved.value = null;
-            autosaveStatus.value = null;
-        }
+            localLastSaved.value = null; // Clear local draft time on successful save
+            autosaveStatus.value = { type: 'success', message: '页面已成功保存！' };
+            setTimeout(() => { // 一段时间后清除成功提示
+                if (autosaveStatus.value?.type === 'success') {
+                    autosaveStatus.value = null;
+                }
+            }, 3000);
+        },
     });
 };
 
-const unlockPageIfNeeded = async () => {
-    // Only unlock if locked by the current user
-    if (props.lockInfo.isLocked && props.lockInfo.lockedBy?.id === pageProps.auth.user?.id) {
-        try {
-            // Prefer sendBeacon for reliability on page exit
-            if (navigator.sendBeacon) {
-                const url = route('wiki.unlock');
-                // sendBeacon needs specific data format, typically FormData or Blob
-                const data = new URLSearchParams();
-                data.append('page_id', props.page.id);
-                data.append('_token', pageProps.csrf); // Assuming csrf token is available globally
-                navigator.sendBeacon(url, data);
-                console.log('Sent unlock request via sendBeacon');
-            } else {
-                // Fallback to axios for browsers without sendBeacon support
-                await axios.post(route('wiki.unlock'), { page_id: props.page.id });
-                console.log('Sent unlock request via axios');
-            }
-        } catch (error) {
-            // Log but don't block user experience, especially on page exit
-            console.warn('Failed to unlock page on finish/unmount:', error.response?.data || error.message);
-        }
-    }
-};
-
-const forceUnlockPage = async () => {
-    if (!canForceUnlock.value) return;
-
-    if (confirm(`确定要强制解锁由 ${props.lockInfo.lockedBy?.name || '其他用户'} 锁定的页面吗？这可能会导致对方未保存的更改丢失。`)) {
-        try {
-            await axios.post(route('wiki.unlock'), { page_id: props.page.id });
-            // Reload the page to reflect the unlocked state
-            router.reload({ preserveState: false }); // false to force fresh data
-            alert('页面已强制解锁。');
-        } catch (error) {
-            console.error('强制解锁页面失败:', error.response?.data || error.message);
-            alert(`强制解锁失败: ${error.response?.data?.message || '未知错误'}`);
-        }
-    }
-};
 
 // --- Lifecycle Hooks ---
 onMounted(() => {
@@ -311,46 +284,52 @@ onMounted(() => {
     }
     // Add listener for page unload
     window.addEventListener('beforeunload', unlockPageIfNeeded);
+    console.log('Edit page mounted. Editable:', isEditable.value);
+
+    // 监听来自 Inertia 的错误 (保持不变)
+    watch(() => props.errors, (newErrors) => {
+        if (newErrors) {
+            form.errors = newErrors;
+        }
+    }, { deep: true });
 });
 
 onBeforeUnmount(() => {
-    if (lockRefreshTimer) {
-        clearInterval(lockRefreshTimer);
-        lockRefreshTimer = null;
+    // 组件卸载时通知后端用户离开
+    const user = pageProps.auth.user;
+    if (user) {
+        // 使用 sendBeacon 尝试发送，如果不支持或失败也无妨
+        try {
+            if (navigator.sendBeacon) {
+                const url = route('wiki.editors.unregister', { page: props.page.id });
+                const formData = new FormData();
+                // 不需要发送额外数据，后端通过 session 获取用户
+                navigator.sendBeacon(url, formData);
+                console.log('Sent unregister request via sendBeacon');
+            } else {
+                // 不使用 axios fallback，避免阻塞页面关闭
+                console.log('sendBeacon not supported, skipping unregister on unload.');
+            }
+        } catch (e) {
+            console.warn('Error sending unregister beacon:', e);
+        }
     }
-    // Attempt to unlock on component unmount (e.g., navigating away SPA-style)
-    unlockPageIfNeeded();
-    // Remove listener
-    window.removeEventListener('beforeunload', unlockPageIfNeeded);
 });
 
-const refreshLock = async () => {
-    // Check if still locked by the current user before refreshing
-    if (props.lockInfo.isLocked && props.lockInfo.lockedBy?.id === pageProps.auth.user?.id) {
-        try {
-            await axios.post(route('wiki.refresh-lock'), { page_id: props.page.id });
-        } catch (error) {
-            console.error('刷新页面锁失败:', error.response?.data || error.message);
-            // Stop refreshing if it fails, maybe the lock expired or server issue
-            if (lockRefreshTimer) {
-                clearInterval(lockRefreshTimer);
-                lockRefreshTimer = null;
-                console.warn("Lock refresh failed, stopping timer. Lock might have expired.");
-                // Notify user about the potential lock loss
-                alert("您的页面锁定已过期或刷新失败，请保存您的更改并刷新页面。");
-            }
-        }
-    } else {
-        // If not locked by current user anymore, stop the timer
-        if (lockRefreshTimer) {
-            clearInterval(lockRefreshTimer);
-            lockRefreshTimer = null;
-        }
-    }
-};
 
 </script>
 
 <style>
+.disabled\:bg-gray-100:disabled {
+    background-color: #f3f4f6;
+}
+
+.disabled\:cursor-not-allowed:disabled {
+    cursor: not-allowed;
+}
+
+.min-h-\[20px\] {
+    min-height: 20px;
+}
 /* Add any specific styles for the edit page if needed */
 </style>

@@ -1,6 +1,6 @@
 <?php
-// FileName: /var/www/Solarmax3Wiki/resources/lang/zh/auth.php
 
+// FileName: /var/www/Solarmax3Wiki/resources/lang/zh/auth.php
 
 return [
 

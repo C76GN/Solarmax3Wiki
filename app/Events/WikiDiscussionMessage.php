@@ -4,7 +4,6 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -15,14 +14,14 @@ class WikiDiscussionMessage implements ShouldBroadcast
 
     /**
      * 页面ID
-     * 
+     *
      * @var int
      */
     public $pageId;
-    
+
     /**
      * 消息数据
-     * 
+     *
      * @var array
      */
     public $message;
@@ -30,8 +29,8 @@ class WikiDiscussionMessage implements ShouldBroadcast
     /**
      * 创建新事件实例
      *
-     * @param int $pageId 页面ID
-     * @param array $message 消息数据
+     * @param  int  $pageId  页面ID
+     * @param  array  $message  消息数据
      * @return void
      */
     public function __construct(int $pageId, array $message)
@@ -47,9 +46,9 @@ class WikiDiscussionMessage implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return new Channel('wiki.page.' . $this->pageId);
+        return new Channel('wiki.page.'.$this->pageId);
     }
-    
+
     /**
      * 获取广播事件名称
      *

@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Traits\LogsActivity;
 
 class WikiVersion extends Model
 {
     use LogsActivity;
-    
+
     protected $fillable = [
         'wiki_page_id',
         'content',
@@ -17,26 +17,26 @@ class WikiVersion extends Model
         'version_number',
         'comment',
         'is_current',
-        'diff_from_previous'
+        'diff_from_previous',
     ];
-    
+
     protected $casts = [
         'is_current' => 'boolean',
-        'diff_from_previous' => 'array'
+        'diff_from_previous' => 'array',
     ];
-    
+
     // 关联页面
     public function page(): BelongsTo
     {
         return $this->belongsTo(WikiPage::class, 'wiki_page_id');
     }
-    
+
     // 关联创建者
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-    
+
     // 计算与前一版本的差异
     public function calculateDiff(string $previousContent): array
     {

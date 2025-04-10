@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * 缓存系统数据表迁移
- * 
+ *
  * 本迁移创建Laravel数据库缓存驱动所需的表结构
  * 包括：缓存数据表和缓存锁表
  */
@@ -14,10 +14,8 @@ return new class extends Migration
 {
     /**
      * 执行迁移
-     * 
+     *
      * 创建缓存系统所需的数据表
-     * 
-     * @return void
      */
     public function up(): void
     {
@@ -38,10 +36,8 @@ return new class extends Migration
 
     /**
      * 回滚迁移
-     * 
+     *
      * 删除所有已创建的缓存相关表
-     * 
-     * @return void
      */
     public function down(): void
     {

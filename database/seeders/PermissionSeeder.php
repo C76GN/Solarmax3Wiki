@@ -2,22 +2,28 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Role;
 use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Collection as SupportCollection; // Import Support Collection for intermediate use
-use Illuminate\Database\Eloquent\Collection as EloquentCollection; // Import Eloquent Collection for return type
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Seeder;
+// Import Support Collection for intermediate use
+use Illuminate\Support\Facades\DB; // Import Eloquent Collection for return type
 
 class PermissionSeeder extends Seeder
 {
     private const ROLE_ADMIN = 'admin';
+
     private const ROLE_EDITOR = 'editor';
+
     private const ROLE_RESOLVER = 'conflict_resolver'; // Define constant
+
     private const GROUP_ROLE = 'role';
+
     private const GROUP_USER = 'user';
+
     private const GROUP_LOG = 'log';
+
     private const GROUP_WIKI = 'wiki'; // Define constant for wiki group
 
     public function run(): void
@@ -36,10 +42,10 @@ class PermissionSeeder extends Seeder
 
         // Check if permissions were actually created/retrieved
         if ($permissions->isEmpty() && count($this->getPermissionsConfig()) > 0) {
-             $this->command->error('权限未能成功创建或获取，请检查数据库和代码。');
-             return; // Stop seeding if permissions failed
-        }
+            $this->command->error('权限未能成功创建或获取，请检查数据库和代码。');
 
+            return; // Stop seeding if permissions failed
+        }
 
         $adminRole = $this->createAdminRole($permissions); // Pass all permissions
         $editorRole = $this->createEditorRole($permissions);
@@ -87,6 +93,7 @@ class PermissionSeeder extends Seeder
         // Sync all permission IDs from the Eloquent Collection
         $adminRole->permissions()->sync($permissions->pluck('id'));
         $this->command->info('管理员角色创建/更新完成，已分配所有权限');
+
         return $adminRole;
     }
 
@@ -105,13 +112,14 @@ class PermissionSeeder extends Seeder
             'wiki.view',
             'wiki.create',
             'wiki.edit',
-            'wiki.comment'
+            'wiki.comment',
         ];
         // Filter permissions by name and get IDs
         $permissionIds = $permissions->whereIn('name', $editorPermissionNames)->pluck('id');
         $editorRole->permissions()->sync($permissionIds);
 
         $this->command->info('编辑角色创建/更新完成，已分配相关权限');
+
         return $editorRole;
     }
 
@@ -129,14 +137,15 @@ class PermissionSeeder extends Seeder
         $resolverPermissionNames = [
             'wiki.view',
             'wiki.resolve_conflict',
-            'wiki.history' // Allow viewing history to help resolve
+            'wiki.history', // Allow viewing history to help resolve
             // Consider if wiki.edit is strictly needed or just resolve permission
         ];
         // Filter permissions by name and get IDs
-         $permissionIds = $permissions->whereIn('name', $resolverPermissionNames)->pluck('id');
+        $permissionIds = $permissions->whereIn('name', $resolverPermissionNames)->pluck('id');
         $resolverRole->permissions()->sync($permissionIds);
 
         $this->command->info('冲突解决者角色创建/更新完成，已分配相关权限');
+
         return $resolverRole;
     }
 
@@ -148,30 +157,30 @@ class PermissionSeeder extends Seeder
 
         $user = User::where('email', 'user@example.com')->first();
         if ($user) {
-             // Ensure regular user has NO special roles initially from this seeder
-             if ($user->roles()->whereIn('name', [self::ROLE_ADMIN, self::ROLE_EDITOR, self::ROLE_RESOLVER])->exists()) {
-                 $user->roles()->detach(); // Or only detach the specific roles
-                 $this->command->info("重置了用户 user@example.com 的角色为空 (确保为普通用户)");
-             } else {
-                 $this->command->info("用户 user@example.com (普通用户) 角色保持不变");
-             }
+            // Ensure regular user has NO special roles initially from this seeder
+            if ($user->roles()->whereIn('name', [self::ROLE_ADMIN, self::ROLE_EDITOR, self::ROLE_RESOLVER])->exists()) {
+                $user->roles()->detach(); // Or only detach the specific roles
+                $this->command->info('重置了用户 user@example.com 的角色为空 (确保为普通用户)');
+            } else {
+                $this->command->info('用户 user@example.com (普通用户) 角色保持不变');
+            }
         } else {
-             $this->command->warn("未找到测试用户 user@example.com");
+            $this->command->warn('未找到测试用户 user@example.com');
         }
     }
 
-     // Helper method for assigning roles
-     private function assignRoleToUser(string $email, Role $role, string $roleDisplayName): void
-     {
-         $user = User::where('email', $email)->first();
-         if ($user) {
-             // Use sync to ensure only this role is assigned (or syncWithoutDetaching if roles should be additive)
-             $user->roles()->sync([$role->id]);
-             $this->command->info("已为用户 {$email} 分配 '{$roleDisplayName}' 角色");
-         } else {
-             $this->command->warn("未找到测试用户 {$email}，跳过角色分配");
-         }
-     }
+    // Helper method for assigning roles
+    private function assignRoleToUser(string $email, Role $role, string $roleDisplayName): void
+    {
+        $user = User::where('email', $email)->first();
+        if ($user) {
+            // Use sync to ensure only this role is assigned (or syncWithoutDetaching if roles should be additive)
+            $user->roles()->sync([$role->id]);
+            $this->command->info("已为用户 {$email} 分配 '{$roleDisplayName}' 角色");
+        } else {
+            $this->command->warn("未找到测试用户 {$email}，跳过角色分配");
+        }
+    }
 
     private function getPermissionsConfig(): array
     {
@@ -190,7 +199,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'wiki.manage_tags', 'display_name' => '管理Wiki标签', 'group' => self::GROUP_WIKI, 'description' => '允许创建、编辑、删除Wiki标签'],
             ['name' => 'wiki.moderate_comments', 'display_name' => '管理Wiki评论', 'group' => self::GROUP_WIKI, 'description' => '允许编辑或删除他人的评论'],
 
-             // Role Management Group
+            // Role Management Group
             ['name' => 'role.view', 'display_name' => '查看角色', 'group' => self::GROUP_ROLE, 'description' => '允许查看系统中的所有角色及其权限'],
             ['name' => 'role.create', 'display_name' => '创建角色', 'group' => self::GROUP_ROLE, 'description' => '允许创建新的用户角色'],
             ['name' => 'role.edit', 'display_name' => '编辑角色', 'group' => self::GROUP_ROLE, 'description' => '允许编辑现有角色的名称、描述和权限'],

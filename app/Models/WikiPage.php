@@ -2,21 +2,18 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Traits\LogsActivity;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Log;
 
 class WikiPage extends Model
 {
-    use HasFactory, Notifiable, LogsActivity;
-
-    const DEFAULT_LOCK_DURATION_MINUTES = 5; // 定义锁的默认持续时间（分钟）
+    use HasFactory, LogsActivity, Notifiable;
 
     protected $fillable = [
         'title',
@@ -27,9 +24,6 @@ class WikiPage extends Model
         'is_locked',
         'locked_by',
         'locked_until',
-        // 移除 parent_id 和 order
-        // 'parent_id',
-        // 'order',
     ];
 
     protected $casts = [
@@ -39,7 +33,9 @@ class WikiPage extends Model
 
     // 页面状态常量
     const STATUS_DRAFT = 'draft';
+
     const STATUS_PUBLISHED = 'published';
+
     const STATUS_CONFLICT = 'conflict';
 
     /**
@@ -96,8 +92,8 @@ class WikiPage extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(WikiComment::class)
-                    ->whereNull('parent_id')
-                    ->where('is_hidden', false); // 添加条件只获取未隐藏的顶级评论
+            ->whereNull('parent_id')
+            ->where('is_hidden', false); // 添加条件只获取未隐藏的顶级评论
     }
 
     /**
@@ -133,100 +129,72 @@ class WikiPage extends Model
         return $this->is_locked && $this->locked_until && $this->locked_until->isFuture();
     }
 
-    /**
-     * 检查页面是否被其他用户锁定
-     */
-     public function isLockedByAnotherUser(): bool
-     {
-        $currentUser = Auth::user();
-        // 页面已锁定，存在当前用户，且锁定者不是当前用户
-        return $this->isLocked() && $currentUser && $this->locked_by !== $currentUser->id;
-     }
-
-    /**
-     * 锁定页面
-     */
-    public function lock(User $user, int $minutes = self::DEFAULT_LOCK_DURATION_MINUTES): void
+    public function isLockedDueToConflict(): bool
     {
-        $now = now();
-        $expiresAt = $now->addMinutes($minutes);
-        $this->update([
-            'is_locked' => true,
-            'locked_by' => $user->id,
-            'locked_until' => $expiresAt
-        ]);
-         Log::info("Page {$this->id} ('{$this->title}') locked by user {$user->id} ({$user->name}) until {$expiresAt}");
+        // 简单的实现可以直接检查 status
+        return $this->status === self::STATUS_CONFLICT;
+        // 或者，如果保留 is_locked 字段并与 conflict 同步：
+        // return $this->is_locked && $this->status === self::STATUS_CONFLICT;
     }
-
-    /**
-     * 解锁页面
-     */
-    public function unlock(): void
-    {
-        if ($this->is_locked || $this->locked_by) {
-            $previouslyLockedBy = $this->locked_by;
-            $previouslyLockedUntil = $this->locked_until ? $this->locked_until->toDateTimeString() : 'N/A';
-
-            $this->update([
-                'is_locked' => false,
-                'locked_by' => null,
-                'locked_until' => null
-            ]);
-
-            Log::info("Page {$this->id} ('{$this->title}') unlocked. Was locked by: {$previouslyLockedBy} until {$previouslyLockedUntil}.");
-        } else {
-            // Log::debug("Page {$this->id} ('{$this->title}') was already unlocked.");
-        }
-    }
-
-     /**
-     * 刷新页面锁定的时间
-     */
-     public function refreshLock(int $minutes = self::DEFAULT_LOCK_DURATION_MINUTES): bool
-     {
-        if ($this->isLocked()) {
-            $newExpiry = now()->addMinutes($minutes);
-            $this->update([
-                'locked_until' => $newExpiry
-            ]);
-            // Log::info("Lock refreshed for Page {$this->id} ('{$this->title}') until {$newExpiry}");
-            return true;
-        }
-         Log::warning("Attempted to refresh lock for Page {$this->id} ('{$this->title}'), but it was not locked or lock expired.");
-        return false;
-     }
 
     /**
      * 将页面标记为冲突状态
      */
-    public function markAsConflict(): void
+    public function markAsConflict(): bool
     {
         $previousStatus = $this->status;
-        $this->update([
+        // 进入冲突状态时，可以设置 is_locked = true，locked_until=null
+        $updated = $this->update([
             'status' => self::STATUS_CONFLICT,
-            // 冲突时通常也需要解除编辑锁，允许有权限者解决
-            'is_locked' => true, // 或者 false，取决于业务逻辑，这里先保持锁定，解决者需要有解锁权限或逻辑
-            'locked_by' => null, // 清除锁定者，因为现在是冲突状态
-            'locked_until' => null // 清除锁定时间
+            'is_locked' => true, // 标记为锁定状态，表示需要解决冲突
+            'locked_by' => null, // 可以为空，或指向一个系统标记
+            'locked_until' => null, // 冲突锁定没有时间限制
         ]);
-         Log::warning("Page {$this->id} ('{$this->title}') marked as CONFLICT. Previous status: {$previousStatus}");
-         // 记录冲突日志
-         $this->logCustomActivity('conflict_detected', ['previous_status' => $previousStatus]);
+        if ($updated) {
+            Log::warning("Page {$this->id} ('{$this->title}') marked as CONFLICT. Previous status: {$previousStatus}");
+            $this->logCustomActivity('conflict_detected', ['previous_status' => $previousStatus]);
+            // 更新模型状态
+            $this->status = self::STATUS_CONFLICT;
+            $this->is_locked = true;
+            $this->locked_by = null;
+            $this->locked_until = null;
+        } else {
+            Log::error("Failed to mark page {$this->id} as CONFLICT in the database.");
+        }
+
+        return $updated;
     }
 
-     /**
-      * 将页面标记为已解决冲突状态
-      */
-     public function markAsResolved(User $resolver): void
-     {
-        $this->update([
-            'status' => self::STATUS_PUBLISHED, // 恢复为发布状态
-            'is_locked' => false,              // 解除锁定
+    /**
+     * 将页面标记为已解决冲突状态
+     */
+    public function markAsResolved(User $resolver): bool
+    {
+        if ($this->status !== self::STATUS_CONFLICT) {
+            Log::warning("Attempted to mark page {$this->id} as resolved, but it was not in conflict status.");
+
+            return true; // 不是冲突状态，认为操作"成功"（无事发生）
+        }
+
+        // 解决冲突后，状态变为 published，解除锁定标记
+        $updated = $this->update([
+            'status' => self::STATUS_PUBLISHED,
+            'is_locked' => false,
             'locked_by' => null,
-            'locked_until' => null
+            'locked_until' => null,
         ]);
-         Log::info("Page {$this->id} ('{$this->title}') conflict marked as RESOLVED by user {$resolver->id}.");
-         // 记录冲突解决日志
-         $this->logCustomActivity('conflict_resolved', ['resolved_by' => $resolver->id]);
-     }
+        if ($updated) {
+            Log::info("Page {$this->id} ('{$this->title}') conflict marked as RESOLVED by user {$resolver->id}.");
+            $this->logCustomActivity('conflict_resolved', ['resolved_by' => $resolver->id]);
+            // 更新模型状态
+            $this->status = self::STATUS_PUBLISHED;
+            $this->is_locked = false;
+            $this->locked_by = null;
+            $this->locked_until = null;
+        } else {
+            Log::error("Failed to mark page {$this->id} as RESOLVED in the database.");
+        }
+
+        return $updated;
+    }
 }

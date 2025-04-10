@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * 角色表迁移
- * 
+ *
  * 创建角色管理系统所需的角色表，用于存储系统中的各类角色定义
  * 该表是RBAC（基于角色的访问控制）模型的核心组成部分
  */
@@ -14,10 +14,8 @@ return new class extends Migration
 {
     /**
      * 执行迁移
-     * 
+     *
      * 创建角色表及其相关字段结构
-     * 
-     * @return void
      */
     public function up(): void
     {
@@ -33,10 +31,8 @@ return new class extends Migration
 
     /**
      * 回滚迁移
-     * 
+     *
      * 删除角色表
-     * 
-     * @return void
      */
     public function down(): void
     {

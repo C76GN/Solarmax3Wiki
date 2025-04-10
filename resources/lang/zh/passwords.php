@@ -1,6 +1,6 @@
 <?php
-// FileName: /var/www/Solarmax3Wiki/resources/lang/zh/passwords.php
 
+// FileName: /var/www/Solarmax3Wiki/resources/lang/zh/passwords.php
 
 return [
 
@@ -18,6 +18,6 @@ return [
     'sent' => '我们已通过电子邮件发送您的密码重置链接。',
     'throttled' => '请稍候再试。',
     'token' => '此密码重置令牌无效。',
-    'user' => "我们找不到使用该电子邮件地址的用户。",
+    'user' => '我们找不到使用该电子邮件地址的用户。',
 
 ];

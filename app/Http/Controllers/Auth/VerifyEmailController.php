@@ -18,7 +18,7 @@ class VerifyEmailController extends Controller
      * 当用户点击验证邮件中的链接时，验证用户邮箱
      * 如果邮箱验证成功，触发Verified事件
      *
-     * @param EmailVerificationRequest $request 邮箱验证请求
+     * @param  EmailVerificationRequest  $request  邮箱验证请求
      * @return RedirectResponse 重定向响应
      */
     public function __invoke(EmailVerificationRequest $request): RedirectResponse

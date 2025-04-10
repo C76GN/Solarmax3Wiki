@@ -7,7 +7,7 @@ use Inertia\Response;
 
 /**
  * 首页控制器
- * 
+ *
  * 负责处理网站主页相关的请求
  */
 class HomeController extends Controller

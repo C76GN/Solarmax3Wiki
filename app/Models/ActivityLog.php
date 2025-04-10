@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Log; // 引入 Log facade
@@ -17,7 +17,7 @@ class ActivityLog extends Model
         'subject_id',
         'properties',
         'ip_address',
-        'user_agent'
+        'user_agent',
     ];
 
     /**
@@ -26,7 +26,7 @@ class ActivityLog extends Model
      * @var array
      */
     protected $casts = [
-        'properties' => 'array'
+        'properties' => 'array',
     ];
 
     /**
@@ -65,6 +65,7 @@ class ActivityLog extends Model
                     'unlock' => '解锁页面',
                     'editor_active' => '编辑活动', // 用于协作服务
                 ];
+
                 return $actions[$attributes['action']] ?? $attributes['action'];
             }
         );
@@ -79,7 +80,7 @@ class ActivityLog extends Model
             get: function ($value, array $attributes) {
                 // 从 $attributes['subject_type'] 获取类名
                 $fullClassName = $attributes['subject_type'] ?? null;
-                if (!$fullClassName) {
+                if (! $fullClassName) {
                     return '未知类型';
                 }
                 // 提取短类名
@@ -95,6 +96,7 @@ class ActivityLog extends Model
                     'Role' => '角色',
                     'User' => '用户',
                 ];
+
                 return $types[$shortClassName] ?? $shortClassName; // 如果未定义，返回短类名
             }
         );
@@ -103,15 +105,15 @@ class ActivityLog extends Model
     /**
      * 静态方法，用于快速记录日志。
      *
-     * @param string $action 操作类型 (e.g., 'create', 'update')
-     * @param Model $subject 操作对象
-     * @param array|null $properties 额外属性 (e.g., 更改详情)
+     * @param  string  $action  操作类型 (e.g., 'create', 'update')
+     * @param  Model  $subject  操作对象
+     * @param  array|null  $properties  额外属性 (e.g., 更改详情)
      * @return static|null 返回创建的日志记录或null（如果失败）
      */
     public static function log(string $action, Model $subject, ?array $properties = null): ?self
     {
         // 确保在测试等环境中 request() 和 auth() 可用
-        if (!app()->runningInConsole() || app()->runningUnitTests()) { // 在测试中也可能需要记录
+        if (! app()->runningInConsole() || app()->runningUnitTests()) { // 在测试中也可能需要记录
             try {
                 $request = request(); // 获取当前请求
                 $userId = $request->user()?->id; // 获取当前登录用户ID
@@ -143,6 +145,7 @@ class ActivityLog extends Model
             ]);
         } catch (\Exception $e) {
             Log::error("Failed to create ActivityLog entry: {$e->getMessage()}");
+
             return null;
         }
     }

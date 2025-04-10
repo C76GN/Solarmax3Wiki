@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 
 /**
  * 身份验证路由
- * 
+ *
  * 本文件定义了所有与用户身份验证相关的路由，包括：
  * - 用户注册与登录
  * - 密码重置流程
@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Route;
 
 /**
  * 游客路由组
- * 
+ *
  * 这些路由只对未登录的用户可用
  */
 Route::middleware('guest')->group(function () {
@@ -49,7 +49,7 @@ Route::middleware('guest')->group(function () {
         ->name('password.request');
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
         ->name('password.email');
-    
+
     // 重置密码表单
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
         ->name('password.reset');
@@ -59,7 +59,7 @@ Route::middleware('guest')->group(function () {
 
 /**
  * 已认证用户路由组
- * 
+ *
  * 这些路由只对已登录的用户可用
  */
 Route::middleware('auth')->group(function () {
@@ -69,12 +69,12 @@ Route::middleware('auth')->group(function () {
     // 验证邮箱提示页面
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
-    
+
     // 验证邮箱链接处理
     Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
         ->middleware(['signed', 'throttle:6,1']) // 签名链接 + 频率限制
         ->name('verification.verify');
-    
+
     // 重新发送验证邮件
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1') // 防止滥用
@@ -87,7 +87,7 @@ Route::middleware('auth')->group(function () {
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
-    
+
     // 更新密码
     Route::put('password', [PasswordController::class, 'update'])
         ->name('password.update');

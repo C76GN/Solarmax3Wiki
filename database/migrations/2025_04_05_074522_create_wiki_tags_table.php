@@ -13,17 +13,17 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug')->unique();
             $table->timestamps();
-            
+
             $table->index('slug');
         });
-        
+
         // 创建页面标签关联表
         Schema::create('wiki_page_tag', function (Blueprint $table) {
             $table->id();
             $table->foreignId('wiki_page_id')->constrained()->onDelete('cascade');
             $table->foreignId('wiki_tag_id')->constrained()->onDelete('cascade');
             $table->timestamps();
-            
+
             $table->unique(['wiki_page_id', 'wiki_tag_id']);
         });
     }

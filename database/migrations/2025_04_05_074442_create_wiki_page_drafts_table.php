@@ -15,7 +15,7 @@ return new class extends Migration
             $table->longText('content');
             $table->timestamp('last_saved_at');
             $table->timestamps();
-            
+
             $table->index(['wiki_page_id', 'user_id']);
             $table->unique(['wiki_page_id', 'user_id']);
         });

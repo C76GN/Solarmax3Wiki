@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * 队列系统相关数据表迁移
- * 
+ *
  * 创建Laravel队列系统所需的表结构，包括：
  * - 队列任务表
  * - 批量任务表
@@ -16,10 +16,8 @@ return new class extends Migration
 {
     /**
      * 执行迁移
-     * 
+     *
      * 创建队列系统所需的所有数据表
-     * 
-     * @return void
      */
     public function up(): void
     {
@@ -62,10 +60,8 @@ return new class extends Migration
 
     /**
      * 回滚迁移
-     * 
+     *
      * 按照依赖关系的反序删除所有创建的表
-     * 
-     * @return void
      */
     public function down(): void
     {
