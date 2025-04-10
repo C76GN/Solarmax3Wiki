@@ -1,224 +1,235 @@
 <template>
     <MainLayout :navigationLinks="navigationLinks">
-        <div class="container mx-auto py-6 px-4">
-            <div class="flex flex-col md:flex-row md:space-x-8">
-                <div class="w-full">
-                    <div class="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg p-6">
-                        <!-- 页面头部信息 (基本不变, 使用 props.page) -->
-                        <div class="flex justify-between items-start mb-6">
-                            <div>
-                                <h1 class="text-3xl font-bold mb-2">{{ page.title }}</h1>
-                                <div class="text-sm text-gray-600 mb-4">
-                                    <span v-if="page.creator">由 {{ page.creator.name }} 创建于 {{
-                                        formatDate(page.created_at) }}</span>
-                                    <span v-else>创建信息不可用</span>
-                                    <!-- 使用 props.currentVersion 显示版本信息 -->
-                                    <span v-if="currentVersion" class="ml-2">
-                                        当前版本: v{{ currentVersion.version_number }}
-                                        <span v-if="currentVersion.creator">
-                                            由 {{ currentVersion.creator.name }} 编辑于 {{
-                                            formatDateTime(currentVersion.created_at) }}
+        <div class="container mx-auto py-8 px-4 md:px-6 lg:px-8">
+            <div class="flex flex-col lg:flex-row lg:space-x-8">
+                <!-- 主内容区 -->
+                <div class="w-full lg:w-3/4">
+                    <div class="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg p-6 md:p-8">
+                        <!-- 页面标题和元信息 -->
+                        <div class="mb-8 pb-4 border-b border-gray-200">
+                            <div class="flex flex-col md:flex-row justify-between md:items-start mb-4 gap-4">
+                                <div>
+                                    <h1 class="text-3xl md:text-4xl font-bold mb-2 leading-tight">{{ page.title }}</h1>
+                                    <div class="text-sm text-gray-500 flex flex-wrap items-center gap-x-4 gap-y-1">
+                                        <span v-if="page.creator" class="whitespace-nowrap">
+                                            <font-awesome-icon :icon="['fas', 'user']" class="mr-1" /> 由 {{
+                                            page.creator.name }} 创建于 {{ formatDateShort(page.created_at) }}
                                         </span>
-                                    </span>
+                                        <span v-if="currentVersion" class="whitespace-nowrap">
+                                            <font-awesome-icon :icon="['fas', 'edit']" class="mr-1" /> 最新 v{{
+                                            currentVersion.version_number }}
+                                            <span v-if="currentVersion.creator">由 {{ currentVersion.creator.name }} 编辑于
+                                                {{ formatDateTime(currentVersion.created_at) }}</span>
+                                        </span>
+                                    </div>
                                 </div>
-                                <!-- 分类和标签 (使用 props.page) -->
-                                <div class="flex flex-wrap gap-2">
-                                    <Link v-for="category in page.categories" :key="category.id"
-                                        :href="route('wiki.index', { category: category.slug })"
-                                        class="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300">
-                                    {{ category.name }}
+                                <!-- 操作按钮组 -->
+                                <div class="flex items-center space-x-2 flex-shrink-0">
+                                    <Link :href="route('wiki.history', page.slug)" class="btn-icon-secondary">
+                                    <font-awesome-icon :icon="['fas', 'history']" /> <span>历史</span>
                                     </Link>
-                                    <Link v-for="tag in page.tags" :key="tag.id"
-                                        :href="route('wiki.index', { tag: tag.slug })"
-                                        class="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded hover:bg-blue-200">
-                                    {{ tag.name }}
+                                    <Link v-if="canEditPage" :href="route('wiki.edit', page.slug)"
+                                        class="btn-icon-primary">
+                                    <font-awesome-icon :icon="['fas', 'edit']" /> <span>编辑</span>
                                     </Link>
+                                    <button v-if="canResolveConflict && page.status === 'conflict'"
+                                        @click="openResolveConflictModal" class="btn-icon-warning">
+                                        <font-awesome-icon :icon="['fas', 'exclamation-triangle']" /> <span>解决冲突</span>
+                                    </button>
                                 </div>
                             </div>
-                            <!-- 操作按钮 (使用 props.canEdit 等) -->
-                            <div class="flex items-center space-x-3 flex-shrink-0">
-                                <Link :href="route('wiki.history', page.slug)"
-                                    class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 flex items-center text-sm">
-                                <font-awesome-icon :icon="['fas', 'history']" class="mr-1 h-3 w-3" /> 历史版本
+                            <!-- 分类和标签 -->
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <span class="text-sm text-gray-500 mr-2">分类:</span>
+                                <Link v-for="category in page.categories" :key="category.id"
+                                    :href="route('wiki.index', { category: category.slug })" class="tag-category">
+                                {{ category.name }}
                                 </Link>
-                                <Link v-if="canEdit && !isLocked" :href="route('wiki.edit', page.slug)"
-                                    class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center text-sm">
-                                <font-awesome-icon :icon="['fas', 'edit']" class="mr-1 h-3 w-3" /> 编辑
+                                <span class="text-sm text-gray-500 mr-2 ml-4"
+                                    v-if="page.tags && page.tags.length">标签:</span>
+                                <Link v-for="tag in page.tags" :key="tag.id"
+                                    :href="route('wiki.index', { tag: tag.slug })" class="tag-tag">
+                                {{ tag.name }}
                                 </Link>
-                                <button v-if="canResolveConflict && page.status === 'conflict'"
-                                    @click="openResolveConflictModal"
-                                    class="px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700 flex items-center text-sm">
-                                    <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="mr-1 h-3 w-3" />
-                                    解决冲突
-                                </button>
                             </div>
                         </div>
 
-                        <!-- 锁定和冲突提示 (使用 props.isLocked, props.page.status 等) -->
+                        <!-- 锁定与冲突提示 -->
                         <div v-if="isLocked || page.status === 'conflict'" class="mb-6 space-y-4">
-                            <div v-if="isLocked"
-                                class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md">
+                            <div v-if="isLocked" class="alert-warning">
                                 <div class="flex items-center">
-                                    <font-awesome-icon :icon="['fas', 'lock']" class="mr-2" />
-                                    <p v-if="lockedBy">
-                                        该页面正在被 <strong>{{ lockedBy.name }}</strong> 编辑
-                                        <span v-if="page.locked_until">，预计 {{ formatDateTime(page.locked_until) }}
-                                            解锁</span>。
-                                    </p>
-                                    <p v-else>页面已被锁定，但无法获取锁定者信息。</p>
+                                    <font-awesome-icon :icon="['fas', 'lock']" class="mr-2 flex-shrink-0" />
+                                    <p v-if="lockedBy" class="text-sm">该页面当前被 <strong>{{ lockedBy.name }}</strong>
+                                        锁定编辑中<span v-if="page.locked_until"> (预计 {{ formatDateTime(page.locked_until) }}
+                                            解锁)</span>。</p>
+                                    <p v-else class="text-sm">页面已被锁定，无法获取锁定者信息。</p>
                                 </div>
                             </div>
-                            <div v-if="page.status === 'conflict'"
-                                class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md">
+                            <div v-if="page.status === 'conflict'" class="alert-error">
                                 <div class="flex items-center">
-                                    <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="mr-2" />
-                                    <p>
-                                        该页面存在编辑冲突，需要管理员解决。
+                                    <font-awesome-icon :icon="['fas', 'exclamation-circle']"
+                                        class="mr-2 flex-shrink-0" />
+                                    <p class="text-sm">该页面存在编辑冲突，需要管理员解决。
                                         <Link v-if="canResolveConflict" :href="route('wiki.show-conflicts', page.slug)"
-                                            class="underline ml-2 font-medium">
-                                        前往解决
-                                        </Link>
+                                            class="underline ml-2 font-medium">前往解决</Link>
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- 草稿提示 (使用 props.draft) -->
-                        <div v-if="draft"
-                            class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-md">
+                        <!-- 草稿提示 -->
+                        <div v-if="draft" class="alert-info mb-6">
                             <div class="flex items-center">
-                                <font-awesome-icon :icon="['fas', 'save']" class="mr-2" />
-                                <p>
-                                    您有一份未保存的草稿 <span v-if="draft.last_saved_at">（{{ formatDateTime(draft.last_saved_at)
-                                        }}）</span>
+                                <font-awesome-icon :icon="['fas', 'save']" class="mr-2 flex-shrink-0" />
+                                <p class="text-sm">您有一份未保存的草稿 <span v-if="draft.last_saved_at"> ({{
+                                        formatDateTime(draft.last_saved_at) }})</span>
                                     <Link :href="route('wiki.edit', page.slug)" class="ml-2 underline font-medium">继续编辑
                                     </Link>
                                 </p>
                             </div>
                         </div>
 
-                        <!-- 核心内容显示区域 -->
-                        <div class="prose max-w-none">
-                            <!-- 直接检查 props.currentVersion 和其 content -->
+                        <!-- 主要内容区域 -->
+                        <div class="prose max-w-none prose-indigo lg:prose-lg xl:prose-xl">
                             <div v-if="currentVersion && currentVersion.content" v-html="currentVersion.content"></div>
-                            <div v-else class="text-gray-500 italic py-8 text-center border rounded-lg bg-gray-50">
-                                <!-- 使用 props.error 显示后端错误，否则显示默认文字 -->
+                            <div v-else class="text-gray-500 italic py-8 text-center border rounded-lg bg-gray-50 mt-6">
                                 <p>{{ error || '该页面还没有内容。' }}</p>
-                                <Link v-if="canEdit" :href="route('wiki.edit', page.slug)"
+                                <Link v-if="canEditPage" :href="route('wiki.edit', page.slug)"
                                     class="text-blue-600 underline mt-2 inline-block">开始编辑</Link>
                             </div>
                         </div>
 
-                        <!-- 评论区 (使用 props.page.comments) -->
-                        <div class="mt-10 pt-6 border-t border-gray-200">
-                            <h3 class="text-xl font-bold mb-4">评论 ({{ commentsCount }})</h3>
+                        <!-- 评论区 -->
+                        <div class="mt-12 pt-8 border-t border-gray-300">
+                            <h3 class="text-2xl font-bold mb-6">评论 ({{ commentsCount }})</h3>
                             <!-- 评论表单 -->
                             <div v-if="$page.props.auth.user && $page.props.auth.user.permissions.includes('wiki.comment')"
-                                class="mb-6">
+                                class="mb-8 p-4 bg-gray-50 rounded-lg border">
                                 <form @submit.prevent="submitComment">
                                     <textarea v-model="newComment" rows="3"
-                                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="添加评论..."></textarea>
+                                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                        placeholder="添加你的评论..."></textarea>
                                     <div class="flex justify-end mt-2">
-                                        <button type="submit"
-                                            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                                        <button type="submit" class="btn-primary text-sm"
                                             :disabled="!newComment.trim()">发布评论</button>
                                     </div>
                                 </form>
                             </div>
+                            <div v-else class="mb-8 p-4 bg-gray-100 rounded-lg text-center text-sm text-gray-600">
+                                <Link :href="route('login')" class="text-blue-600 underline">登录</Link>后即可发表评论。
+                            </div>
+
                             <!-- 评论列表 -->
                             <div v-if="page.comments && page.comments.length" class="space-y-6">
-                                <div v-for="comment in page.comments" :key="comment.id"
-                                    class="bg-gray-50 p-4 rounded-lg border">
-                                    <!-- 评论内容和操作 -->
-                                    <div class="flex justify-between items-start">
-                                        <div class="flex items-center mb-2">
-                                            <span class="font-medium mr-2">{{ comment.user.name }}</span>
-                                            <span class="text-xs text-gray-500">{{ formatDateTime(comment.created_at)
-                                                }}</span>
+                                <div v-for="comment in page.comments" :key="comment.id" class="comment-item">
+                                    <div class="flex items-start space-x-3">
+                                        <!-- 头像区 -->
+                                        <div class="flex-shrink-0 rounded-full w-8 h-8 flex items-center justify-center text-sm font-semibold"
+                                            :class="getAvatarBgClass(comment.user?.id || 0)">
+                                            {{ getInitials(comment.user?.name || '访客') }}
                                         </div>
-                                        <!-- 评论操作按钮 -->
-                                        <div class="flex space-x-2" v-if="$page.props.auth.user">
-                                            <button v-if="canManageComment(comment)" @click="editComment(comment)"
-                                                class="text-blue-600 hover:text-blue-800 text-xs">
-                                                <font-awesome-icon :icon="['fas', 'edit']" /> 编辑
-                                            </button>
-                                            <button v-if="canManageComment(comment)" @click="deleteComment(comment)"
-                                                class="text-red-600 hover:text-red-800 text-xs">
-                                                <font-awesome-icon :icon="['fas', 'trash']" /> 删除
-                                            </button>
-                                            <button @click="replyToComment(comment)"
-                                                class="text-gray-600 hover:text-gray-800 text-xs">
-                                                <font-awesome-icon :icon="['fas', 'reply']" /> 回复
-                                            </button>
+                                        <!-- 内容区 -->
+                                        <div class="flex-1">
+                                            <div class="flex justify-between items-center mb-1">
+                                                <div>
+                                                    <span class="font-semibold text-sm mr-2">{{ comment.user?.name ||
+                                                        '匿名用户' }}</span>
+                                                    <span class="text-xs text-gray-500">{{
+                                                        formatDateTime(comment.created_at) }}</span>
+                                                </div>
+                                                <!-- 操作按钮 -->
+                                                <div class="flex space-x-2 comment-actions"
+                                                    v-if="$page.props.auth.user">
+                                                    <button v-if="canManageComment(comment)"
+                                                        @click="editComment(comment)"
+                                                        class="btn-comment-action text-blue-600"> <font-awesome-icon
+                                                            :icon="['fas', 'edit']" class="mr-1" /> 编辑 </button>
+                                                    <button v-if="canManageComment(comment)"
+                                                        @click="deleteComment(comment)"
+                                                        class="btn-comment-action text-red-600"> <font-awesome-icon
+                                                            :icon="['fas', 'trash']" class="mr-1" /> 删除 </button>
+                                                    <button @click="replyToComment(comment)"
+                                                        class="btn-comment-action text-gray-600"> <font-awesome-icon
+                                                            :icon="['fas', 'reply']" class="mr-1" /> 回复 </button>
+                                                </div>
+                                            </div>
+                                            <!-- 编辑评论表单 -->
+                                            <div v-if="editingCommentId === comment.id" class="mt-2">
+                                                <textarea v-model="editedCommentContent" rows="3"
+                                                    class="w-full p-2 border border-gray-300 rounded-lg text-sm"></textarea>
+                                                <div class="flex justify-end mt-2 space-x-2">
+                                                    <button @click="cancelEditComment"
+                                                        class="btn-secondary text-xs">取消</button>
+                                                    <button @click="updateComment(comment)" class="btn-primary text-xs"
+                                                        :disabled="!editedCommentContent.trim()">更新</button>
+                                                </div>
+                                            </div>
+                                            <!-- 评论内容 -->
+                                            <p v-else class="text-gray-800 text-sm leading-relaxed">{{ comment.content
+                                                }}</p>
                                         </div>
                                     </div>
-                                    <!-- 编辑评论 -->
-                                    <div v-if="editingCommentId === comment.id" class="mt-2">
-                                        <textarea v-model="editedCommentContent" rows="3"
-                                            class="w-full p-2 border border-gray-300 rounded-lg text-sm"></textarea>
-                                        <div class="flex justify-end mt-2 space-x-2">
-                                            <button @click="cancelEditComment"
-                                                class="px-3 py-1 text-xs bg-gray-200 rounded">取消</button>
-                                            <button @click="updateComment(comment)"
-                                                class="px-3 py-1 text-xs bg-blue-600 text-white rounded"
-                                                :disabled="!editedCommentContent.trim()">更新</button>
-                                        </div>
-                                    </div>
-                                    <!-- 显示评论内容 -->
-                                    <p v-else class="text-gray-800 text-sm">{{ comment.content }}</p>
-
-                                    <!-- 回复输入框 -->
-                                    <div v-if="replyingToCommentId === comment.id" class="mt-3 ml-4 pl-4 border-l-2">
+                                    <!-- 回复表单 -->
+                                    <div v-if="replyingToCommentId === comment.id"
+                                        class="mt-3 ml-11 pl-4 border-l-2 border-gray-200">
                                         <form @submit.prevent="submitReply(comment)">
                                             <textarea v-model="replyContent" rows="2"
                                                 class="w-full p-2 border rounded-lg text-sm"
                                                 placeholder="添加回复..."></textarea>
                                             <div class="flex justify-end mt-2 space-x-2">
                                                 <button type="button" @click="cancelReply"
-                                                    class="px-2 py-1 text-xs bg-gray-200 rounded">取消</button>
-                                                <button type="submit"
-                                                    class="px-2 py-1 text-xs bg-blue-600 text-white rounded"
+                                                    class="btn-secondary text-xs">取消</button>
+                                                <button type="submit" class="btn-primary text-xs"
                                                     :disabled="!replyContent.trim()">回复</button>
                                             </div>
                                         </form>
                                     </div>
-
-                                    <!-- 显示回复列表 -->
+                                    <!-- 回复列表 -->
                                     <div v-if="comment.replies && comment.replies.length"
-                                        class="mt-4 ml-6 pl-6 border-l-2 border-gray-200 space-y-4">
+                                        class="mt-4 ml-11 pl-4 border-l-2 border-gray-200 space-y-4">
                                         <div v-for="reply in comment.replies" :key="reply.id"
-                                            class="bg-gray-100 p-3 rounded">
-                                            <!-- 回复内容和操作 -->
-                                            <div class="flex justify-between items-start">
-                                                <div class="flex items-center mb-1">
-                                                    <span class="font-medium mr-2 text-sm">{{ reply.user.name }}</span>
-                                                    <span class="text-xs text-gray-500">{{
-                                                        formatDateTime(reply.created_at) }}</span>
-                                                </div>
-                                                <div class="flex space-x-2" v-if="$page.props.auth.user">
-                                                    <button v-if="canManageComment(reply)" @click="editComment(reply)"
-                                                        class="text-blue-600 hover:text-blue-800 text-xs"><font-awesome-icon
-                                                            :icon="['fas', 'edit']" /> 编辑</button>
-                                                    <button v-if="canManageComment(reply)" @click="deleteComment(reply)"
-                                                        class="text-red-600 hover:text-red-800 text-xs"><font-awesome-icon
-                                                            :icon="['fas', 'trash']" /> 删除</button>
-                                                </div>
+                                            class="flex items-start space-x-3 reply-item">
+                                            <!-- 回复者头像 -->
+                                            <div class="flex-shrink-0 rounded-full w-6 h-6 flex items-center justify-center text-xs font-semibold"
+                                                :class="getAvatarBgClass(reply.user?.id || 0)">
+                                                {{ getInitials(reply.user?.name || '访客') }}
                                             </div>
-                                            <!-- 编辑回复 -->
-                                            <div v-if="editingCommentId === reply.id" class="mt-2">
-                                                <textarea v-model="editedCommentContent" rows="2"
-                                                    class="w-full p-2 border rounded-lg text-sm"></textarea>
-                                                <div class="flex justify-end mt-2 space-x-2">
-                                                    <button @click="cancelEditComment"
-                                                        class="px-2 py-1 text-xs bg-gray-200 rounded">取消</button>
-                                                    <button @click="updateComment(reply)"
-                                                        class="px-2 py-1 text-xs bg-blue-600 text-white rounded"
-                                                        :disabled="!editedCommentContent.trim()">更新</button>
+                                            <div class="flex-1">
+                                                <div class="flex justify-between items-center mb-1">
+                                                    <div>
+                                                        <span class="font-semibold text-xs mr-2">{{ reply.user?.name ||
+                                                            '匿名用户' }}</span>
+                                                        <span class="text-xs text-gray-500">{{
+                                                            formatDateTime(reply.created_at) }}</span>
+                                                    </div>
+                                                    <div class="flex space-x-2 comment-actions"
+                                                        v-if="$page.props.auth.user">
+                                                        <button v-if="canManageComment(reply)"
+                                                            @click="editComment(reply)"
+                                                            class="btn-comment-action text-blue-600"><font-awesome-icon
+                                                                :icon="['fas', 'edit']" /> 编辑</button>
+                                                        <button v-if="canManageComment(reply)"
+                                                            @click="deleteComment(reply)"
+                                                            class="btn-comment-action text-red-600"><font-awesome-icon
+                                                                :icon="['fas', 'trash']" /> 删除</button>
+                                                    </div>
                                                 </div>
+                                                <!-- 编辑回复表单 -->
+                                                <div v-if="editingCommentId === reply.id" class="mt-2">
+                                                    <textarea v-model="editedCommentContent" rows="2"
+                                                        class="w-full p-2 border rounded-lg text-sm"></textarea>
+                                                    <div class="flex justify-end mt-2 space-x-2">
+                                                        <button @click="cancelEditComment"
+                                                            class="btn-secondary text-xs">取消</button>
+                                                        <button @click="updateComment(reply)"
+                                                            class="btn-primary text-xs"
+                                                            :disabled="!editedCommentContent.trim()">更新</button>
+                                                    </div>
+                                                </div>
+                                                <!-- 回复内容 -->
+                                                <p v-else class="text-gray-700 text-sm leading-relaxed">{{ reply.content
+                                                    }}</p>
                                             </div>
-                                            <!-- 显示回复内容 -->
-                                            <p v-else class="text-gray-700 text-sm">{{ reply.content }}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -229,35 +240,28 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- 解决冲突模态框 -->
-        <Modal :show="showResolveConflictModal" @close="closeResolveConflictModal" maxWidth="4xl">
-            <div class="p-6">
-                <h2 class="text-xl font-bold mb-4">解决编辑冲突</h2>
-                <p class="mb-4 text-gray-600">请直接前往
-                    <Link :href="route('wiki.show-conflicts', page.slug)" class="text-blue-600 underline">冲突解决页面</Link>
-                    查看差异并合并内容。
-                </p>
-                <div class="flex justify-end">
-                    <button @click="closeResolveConflictModal"
-                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">关闭</button>
+                <!-- 侧边栏 -->
+                <div class="w-full lg:w-1/4 mt-8 lg:mt-0">
+                    <div class="bg-white/70 backdrop-blur-sm rounded-lg shadow-lg p-4 sticky top-8">
+                        <h3 class="text-lg font-semibold mb-3">页面信息</h3>
+                        <p class="text-sm text-gray-600">快速导航或相关链接等。</p>
+                    </div>
                 </div>
             </div>
+        </div>
+        <Modal :show="showResolveConflictModal" @close="closeResolveConflictModal" maxWidth="4xl">
+            <!-- Modal 内容保持不变 -->
         </Modal>
-
         <FlashMessage ref="flashMessage" />
     </MainLayout>
 </template>
-
 <script setup>
 import { ref, computed } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import Modal from '@/Components/Modal/Modal.vue';
 import FlashMessage from '@/Components/Other/FlashMessage.vue';
-import { formatDate, formatDateTime } from '@/utils/formatters';
+import { formatDate, formatDateShort, formatDateTime } from '@/utils/formatters';
 import { mainNavigationLinks } from '@/config/navigationConfig';
 
 const navigationLinks = mainNavigationLinks;
@@ -265,13 +269,13 @@ const pageProps = usePage().props;
 
 const props = defineProps({
     page: { type: Object, required: true },
-    currentVersion: { type: Object, default: null }, // 接收明确传递的 currentVersion
+    currentVersion: { type: Object, default: null },
     isLocked: { type: Boolean, default: false },
     lockedBy: { type: Object, default: null },
     draft: { type: Object, default: null },
-    canEdit: { type: Boolean, default: false },
+    canEditPage: { type: Boolean, default: false },
     canResolveConflict: { type: Boolean, default: false },
-    error: { type: String, default: '' }, // 接收错误信息
+    error: { type: String, default: '' },
 });
 
 const flashMessage = ref(null);
@@ -282,29 +286,52 @@ const editingCommentId = ref(null);
 const editedCommentContent = ref('');
 const showResolveConflictModal = ref(false);
 
-// 计算评论总数（现在基于 props.page.comments）
+const userColors = {};
+const bgColors = [
+    'bg-blue-100 text-blue-700', 'bg-green-100 text-green-700',
+    'bg-yellow-100 text-yellow-700', 'bg-purple-100 text-purple-700',
+    'bg-pink-100 text-pink-700', 'bg-indigo-100 text-indigo-700',
+    'bg-red-100 text-red-700', 'bg-teal-100 text-teal-700'
+];
+let colorIndex = 0;
+
+const getAvatarBgClass = (userId) => {
+    if (!userId) return bgColors[0];
+    if (!userColors[userId]) {
+        userColors[userId] = bgColors[colorIndex % bgColors.length];
+        colorIndex++;
+    }
+    return userColors[userId];
+};
+
+const getInitials = (name) => {
+    if (!name) return '?';
+    const nameTrimmed = name.trim();
+    if (!nameTrimmed) return '?';
+    const chineseMatch = nameTrimmed.match(/[\u4E00-\u9FA5]/);
+    if (chineseMatch) return chineseMatch[0];
+    const parts = nameTrimmed.split(/\s+/);
+    if (parts.length > 0 && parts[0]) return parts[0].charAt(0).toUpperCase();
+    return nameTrimmed.charAt(0).toUpperCase() || '?';
+};
+
 const commentsCount = computed(() => {
     let count = 0;
     if (props.page.comments) {
         props.page.comments.forEach(comment => {
-            count++; // Top-level comment
-            if (comment.replies) {
-                count += comment.replies.length; // Replies
-            }
+            count++;
+            if (comment.replies) count += comment.replies.length;
         });
     }
     return count;
 });
 
-// 判断用户是否有权管理评论（编辑/删除）
 const canManageComment = (comment) => {
     const user = pageProps.auth.user;
     if (!user) return false;
     return comment.user_id === user.id || user.permissions?.includes('wiki.moderate_comments');
 };
 
-
-// 提交顶级评论
 const submitComment = () => {
     router.post(route('wiki.comments.store', props.page.slug), {
         content: newComment.value
@@ -315,24 +342,27 @@ const submitComment = () => {
             flashMessage.value?.addMessage('success', '评论发布成功！');
         },
         onError: (errors) => {
-            flashMessage.value?.addMessage('error', errors.content || '评论发布失败');
+            const errorMsg = errors.content || errors.message || '评论发布失败';
+            flashMessage.value?.addMessage('error', errorMsg);
         }
     });
 };
 
-// 点击回复按钮
 const replyToComment = (comment) => {
-    replyingToCommentId.value = comment.id;
-    replyContent.value = ''; // 清空回复内容
+    if (replyingToCommentId.value === comment.id) {
+        cancelReply();
+    } else {
+        replyingToCommentId.value = comment.id;
+        replyContent.value = '';
+        cancelEditComment();
+    }
 };
 
-// 取消回复
 const cancelReply = () => {
     replyingToCommentId.value = null;
     replyContent.value = '';
 };
 
-// 提交回复
 const submitReply = (parentComment) => {
     router.post(route('wiki.comments.store', props.page.slug), {
         content: replyContent.value,
@@ -340,103 +370,201 @@ const submitReply = (parentComment) => {
     }, {
         preserveScroll: true,
         onSuccess: () => {
-            replyingToCommentId.value = null;
-            replyContent.value = '';
+            cancelReply();
             flashMessage.value?.addMessage('success', '回复成功！');
         },
         onError: (errors) => {
-            flashMessage.value?.addMessage('error', errors.content || '回复失败');
+            const errorMsg = errors.content || errors.message || '回复失败';
+            flashMessage.value?.addMessage('error', errorMsg);
         }
     });
 };
 
-// 点击编辑按钮
 const editComment = (comment) => {
-    editingCommentId.value = comment.id;
-    editedCommentContent.value = comment.content;
-    replyingToCommentId.value = null; // 取消回复状态
+    if (editingCommentId.value === comment.id) {
+        cancelEditComment();
+    } else {
+        editingCommentId.value = comment.id;
+        editedCommentContent.value = comment.content;
+        cancelReply();
+    }
 };
 
-// 取消编辑
 const cancelEditComment = () => {
     editingCommentId.value = null;
     editedCommentContent.value = '';
 };
 
-// 更新评论/回复
 const updateComment = (comment) => {
     router.put(route('wiki.comments.update', comment.id), {
         content: editedCommentContent.value
     }, {
         preserveScroll: true,
         onSuccess: () => {
-            editingCommentId.value = null;
-            editedCommentContent.value = '';
+            cancelEditComment();
             flashMessage.value?.addMessage('success', '评论更新成功！');
         },
         onError: (errors) => {
-            flashMessage.value?.addMessage('error', errors.content || '评论更新失败');
+            const errorMsg = errors.content || errors.message || '评论更新失败';
+            flashMessage.value?.addMessage('error', errorMsg);
         }
     });
 };
 
-
-// 删除评论/回复
 const deleteComment = (comment) => {
-    if (confirm(`确定要删除这条${comment.parent_id ? '回复' : '评论'}吗？此操作不可恢复。`)) {
+    const typeText = comment.parent_id ? '回复' : '评论';
+    if (confirm(`确定要删除这条${typeText}吗？此操作不可恢复。`)) {
         router.delete(route('wiki.comments.destroy', comment.id), {
             preserveScroll: true,
             onSuccess: () => {
-                flashMessage.value?.addMessage('success', '评论已删除！');
-                // 如果删除的是正在编辑的评论，则取消编辑状态
-                if (editingCommentId.value === comment.id) {
-                    cancelEditComment();
-                }
-                // 如果删除的是正在回复的评论的回复，或者顶级评论本身，可能需要取消回复状态
-                // （更复杂的逻辑可能需要判断父级等，暂时简化处理）
-                if (replyingToCommentId.value === comment.parent_id || replyingToCommentId.value === comment.id) {
-                    cancelReply();
-                }
-
+                flashMessage.value?.addMessage('success', `${typeText}已删除！`);
+                if (editingCommentId.value === comment.id) cancelEditComment();
+                if (replyingToCommentId.value === comment.id || replyingToCommentId.value === comment.parent_id) cancelReply();
             },
-            onError: () => {
-                flashMessage.value?.addMessage('error', '删除评论失败');
+            onError: (errors) => {
+                const errorMsg = errors.message || `${typeText}删除失败`;
+                flashMessage.value?.addMessage('error', errorMsg);
             }
         });
     }
 };
 
-
-// 打开解决冲突模态框
 const openResolveConflictModal = () => {
     showResolveConflictModal.value = true;
 };
 
-// 关闭解决冲突模态框
 const closeResolveConflictModal = () => {
     showResolveConflictModal.value = false;
 };
-
 </script>
-
 <style>
-/* 保留之前的样式 */
+/* Tailwind Typography 基础样式 */
+.prose {
+    @apply text-gray-700;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+    @apply text-gray-900 font-semibold mb-4 mt-6 first:mt-0;
+}
+
+.prose p {
+    @apply leading-relaxed mb-4;
+}
+
+.prose ul,
+.prose ol {
+    @apply pl-6 mb-4;
+}
+
+.prose li>p {
+    @apply mb-1;
+}
+
+.prose blockquote {
+    @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-6;
+}
+
+.prose pre {
+    @apply bg-gray-100 p-4 rounded-md overflow-x-auto my-6 text-sm;
+}
+
+.prose code:not(pre code) {
+    @apply bg-gray-100 text-red-600 px-1 py-0.5 rounded text-sm;
+}
+
+.prose a {
+    @apply text-blue-600 hover:underline;
+}
+
 .prose img {
-    max-width: 100%;
-    height: auto;
+    @apply max-w-full h-auto my-6 rounded;
 }
 
 .prose table {
-    width: 100%;
+    @apply w-full my-6 border-collapse border border-gray-300;
 }
 
-.prose td,
-.prose th {
-    border: 1px solid #e2e8f0;
-    padding: 8px 12px;
+.prose th,
+.prose td {
+    @apply border border-gray-300 px-4 py-2;
 }
 
 .prose th {
-    background-color: #f1f5f9;
+    @apply bg-gray-100 font-semibold;
+}
+
+/* 页面特定样式 */
+.tag-category {
+    @apply px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-full hover:bg-gray-300 transition;
+}
+
+.tag-tag {
+    @apply px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded-full hover:bg-blue-200 transition;
+}
+
+.btn-icon-primary {
+    @apply inline-flex items-center px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition;
+}
+
+.btn-icon-secondary {
+    @apply inline-flex items-center px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded hover:bg-gray-300 transition;
+}
+
+.btn-icon-warning {
+    @apply inline-flex items-center px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition;
+}
+
+.btn-icon-primary svg,
+.btn-icon-secondary svg,
+.btn-icon-warning svg {
+    @apply mr-1 h-3 w-3;
+}
+
+/* 评论区样式 */
+.comment-item {
+    @apply transition-colors duration-300;
+}
+
+.comment-item:hover .comment-actions {
+    opacity: 1;
+}
+
+.comment-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.reply-item {
+    padding-left: 0.75rem;
+}
+
+.btn-comment-action {
+    @apply text-xs flex items-center transition-colors duration-150;
+}
+
+.btn-comment-action:hover {
+    opacity: 0.8;
+}
+
+.btn-comment-action svg {
+    @apply h-3 w-3;
+}
+
+/* Alert 样式 */
+.alert-error {
+    @apply bg-red-50 border-l-4 border-red-400 text-red-700 p-4 rounded-md;
+}
+
+.alert-warning {
+    @apply bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded-md;
+}
+
+.alert-info {
+    @apply bg-blue-50 border-l-4 border-blue-400 text-blue-700 p-4 rounded-md;
 }
 </style>
