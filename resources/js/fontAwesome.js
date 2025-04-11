@@ -1,5 +1,5 @@
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import {
     faSearch, faUser, faBell, faUserGroup, faBarsStaggered,
     faXmark, faLinkSlash, faDownload, faEdit, faHistory,
@@ -11,10 +11,13 @@ import {
     faColumns, faGripLines, faTrashAlt, faMinus, faUnderline,
     faHighlighter, faAlignCenter, faAlignLeft, faAlignRight,
     faAlignJustify, faPaperPlane, faSpinner, faWindowMinimize,
-    faWindowMaximize, faComments, faArrowLeft, faCheck // Added icons
-} from '@fortawesome/free-solid-svg-icons'
-import { faGithub } from '@fortawesome/free-brands-svg-icons'
-import { faFileAlt as faFileAltRegular } from '@fortawesome/free-regular-svg-icons'
+    faWindowMaximize, faComments, faArrowLeft, faCheck,
+    // 添加缺少的图标
+    faFolderOpen, faUserShield, faPlusCircle, faTags, faClipboardList,
+    faFolder, faTag, faComment, faQuestionCircle, faArrowRight
+} from '@fortawesome/free-solid-svg-icons';
+import { faGithub } from '@fortawesome/free-brands-svg-icons';
+import { faFileAlt as faFileAltRegular } from '@fortawesome/free-regular-svg-icons';
 
 library.add(
     faSearch, faUser, faBell, faUserGroup, faBarsStaggered,
@@ -27,9 +30,12 @@ library.add(
     faColumns, faGripLines, faTrashAlt, faMinus, faUnderline,
     faHighlighter, faAlignCenter, faAlignLeft, faAlignRight,
     faAlignJustify, faPaperPlane, faSpinner, faWindowMinimize,
-    faWindowMaximize, faComments, faArrowLeft, faCheck, // Added icons
+    faWindowMaximize, faComments, faArrowLeft, faCheck,
+    // 添加缺少的图标
+    faFolderOpen, faUserShield, faPlusCircle, faTags, faClipboardList,
+    faFolder, faTag, faComment, faQuestionCircle, faArrowRight,
     faGithub,
     faFileAltRegular
-)
+);
 
-export { FontAwesomeIcon }
+export { FontAwesomeIcon };

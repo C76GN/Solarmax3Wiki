@@ -7,14 +7,14 @@ use App\Models\User;
 use App\Models\WikiComment;
 use App\Models\WikiPage;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests; // 1. 引入 AuthorizesRequests Trait
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse; // 1. 引入 AuthorizesRequests Trait
 
 class WikiCommentController extends Controller
 {
@@ -37,7 +37,7 @@ class WikiCommentController extends Controller
             $validated = $request->validate([
                 'content' => 'required|string',
                 'parent_id' => ['nullable', 'exists:wiki_comments,id', function ($attribute, $value, $fail) use ($page) {
-                    if ($value && !WikiComment::where('id', $value)->where('wiki_page_id', $page->id)->exists()) {
+                    if ($value && ! WikiComment::where('id', $value)->where('wiki_page_id', $page->id)->exists()) {
                         $fail('回复的评论不存在或不属于当前页面。');
                     }
                 }],
@@ -46,7 +46,6 @@ class WikiCommentController extends Controller
             // 让 Laravel 的异常处理器处理 Inertia 的验证错误返回
             throw $e;
         }
-
 
         try {
             /** @var User $user */ // 保留类型提示，好习惯
@@ -69,7 +68,7 @@ class WikiCommentController extends Controller
                     ],
                 ]);
         } catch (\Exception $e) {
-            Log::error("Error storing comment for page {$page->id}: " . $e->getMessage());
+            Log::error("Error storing comment for page {$page->id}: ".$e->getMessage());
 
             if ($request->inertia() || $request->wantsJson()) {
                 // 返回通用错误给Inertia
@@ -122,10 +121,11 @@ class WikiCommentController extends Controller
                     ],
                 ]);
         } catch (\Exception $e) {
-            Log::error("Error updating comment {$comment->id}: " . $e->getMessage());
+            Log::error("Error updating comment {$comment->id}: ".$e->getMessage());
             if ($request->inertia() || $request->wantsJson()) {
                 return back()->withErrors(['general' => '评论更新失败，请稍后再试。'])->withInput();
             }
+
             return redirect()->back()
                 ->with('flash', [
                     'message' => [
@@ -135,7 +135,6 @@ class WikiCommentController extends Controller
                 ])->withInput();
         }
     }
-
 
     /**
      * 隐藏评论 (软删除)
@@ -162,10 +161,11 @@ class WikiCommentController extends Controller
                     ],
                 ]);
         } catch (\Exception $e) {
-            Log::error("Error deleting (hiding) comment {$comment->id}: " . $e->getMessage());
+            Log::error("Error deleting (hiding) comment {$comment->id}: ".$e->getMessage());
             if ($request->inertia() || $request->wantsJson()) {
                 return back()->withErrors(['general' => '删除评论失败，请稍后再试。']);
             }
+
             return redirect()->back()
                 ->with('flash', [
                     'message' => [
@@ -176,17 +176,16 @@ class WikiCommentController extends Controller
         }
     }
 
-
     // 日志记录辅助方法 (保持不变)
     protected function logActivity(string $action, Model $subject, ?array $properties = null): void
     {
-        if (app()->runningInConsole() && !app()->runningUnitTests()) {
+        if (app()->runningInConsole() && ! app()->runningUnitTests()) {
             return;
         }
         try {
             ActivityLog::log($action, $subject, $properties);
         } catch (\Exception $e) {
-            Log::error("Failed to log activity: Action={$action}, Subject={$subject->getTable()}:{$subject->getKey()}, Error: " . $e->getMessage());
+            Log::error("Failed to log activity: Action={$action}, Subject={$subject->getTable()}:{$subject->getKey()}, Error: ".$e->getMessage());
         }
     }
 }

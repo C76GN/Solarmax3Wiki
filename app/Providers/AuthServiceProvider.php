@@ -3,11 +3,10 @@
 namespace App\Providers;
 
 // use Illuminate\Support\Facades\Gate; // 如果你还需要定义 Gate，取消注释
-use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
-
-// 引入你的模型和策略
 use App\Models\WikiComment;
+// 引入你的模型和策略
 use App\Policies\WikiCommentPolicy;
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
 {

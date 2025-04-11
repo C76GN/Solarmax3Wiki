@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
@@ -10,7 +11,6 @@ use App\Http\Controllers\WikiCommentController;
 use App\Http\Controllers\WikiController;
 use App\Http\Controllers\WikiTagController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('', [HomeController::class, 'index'])->name('home');
 
@@ -103,9 +103,9 @@ Route::middleware(['auth'])->group(function () {
         Route::middleware('permission:role.delete')->delete('{role}', [RoleController::class, 'destroy'])->where('role', '[0-9]+')->name('destroy');
     });
 
-    Route::get('dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->middleware('verified')->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index']) // 修改这里
+        ->middleware('verified')
+        ->name('dashboard');
 
     Route::prefix('profile')->group(function () {
         Route::get('', [ProfileController::class, 'edit'])->name('profile.edit');

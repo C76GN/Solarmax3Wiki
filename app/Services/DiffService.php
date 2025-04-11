@@ -2,47 +2,43 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Log; // 引入Log
-// 尝试使用 jfcherng/php-diff (如果安装了)
+use Illuminate\Support\Facades\Log;
 use Jfcherng\Diff\Differ;
 use Jfcherng\Diff\Renderer\Html\SideBySide as JfcherngSideBySideRenderer;
-
-// use Jfcherng\Diff\Renderer\Html\SideBySide; // 或者 Unified
-// use Jfcherng\Diff\Renderer\Html\Unified; // 或者 Unified
 
 class DiffService
 {
     /**
-     * Checks for conflicts between two sets of changes based on a common ancestor.
+     * 检查是否存在编辑冲突（三方合并场景）
      *
-     * This implementation is basic. A 3-way merge algorithm would be more robust.
-     * It primarily checks if both users modified the *same line* with different content,
-     * or if one user modified a line deleted by the other. It might miss some complex conflicts.
-     *
-     * @param  string  $baseContent  The original content before edits (user started from).
-     * @param  string  $currentContent  The content currently in the database (potentially changed by others).
-     * @param  string  $newContent  The content being submitted (user's proposed changes).
-     * @return bool True if a conflict is detected, false otherwise.
+     * @param  string  $baseContent  基础版本内容
+     * @param  string  $currentContent  当前数据库中的版本内容
+     * @param  string  $newContent  用户提交的新内容
      */
     public function hasConflict(string $baseContent, string $currentContent, string $newContent): bool
     {
-        // Optimization: If the content hasn't actually changed from the base, no conflict.
+        // 如果新内容和基础版本相同，说明用户没有做修改或撤销了修改，不算冲突
         if ($newContent === $baseContent) {
-            // Log::debug("hasConflict: newContent is same as baseContent. No conflict.");
-            return false;
-        }
-        // Optimization: If current content is same as base, it means no one else edited concurrently.
-        if ($currentContent === $baseContent) {
-            // Log::debug("hasConflict: currentContent is same as baseContent. No conflict.");
-            return false;
-        }
-        // Optimization: If the proposed new content is identical to what's already current, no conflict.
-        if ($newContent === $currentContent) {
-            // Log::debug("hasConflict: newContent is same as currentContent. No conflict (idempotent save).");
             return false;
         }
 
-        // Line-based comparison (Basic approach)
+        // 如果当前数据库版本和基础版本相同，说明在用户编辑期间其他人没有修改，直接接受新内容，不算冲突
+        if ($currentContent === $baseContent) {
+            return false;
+        }
+
+        // 如果新内容和当前数据库内容相同，说明可能是重复提交或无效提交，不算冲突
+        if ($newContent === $currentContent) {
+            // 可以考虑记录日志或返回特定状态
+            return false;
+        }
+
+        // 简单的三方合并冲突检测：
+        // 如果同一行在 currentContent 和 newContent 中相对于 baseContent 都被修改了，
+        // 并且修改的内容不同，则认为是冲突。
+        // 注意：这是一个基础的行级比较，可能无法覆盖所有复杂的合并冲突场景。
+        // 更复杂的场景可能需要更高级的 diff 或合并库。
+
         $baseLines = explode("\n", $baseContent);
         $currentLines = explode("\n", $currentContent);
         $newLines = explode("\n", $newContent);
@@ -57,48 +53,51 @@ class DiffService
             $lineCurrent = $currentLines[$i] ?? null;
             $lineNew = $newLines[$i] ?? null;
 
+            // 检查当前版本和新版本是否都修改了基础版本的该行
             $currentChanged = ($lineBase !== $lineCurrent);
             $newChanged = ($lineBase !== $lineNew);
 
-            // Case 1: Both modified the same original line, but differently.
-            if ($lineBase !== null && $currentChanged && $newChanged && $lineCurrent !== $lineNew) {
+            // 如果两者都修改了，并且修改后的内容不同，则冲突
+            if ($currentChanged && $newChanged && $lineCurrent !== $lineNew) {
                 Log::debug('Conflict detected at line '.($i + 1).": Modified differently. Base='{$lineBase}', Current='{$lineCurrent}', New='{$lineNew}'");
 
                 return true;
             }
 
-            // Case 2: One modified a line that the other deleted.
+            // 检查一方修改，另一方删除的情况
+            // Case 1: Current modified, New deleted the line (compared to base)
             if ($currentChanged && $lineNew === null && $lineBase !== null) {
                 Log::debug('Conflict detected at line '.($i + 1).": Deleted by New, but modified by Current. Base='{$lineBase}', Current='{$lineCurrent}'");
 
                 return true;
             }
+            // Case 2: New modified, Current deleted the line (compared to base)
             if ($newChanged && $lineCurrent === null && $lineBase !== null) {
                 Log::debug('Conflict detected at line '.($i + 1).": Deleted by Current, but modified by New. Base='{$lineBase}', New='{$lineNew}'");
 
                 return true;
             }
 
-            // Case 3: Concurrent insertions at the same position (Harder to detect perfectly without proper 3-way merge)
-            // This basic check might miss adjacent insertions.
+            // 可选：更复杂的场景，例如并发插入不同内容等，可能需要更复杂的逻辑
+            // 例如，检查是否在基础版本不存在的地方（null）同时插入了不同的内容
             if ($lineBase === null && $lineCurrent !== null && $lineNew !== null && $lineCurrent !== $lineNew) {
-                // Both inserted at the same line index, potentially conflicting insertions
                 Log::debug('Potential conflict detected at line '.($i + 1).": Concurrent insertion? Current='{$lineCurrent}', New='{$lineNew}'");
-                // Decide if this constitutes a conflict based on requirements. For safety, maybe return true.
-                // return true;
+                // 根据业务逻辑决定这是否算冲突，通常插入不同内容不算直接冲突，但可能需要合并
+                // return true; // 如果认为并发插入不同内容也是冲突
             }
         }
 
-        // Log::debug("No direct line conflicts detected by basic hasConflict check.");
-        // If no direct conflicts found based on these simple rules.
+        // 没有检测到明显冲突
         return false;
     }
 
     /**
-     * Generates an HTML representation of the differences between two strings.
-     * Attempts to use jfcherng/php-diff if available, otherwise falls back to phpspec/php-diff.
+     * 生成两个文本内容之间的 HTML 差异视图 (Side by Side)。
+     * 优先使用 jfcherng/php-diff 库。
      *
-     * @return string HTML diff view or error message.
+     * @param  string  $oldContent  旧版本内容
+     * @param  string  $newContent  新版本内容
+     * @return string HTML 格式的差异视图，或在出错时返回错误消息的 HTML。
      */
     public function generateDiffHtml(string $oldContent, string $newContent): string
     {
@@ -106,82 +105,82 @@ class DiffService
         if (class_exists(Differ::class) && class_exists(JfcherngSideBySideRenderer::class)) {
             try {
                 $differOptions = [
-                    'ignoreWhitespace' => true,
-                    'context' => 3, // 显示上下文行数
+                    'ignoreWhitespace' => true, // 忽略空白差异
+                    'context' => 3,          // 上下文行数, 设为 null 或 -1 显示所有行
+                    // 'ignoreCase' => false,      // 是否忽略大小写，默认为 false
+                    // 'ignoreLineEnding' => false, // 是否忽略行尾差异，默认为 false
                 ];
                 $rendererOptions = [
-                    'detailLevel' => 'word', // 对比到单词级别
-                    'language' => 'eng',    // 语言设置（可能影响特定语言的处理）
-                    'lineNumbers' => true,   // 显示行号
+                    'detailLevel' => 'word',       // 'line', 'word', 'char' - 差异对比粒度
+                    'language' => 'eng',         // 'eng' 或 'chs' 摘要语言
+                    'lineNumbers' => true,         // 显示行号
+                    'wrapLock' => false,        // 不自动换行长内容，允许水平滚动
+                    'lineChangeIndicator' => '↕', // 行变化指示符
+                    'withoutCopyright' => true, // 不显示库的版权信息
                 ];
 
                 $differ = new Differ(explode("\n", $oldContent), explode("\n", $newContent), $differOptions);
-                // 使用别名 JfcherngSideBySideRenderer
+
+                // 明确使用 SideBySide Renderer
                 $renderer = new JfcherngSideBySideRenderer($rendererOptions);
 
                 return $renderer->render($differ);
             } catch (\Throwable $e) {
                 Log::error('Error generating diff HTML using jfcherng/php-diff: '.$e->getMessage());
 
-                // 如果 jfcherng 失败，可以选择不尝试旧库，直接返回错误
                 return "<div class='p-4 bg-red-100 text-red-700'>生成差异视图时出错(jfcherng): ".htmlspecialchars($e->getMessage()).'</div>';
-                // 或者继续尝试旧库（如下）
             }
         } else {
             Log::warning('jfcherng/php-diff library not found or required classes are missing. Falling back to phpspec/php-diff.');
         }
 
-        // 备选方案: phpspec/php-diff (如果上面的库不存在或失败)
-        // 注意：这个库比较老旧，可能不再维护，建议优先使用 jfcherng
+        // 回退到 phpspec/php-diff
+        // 注意：phpspec/php-diff 的渲染效果可能不如 jfcherng/php-diff
         try {
-            // 尝试加载 phpspec/php-diff （如果 jfcherng 不可用）
-            // 确保类在使用前已加载
-            if (!class_exists('Diff', false)) {
+            // 确保 Diff 和 Renderer 类已加载 (如果 composer autoload 正常，通常不需要手动 require)
+            if (! class_exists('Diff', false)) {
                 $diffLibPath = base_path('vendor/phpspec/php-diff/lib/Diff.php');
                 if (file_exists($diffLibPath)) {
-                    require_once $diffLibPath;
+                    @include_once $diffLibPath; // 使用 @ 避免重复包含警告
                 } else {
-                    // 可以记录更详细的错误或抛出更具体的异常
-                    throw new \Exception('php-diff library core file not found at ' . $diffLibPath);
+                    throw new \Exception('php-diff library core file not found at '.$diffLibPath);
                 }
             }
-
-            if (!class_exists('Diff_Renderer_Html_SideBySide', false)) {
+            if (! class_exists('Diff_Renderer_Html_SideBySide', false)) {
                 $rendererPath = base_path('vendor/phpspec/php-diff/lib/Diff/Renderer/Html/SideBySide.php');
                 if (file_exists($rendererPath)) {
-                    require_once $rendererPath;
+                    @include_once $rendererPath;
                 } else {
-                    // 可以记录更详细的错误或抛出更具体的异常
-                    throw new \Exception('php-diff SideBySide renderer file not found at ' . $rendererPath);
+                    throw new \Exception('php-diff SideBySide renderer file not found at '.$rendererPath);
                 }
             }
-            // 增加一个最终检查，确保类确实加载了
-            if (!class_exists('Diff') || !class_exists('Diff_Renderer_Html_SideBySide')) {
+
+            // 再次检查类是否存在
+            if (! class_exists('Diff') || ! class_exists('Diff_Renderer_Html_SideBySide')) {
                 throw new \Exception('Required classes from phpspec/php-diff could not be loaded after require_once.');
             }
+
             $diffOptions = [
                 'ignoreWhitespace' => true,
-                'ignoreCase'       => false,
+                'ignoreCase' => false, // 通常不忽略大小写
             ];
-            // ... (rest of the phpspec diff logic) ...
+
             $diff = new \Diff(explode("\n", $oldContent), explode("\n", $newContent), $diffOptions);
 
-            // 检查渲染器实例化是否成功
-            $renderer = new \Diff_Renderer_Html_SideBySide([]); // 提供空选项数组
+            // 使用 phpspec 的 SideBySide 渲染器
+            $renderer = new \Diff_Renderer_Html_SideBySide([]); // 构造函数可能不需要参数
             $diffOutput = $diff->render($renderer);
+
             if ($diffOutput === false || $diffOutput === null) {
-                // 渲染器可能返回 false 或 null on error
-                throw new \Exception('php-diff renderer failed to generate output.');
+                throw new \Exception('phpspec/php-diff renderer failed to generate output.');
             }
+
             return $diffOutput;
         } catch (\Throwable $e) {
-            // 记录更详细的错误信息
-            Log::error('Error generating diff HTML using phpspec/php-diff: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-            // 返回更友好的错误提示
-            return "<div class='p-4 bg-red-100 text-red-700'>生成差异视图时发生错误，请稍后重试。</div>";
+            Log::error('Error generating diff HTML using phpspec/php-diff: '.$e->getMessage()."\n".$e->getTraceAsString());
+
+            // 提供一个用户友好的错误消息
+            return "<div class='p-4 bg-red-100 text-red-700'>生成差异视图时发生内部错误，请稍后重试。</div>";
         }
     }
-
-    // Other potential diff methods like generateInlineDiffHtml...
-    // ... (Keep the existing generateInlineDiffHtml and its helpers if you use them elsewhere)
 }
