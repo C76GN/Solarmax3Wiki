@@ -134,47 +134,51 @@ class DiffService
         // 备选方案: phpspec/php-diff (如果上面的库不存在或失败)
         // 注意：这个库比较老旧，可能不再维护，建议优先使用 jfcherng
         try {
-            // 检查类是否存在，避免 fatal error
-            if (! class_exists('Diff', false)) { // `false` 参数阻止自动加载，我们手动检查
+            // 尝试加载 phpspec/php-diff （如果 jfcherng 不可用）
+            // 确保类在使用前已加载
+            if (!class_exists('Diff', false)) {
                 $diffLibPath = base_path('vendor/phpspec/php-diff/lib/Diff.php');
                 if (file_exists($diffLibPath)) {
                     require_once $diffLibPath;
                 } else {
-                    throw new \Exception('php-diff library core file not found.');
+                    // 可以记录更详细的错误或抛出更具体的异常
+                    throw new \Exception('php-diff library core file not found at ' . $diffLibPath);
                 }
             }
-            if (! class_exists('Diff_Renderer_Html_SideBySide', false)) {
+
+            if (!class_exists('Diff_Renderer_Html_SideBySide', false)) {
                 $rendererPath = base_path('vendor/phpspec/php-diff/lib/Diff/Renderer/Html/SideBySide.php');
                 if (file_exists($rendererPath)) {
                     require_once $rendererPath;
                 } else {
-                    throw new \Exception('php-diff SideBySide renderer file not found.');
+                    // 可以记录更详细的错误或抛出更具体的异常
+                    throw new \Exception('php-diff SideBySide renderer file not found at ' . $rendererPath);
                 }
             }
-
-            // 确保类现在已定义
-            if (! class_exists('Diff') || ! class_exists('Diff_Renderer_Html_SideBySide')) {
-                throw new \Exception('Required classes from phpspec/php-diff could not be loaded.');
+            // 增加一个最终检查，确保类确实加载了
+            if (!class_exists('Diff') || !class_exists('Diff_Renderer_Html_SideBySide')) {
+                throw new \Exception('Required classes from phpspec/php-diff could not be loaded after require_once.');
             }
-
             $diffOptions = [
                 'ignoreWhitespace' => true,
-                'ignoreCase' => false,
+                'ignoreCase'       => false,
             ];
-            // 使用全局命名空间 (\)
+            // ... (rest of the phpspec diff logic) ...
             $diff = new \Diff(explode("\n", $oldContent), explode("\n", $newContent), $diffOptions);
 
-            $rendererOptions = [
-                // phpspec/php-diff 的渲染器选项可能不同，这里留空或查阅其文档
-            ];
-            // 使用全局命名空间 (\)
-            $renderer = new \Diff_Renderer_Html_SideBySide($rendererOptions);
-
-            return $diff->render($renderer);
+            // 检查渲染器实例化是否成功
+            $renderer = new \Diff_Renderer_Html_SideBySide([]); // 提供空选项数组
+            $diffOutput = $diff->render($renderer);
+            if ($diffOutput === false || $diffOutput === null) {
+                // 渲染器可能返回 false 或 null on error
+                throw new \Exception('php-diff renderer failed to generate output.');
+            }
+            return $diffOutput;
         } catch (\Throwable $e) {
-            Log::error('Error generating diff HTML using phpspec/php-diff: '.$e->getMessage()."\n".$e->getTraceAsString());
-
-            return "<div class='p-4 bg-red-100 text-red-700'>生成差异视图时出错: ".htmlspecialchars($e->getMessage()).'</div>';
+            // 记录更详细的错误信息
+            Log::error('Error generating diff HTML using phpspec/php-diff: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            // 返回更友好的错误提示
+            return "<div class='p-4 bg-red-100 text-red-700'>生成差异视图时发生错误，请稍后重试。</div>";
         }
     }
 

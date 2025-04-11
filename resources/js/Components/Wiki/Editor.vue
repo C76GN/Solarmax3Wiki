@@ -1,9 +1,10 @@
 <template>
     <div class="tiptap-editor">
-        <menu-bar v-if="editor" :editor="editor" :is-editable="isEditableRef" @toggle-edit="toggleEdit" />
+        <!-- 注意：MenuBar 的 @toggle-edit 现在由父组件处理 -->
+        <menu-bar v-if="editor" :editor="editor" :is-editable="editable" @toggle-edit="$emit('toggle-edit')" />
         <editor-content v-if="editor" :editor="editor" class="editor-content prose max-w-none"
-            :class="{ 'editor-disabled': !isEditableRef }" />
-        <!-- 状态显示区 -->
+            :class="{ 'editor-disabled': !editable }" /> <!-- 直接使用 prop -->
+        <!-- Autosave 逻辑保持不变 -->
         <div v-if="autosaveEnabled" class="autosave-status-bar p-2 text-xs text-gray-500 border-t text-right">
             <span v-if="autosaveStatus" :class="autosaveStatusClass" class="ml-2 flex items-center justify-end">
                 <font-awesome-icon :icon="autosaveStatusIcon" :spin="autosaveStatus.type === 'pending'" class="mr-1" />
@@ -15,8 +16,10 @@
 </template>
 
 <script setup>
+// 移除了 isEditableRef 和相关的 toggleEdit emit
 import { ref, watch, onMounted, onBeforeUnmount, computed, defineEmits, defineProps, nextTick } from 'vue';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
+// 保持其他 imports 不变
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
@@ -32,16 +35,16 @@ import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { lowlight } from 'lowlight/lib/core';
-import MenuBar from './EditorMenuBar.vue';
+import MenuBar from './EditorMenuBar.vue'; // 确保 MenuBar 存在且正确
 import axios from 'axios';
 import { debounce } from 'lodash';
 import { formatDateTime } from '@/utils/formatters';
 
-// 导入并注册 highlight.js 语言包
+// 导入 highlight.js 语言包 (与之前保持一致)
 import javascript from 'highlight.js/lib/languages/javascript';
 import css from 'highlight.js/lib/languages/css';
 import php from 'highlight.js/lib/languages/php';
-import html from 'highlight.js/lib/languages/xml'; // xml 通常包含 html
+import html from 'highlight.js/lib/languages/xml';
 import python from 'highlight.js/lib/languages/python';
 import json from 'highlight.js/lib/languages/json';
 
@@ -52,32 +55,31 @@ lowlight.registerLanguage('php', php);
 lowlight.registerLanguage('html', html);
 lowlight.registerLanguage('python', python);
 lowlight.registerLanguage('json', json);
-// ... 你可以继续注册其他你需要的语言
+
 
 const props = defineProps({
     modelValue: { type: String, default: '' },
     placeholder: { type: String, default: '开始编辑内容...' },
-    editable: { type: Boolean, default: true }, // Initial editable state from parent
+    editable: { type: Boolean, default: true }, // 直接使用 prop
     autosave: { type: Boolean, default: false },
     pageId: { type: Number, default: null },
     autosaveInterval: { type: Number, default: 30000 } // 30 seconds
 });
 
-const emit = defineEmits(['update:modelValue', 'saved', 'error', 'statusUpdate']);
+const emit = defineEmits(['update:modelValue', 'saved', 'error', 'statusUpdate', 'toggle-edit']); // 添加 toggle-edit
 
-const isEditableRef = ref(props.editable);
+// --- 移除了 isEditableRef ---
+
 const lastSavedContent = ref(props.modelValue);
 const hasUnsavedChanges = ref(false);
-const autosaveStatus = ref(null); // { type: 'pending' | 'success' | 'error', message: string, saved_at?: string }
+const autosaveStatus = ref(null);
 let debounceTimer = null;
-let autosaveTimer = null; // 用于 clearInterval
+let autosaveTimer = null;
 
-// --- Tiptap Editor Initialization ---
-// !!! 修改点：将 useEditor 移到 setup 顶层 !!!
 const editor = useEditor({
     content: props.modelValue,
-    extensions: [
-        StarterKit.configure({ heading: { levels: [1, 2, 3, 4, 5, 6] }, codeBlock: false }), // 禁用默认CodeBlock，使用Lowlight
+    extensions: [ // 确保所有需要的扩展都在这里或从 extensions/index.js 导入
+        StarterKit.configure({ heading: { levels: [1, 2, 3, 4, 5, 6] }, codeBlock: false }),
         Image.configure({ allowBase64: true, inline: true, HTMLAttributes: { class: 'max-w-full h-auto rounded' } }),
         Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-blue-600 underline hover:text-blue-800' } }),
         Placeholder.configure({ placeholder: props.placeholder }),
@@ -86,188 +88,211 @@ const editor = useEditor({
         Underline,
         TextAlign.configure({ types: ['heading', 'paragraph'] }),
         Highlight,
-        CodeBlockLowlight.configure({ lowlight }), // 使用CodeBlockLowlight
-        CharacterCount.configure({ limit: 50000 }), // 假设你需要字数统计
+        CodeBlockLowlight.configure({ lowlight }),
+        CharacterCount.configure({ limit: 50000 }),
     ],
-    editable: isEditableRef.value,
-    autofocus: isEditableRef.value ? 'end' : false,
-    // onUpdate moved to watch effect below or specific handlers
-});
-
-// Watch for external changes to modelValue
-watch(() => props.modelValue, (newValue) => {
-    // Check if the editor instance exists and the content is actually different
-    if (editor.value && editor.value.getHTML() !== newValue) {
-        editor.value.commands.setContent(newValue, false); // false to prevent triggering update event again
-        hasUnsavedChanges.value = false;
-        lastSavedContent.value = newValue;
-    }
-});
-
-// Watch for internal editor updates to emit changes and handle autosave logic
-watch(() => editor.value?.getHTML(), (newHtml) => {
-    if (editor.value && newHtml !== props.modelValue) {
-        emit('update:modelValue', newHtml); // Emit the change
-        if (lastSavedContent.value !== newHtml) { // Only mark as unsaved if content actually differs from last save
+    editable: props.editable, // 直接使用 prop
+    autofocus: props.editable ? 'end' : false, // 根据 prop 设置
+    onUpdate: ({ editor }) => {
+        // 触发 v-model 更新
+        const newHtml = editor.getHTML();
+        emit('update:modelValue', newHtml);
+        // 标记有未保存更改
+        if (lastSavedContent.value !== newHtml) {
             hasUnsavedChanges.value = true;
         }
-        debouncedSaveDraft(newHtml); // Trigger debounced draft save
+        // 触发防抖保存
+        debouncedSaveDraft(newHtml);
+    },
+    onCreate: ({ editor }) => {
+        editor.setEditable(props.editable); // 确保初始状态正确
+        lastSavedContent.value = editor.getHTML(); // 初始化 lastSavedContent
     }
 });
 
+// 监听外部 modelValue 变化
+watch(() => props.modelValue, (newValue) => {
+    if (editor.value && editor.value.getHTML() !== newValue) {
+        console.log("Editor content updated from external modelValue");
+        editor.value.commands.setContent(newValue, false); // 更新编辑器内容
+        hasUnsavedChanges.value = false; // 重置未保存状态
+        lastSavedContent.value = newValue; // 更新最后保存的内容
+    }
+});
 
-// Watch for changes in props.editable
+// 监听外部 editable 状态变化
 watch(() => props.editable, (newValue) => {
-    isEditableRef.value = newValue;
+    console.log("Editable prop changed:", newValue);
     if (editor.value) {
-        editor.value.setEditable(newValue);
+        editor.value.setEditable(newValue); // 设置编辑器编辑状态
+        // 相应的自动保存逻辑
         if (newValue && autosaveEnabled.value) {
-            setupAutosaveTimer(); // Restart timer if editing is enabled
+            console.log("Editable turned on, setting up autosave timer");
+            setupAutosaveTimer();
         } else {
-            clearAutosaveTimer(); // Stop timer if not editable or autosave disabled
-            // If turning non-editable and there are changes, save immediately
+            console.log("Editable turned off, clearing autosave timer and potentially saving");
+            clearAutosaveTimer();
             if (!newValue && autosaveEnabled.value && hasUnsavedChanges.value) {
-                if (debounceTimer) clearTimeout(debounceTimer); // Clear any pending debounce
+                // 如果变为不可编辑且有未保存更改，立即保存一次
+                if (debounceTimer) clearTimeout(debounceTimer);
+                // console.log("Saving draft because editor became non-editable");
                 saveDraft(editor.value.getHTML() || props.modelValue);
             }
         }
     }
-});
+}, { immediate: true }); // immediate: true 确保初始状态也应用
 
-const autosaveEnabled = computed(() => props.autosave && props.pageId !== null && isEditableRef.value);
+const autosaveEnabled = computed(() => props.autosave && props.pageId !== null && props.editable);
 
 onMounted(() => {
-    // Ensure editable state is set correctly on mount
-    if (editor.value) {
-        editor.value.setEditable(isEditableRef.value);
+    console.log("Editor component mounted, initial editable state:", props.editable);
+    if (autosaveEnabled.value) {
+         console.log("Autosave enabled on mount, setting up timer");
+        setupAutosaveTimer();
     }
-    setupAutosaveTimer();
     window.addEventListener('online', handleOnline);
 
-    // If content prop was initially empty, set it again after mount to ensure placeholder works
+    // 如果初始 modelValue 为空或 null，确保编辑器内容为空
     if (editor.value && !props.modelValue) {
+        console.log("Initial modelValue is empty, ensuring editor content is empty");
         editor.value.commands.setContent('', false);
     }
 });
 
 onBeforeUnmount(() => {
-    clearAutosaveTimer();
+    console.log("Editor component unmounting");
+    clearAutosaveTimer(); // 清除自动保存定时器
 
-    // Save draft on unmount if needed
-    if (autosaveEnabled.value && hasUnsavedChanges.value) {
+    // 保存未保存的草稿
+    if (autosaveEnabled.value && hasUnsavedChanges.value && editor.value) {
         if (debounceTimer) clearTimeout(debounceTimer);
-        if (navigator.sendBeacon && editor.value) {
+        console.log("Saving draft on unmount via sendBeacon");
+        // 使用 navigator.sendBeacon 在页面卸载时尝试发送最后的数据
+        if (navigator.sendBeacon) {
             const url = route('wiki.save-draft', props.pageId);
             const formData = new FormData();
             formData.append('content', editor.value.getHTML());
-            formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content')); // Include CSRF token if needed by backend
+            // 重要: CSRF Token 通常不能通过 sendBeacon 发送，除非后端配置允许
+            // 如果后端需要验证 CSRF，sendBeacon 可能不是最佳选择，或者后端需特殊处理
+            formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
             try {
-                navigator.sendBeacon(url, formData);
+                const success = navigator.sendBeacon(url, formData);
+                 console.log("sendBeacon attempt status:", success);
             } catch (e) {
                 console.error("sendBeacon failed on unmount:", e);
-                // Fallback or log error if needed
             }
         } else {
-            console.warn("sendBeacon not supported or editor not ready, draft might not be saved on unmount.");
+            // Fallback 或记录日志，因为同步 XHR 已不推荐
+            console.warn("navigator.sendBeacon not supported. Draft might not be saved on unmount.");
+            localStorage.setItem(`draft_${props.pageId}`, editor.value.getHTML()); // 考虑隐私和存储限制
         }
     }
 
+    // 销毁编辑器实例
     if (editor.value) {
+        console.log("Destroying editor instance");
         editor.value.destroy();
     }
     window.removeEventListener('online', handleOnline);
 });
 
-// --- Methods ---
-const toggleEdit = () => {
-    // This function is now controlled by the parent via the editable prop
-    // If direct toggle inside this component is needed, emit an event
-    // emit('toggle-edit-request'); // Example event
-    console.warn("toggleEdit called inside Editor.vue - this should ideally be managed by the parent component via the 'editable' prop.");
-    // For testing, we can toggle the internal ref, but this breaks the prop flow
-    // isEditableRef.value = !isEditableRef.value;
-    // if (editor.value) editor.value.setEditable(isEditableRef.value);
-};
 
-// Debounce draft saving
+// Debounce function for saving drafts
 const debouncedSaveDraft = debounce(async (content) => {
     await saveDraft(content);
-}, 2000); // Save 2 seconds after last edit
+}, 2000); // 2秒延迟
 
-// Actual save draft function
+// Function to save the draft via API
 const saveDraft = async (content) => {
-    if (!autosaveEnabled.value) return;
-    // Only save if content has actually changed since the last successful save
+    if (!autosaveEnabled.value) {
+         console.log("Autosave not enabled or editor not editable, skipping draft save.");
+        return;
+    }
     if (!editor.value || content === lastSavedContent.value) {
+        console.log("No changes or editor not ready, skipping draft save.");
         return;
     }
 
+    console.log("Attempting to save draft...");
     autosaveStatus.value = { type: 'pending', message: '正在自动保存草稿...' };
-    emit('statusUpdate', autosaveStatus.value);
+    emit('statusUpdate', { ...autosaveStatus.value }); // 发送状态更新
 
     try {
         const response = await axios.post(route('wiki.save-draft', props.pageId), { content });
-        lastSavedContent.value = content; // Update last saved content *only on success*
-        hasUnsavedChanges.value = false;
-        const savedAtDate = response.data.saved_at ? new Date(response.data.saved_at) : new Date();
+        console.log("Draft saved successfully:", response.data);
+        lastSavedContent.value = content; // 更新最后保存的内容
+        hasUnsavedChanges.value = false; // 重置未保存状态
+        const savedAtDate = response.data.saved_at ? new Date(response.data.saved_at) : new Date(); // 处理时间
+
+        // 设置成功状态
         autosaveStatus.value = {
             type: 'success',
             message: `草稿已于 ${formatDateTime(savedAtDate)} 保存`,
             saved_at: response.data.saved_at
         };
-        emit('saved', autosaveStatus.value);
-        emit('statusUpdate', autosaveStatus.value);
+        emit('saved', { ...autosaveStatus.value }); // 触发 saved 事件
+        emit('statusUpdate', { ...autosaveStatus.value }); // 发送状态更新
 
-        // Clear success message after a delay
+        // 5秒后清除成功状态
         setTimeout(() => {
             if (autosaveStatus.value?.type === 'success') {
+                // console.log("Clearing success status message");
                 autosaveStatus.value = null;
-                emit('statusUpdate', autosaveStatus.value);
+                emit('statusUpdate', null); // 发送状态更新（清除）
             }
         }, 5000);
 
     } catch (error) {
-        console.error('保存草稿失败:', error.response?.data || error.message);
         const errorMessage = error.response?.data?.message || error.message || '网络错误，无法保存';
+        console.error('保存草稿失败:', errorMessage, error.response || error);
+
+        // 设置错误状态
         autosaveStatus.value = {
             type: 'error',
             message: `草稿保存失败: ${errorMessage}`
         };
-        emit('statusUpdate', autosaveStatus.value);
-        emit('error', error);
-        // Don't clear error message automatically
+        emit('statusUpdate', { ...autosaveStatus.value }); // 发送状态更新
+        emit('error', error); // 触发 error 事件
     }
 };
 
-// Setup the interval timer for autosave
+// Function to set up the autosave interval timer
 const setupAutosaveTimer = () => {
     clearAutosaveTimer(); // Clear existing timer first
     if (autosaveEnabled.value) {
+         console.log(`Setting up autosave timer with interval ${props.autosaveInterval}ms`);
         autosaveTimer = setInterval(() => {
+             console.log("Autosave timer triggered. Checking for changes...");
             if (hasUnsavedChanges.value && editor.value) {
-                if (debounceTimer) clearTimeout(debounceTimer); // Clear debounce if interval triggers
+                if (debounceTimer) clearTimeout(debounceTimer); // Clear debounced save if interval triggers
                 saveDraft(editor.value.getHTML() || props.modelValue);
+            } else {
+                console.log("No unsaved changes detected by interval.");
             }
         }, props.autosaveInterval);
     }
 };
 
+// Function to clear the autosave interval timer
 const clearAutosaveTimer = () => {
     if (autosaveTimer) {
+         console.log("Clearing autosave interval timer");
         clearInterval(autosaveTimer);
         autosaveTimer = null;
     }
 }
 
-// Handle coming back online
+// Function to handle coming back online
 const handleOnline = () => {
+    // console.log("Browser came online");
+    // If autosave is enabled, there are unsaved changes, and editor exists
     if (autosaveEnabled.value && hasUnsavedChanges.value && editor.value) {
-        if (debounceTimer) clearTimeout(debounceTimer);
-        saveDraft(editor.value.getHTML() || props.modelValue);
+        if (debounceTimer) clearTimeout(debounceTimer); // Clear debounce timer
+        saveDraft(editor.value.getHTML() || props.modelValue); // Immediately try to save
     }
 };
 
-// --- Computed properties for status display ---
+// Computed properties for status display (保持不变)
 const autosaveStatusClass = computed(() => {
     if (!autosaveStatus.value) return 'text-gray-400 italic';
     switch (autosaveStatus.value.type) {
@@ -279,7 +304,7 @@ const autosaveStatusClass = computed(() => {
 });
 
 const autosaveStatusIcon = computed(() => {
-    if (!autosaveStatus.value) return ['fas', 'circle-info']; // Default icon
+    if (!autosaveStatus.value) return ['fas', 'circle-info'];
     switch (autosaveStatus.value.type) {
         case 'success': return ['fas', 'check-circle'];
         case 'error': return ['fas', 'exclamation-circle'];
@@ -288,15 +313,16 @@ const autosaveStatusIcon = computed(() => {
     }
 });
 
+// 暴露 editor 实例给父组件（如果需要）
+defineExpose({ editor });
+
 </script>
 
 <style>
-/* Base Tiptap Editor Styles */
+/* 保持之前的样式不变 */
 .tiptap-editor {
     border: 1px solid #e2e8f0;
-    /* Tailwind gray-300 */
     border-radius: 0.5rem;
-    /* Tailwind rounded-lg */
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -306,10 +332,10 @@ const autosaveStatusIcon = computed(() => {
 .editor-content {
     padding: 1rem;
     min-height: 300px;
-    /* Adjust as needed */
+    /* 调整为你需要的高度 */
     overflow-y: auto;
     max-height: 70vh;
-    /* Adjust as needed */
+    /* 限制最大高度 */
     flex-grow: 1;
 }
 
@@ -317,10 +343,9 @@ const autosaveStatusIcon = computed(() => {
     outline: none;
 }
 
-/* Disabled state */
 .editor-disabled .ProseMirror {
     background-color: #f9fafb;
-    /* Tailwind gray-50 */
+    /* 轻灰色背景 */
     cursor: not-allowed;
     opacity: 0.7;
 }
@@ -330,9 +355,8 @@ const autosaveStatusIcon = computed(() => {
     cursor: not-allowed;
 }
 
-/* ProseMirror Content Styles (Tailwind 'prose' handles some, but customize here) */
+/* Tiptap 默认和扩展样式 (部分示例) */
 .ProseMirror {
-    /* Base styles */
     line-height: 1.6;
 }
 
@@ -342,7 +366,6 @@ const autosaveStatusIcon = computed(() => {
 
 .ProseMirror p {
     margin: 0 0 0.75em 0;
-    /* Adjust paragraph spacing */
 }
 
 .ProseMirror ul,
@@ -360,17 +383,13 @@ const autosaveStatusIcon = computed(() => {
     line-height: 1.1;
     margin-top: 1.25em;
     margin-bottom: 0.5em;
-    /* Tailwind prose handles font sizes, add specific overrides if needed */
 }
 
 .ProseMirror code {
     background-color: rgba(97, 97, 97, 0.1);
-    /* Slightly transparent gray */
     color: #374151;
-    /* Tailwind gray-700 */
-    padding: 0.2rem 0.4rem;
+    padding: .2rem .4rem;
     border-radius: 0.25rem;
-    /* Tailwind rounded-sm */
     font-family: monospace;
     font-size: 0.9em;
 }
@@ -379,10 +398,8 @@ const autosaveStatusIcon = computed(() => {
     background: #0D0D0D;
     color: #FFF;
     font-family: 'JetBrainsMono', monospace;
-    /* Example font */
     padding: 0.75rem 1rem;
     border-radius: 0.5rem;
-    /* Tailwind rounded-lg */
     margin: 1em 0;
     overflow-x: auto;
 }
@@ -398,24 +415,19 @@ const autosaveStatusIcon = computed(() => {
     max-width: 100%;
     height: auto;
     display: block;
-    /* To prevent extra space below */
+    /* 或者 inline-block 如果需要 */
     margin: 1em 0;
     border-radius: 0.25rem;
-    /* Tailwind rounded */
 }
 
 .ProseMirror img.ProseMirror-selectednode {
     outline: 3px solid #68CEF8;
-    /* Example selection outline */
 }
-
 
 .ProseMirror blockquote {
     padding-left: 1rem;
     border-left: 3px solid #d1d5db;
-    /* Tailwind gray-300 */
     color: #4b5563;
-    /* Tailwind gray-600 */
     font-style: italic;
     margin: 1em 0;
 }
@@ -423,29 +435,26 @@ const autosaveStatusIcon = computed(() => {
 .ProseMirror hr {
     border: none;
     border-top: 1px solid #e5e7eb;
-    /* Tailwind gray-200 */
     margin: 2rem 0;
 }
 
 .ProseMirror a {
     color: #2563eb;
-    /* Tailwind blue-600 */
     text-decoration: underline;
     cursor: pointer;
 }
 
 .ProseMirror a:hover {
     color: #1d4ed8;
-    /* Tailwind blue-700 */
 }
 
 .ProseMirror mark {
     background-color: #fef9c3;
-    /* Tailwind yellow-100 */
+    /* 默认高亮颜色 */
     padding: 0.1em 0;
 }
 
-/* Tables */
+/* 表格样式 */
 .ProseMirror table {
     border-collapse: collapse;
     table-layout: fixed;
@@ -458,7 +467,7 @@ const autosaveStatusIcon = computed(() => {
 .ProseMirror th {
     min-width: 1em;
     border: 1px solid #d1d5db;
-    /* Tailwind gray-300 */
+    /* 单元格边框 */
     padding: 0.5rem 0.75rem;
     vertical-align: top;
     box-sizing: border-box;
@@ -474,7 +483,7 @@ const autosaveStatusIcon = computed(() => {
     font-weight: bold;
     text-align: left;
     background-color: #f9fafb;
-    /* Tailwind gray-50 */
+    /* 表头背景色 */
 }
 
 .ProseMirror .selectedCell:after {
@@ -486,7 +495,7 @@ const autosaveStatusIcon = computed(() => {
     top: 0;
     bottom: 0;
     background: rgba(37, 99, 235, 0.1);
-    /* Tailwind blue-600 with alpha */
+    /* 选中单元格背景 */
     pointer-events: none;
 }
 
@@ -498,7 +507,6 @@ const autosaveStatusIcon = computed(() => {
     width: 4px;
     z-index: 20;
     background-color: #adf;
-    /* Example color */
     pointer-events: none;
 }
 
@@ -507,26 +515,26 @@ const autosaveStatusIcon = computed(() => {
     cursor: col-resize;
 }
 
-/* Placeholder */
+/* Placeholder 样式 */
 .ProseMirror p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
     float: left;
     color: #adb5bd;
-    /* Tailwind gray-400 */
     pointer-events: none;
     height: 0;
 }
 
-/* Focus Ring */
+/* Editor 聚焦样式 */
 .tiptap-editor:focus-within {
     border-color: #3b82f6;
-    /* Tailwind blue-500 */
+    /* 蓝色边框 */
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
-    /* Example focus shadow */
+    /* 蓝色外发光 */
 }
 
+/* Autosave status bar style */
 .autosave-status-bar {
     min-height: 28px;
-    /* Ensure consistent height */
+    /* 确保即使没有状态也有固定高度 */
 }
 </style>

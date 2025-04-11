@@ -22,11 +22,17 @@ return [
     'settings' => [
         // 默认配置 - 基本 HTML 元素和属性
         'default' => [
-            'HTML.Doctype' => 'HTML 4.01 Transitional',
-            'HTML.Allowed' => 'div,b,strong,i,em,u,a[href|title],ul,ol,li,p[style],br,span[style],img[width|height|alt|src]',
-            'CSS.AllowedProperties' => 'font,font-size,font-weight,font-style,font-family,text-decoration,padding-left,color,background-color,text-align',
-            'AutoFormat.AutoParagraph' => true,  // 自动添加段落标签
-            'AutoFormat.RemoveEmpty' => true,  // 删除空标签
+            // --- 修改开始 ---
+            'HTML.Doctype'             => 'HTML 4.01 Transitional',
+            // 允许 Tiptap StarterKit, Table, Link, Image, Highlight, Underline, TextAlign 等常用标签和属性
+            'HTML.Allowed'             => 'h1[style],h2[style],h3[style],h4[style],h5[style],h6[style],div,b,strong,i,em,u,a[href|title|target|rel],ul[style],ol[start|style],li,p[style],br,span[style],img[width|height|alt|src|title],code,pre[class],blockquote[style],hr,table,thead,tbody,tfoot,tr,td[colspan|rowspan|style],th[colspan|rowspan|style],mark',
+            'CSS.AllowedProperties'    => 'font,font-size,font-weight,font-style,font-family,text-decoration,padding-left,color,background-color,text-align,width,height', // 增加了 width, height, text-align
+            // --- 修改结束 ---
+            'AutoFormat.AutoParagraph' => false, // TipTap 通常自己处理段落，禁用自动添加P标签可能更好
+            'AutoFormat.RemoveEmpty'   => true, // 移除空标签
+            // 'CSS.MaxImgLength'         => null, // 允许图片 data URI (如果需要，但通常不推荐，优先使用上传)
+            // 'HTML.SafeIframe'          => true, // 如果你需要 iframe (例如 YouTube)
+            // 'URI.SafeIframeRegexp'     => '%^(http://|https://|//)(www.youtube.com/embed/|player.vimeo.com/video/)%', // 配合 SafeIframe
         ],
 
         // 测试配置 - 启用 ID 属性

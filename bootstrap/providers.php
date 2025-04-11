@@ -10,5 +10,6 @@ return [
     // 核心应用服务提供者
     App\Providers\AppServiceProvider::class,
     App\Providers\BroadcastServiceProvider::class,
+    App\Providers\AuthServiceProvider::class,
     // 此处可以添加更多自定义服务提供者
 ];
