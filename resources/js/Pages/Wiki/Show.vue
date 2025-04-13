@@ -4,16 +4,16 @@
         <Head :title="page.title" />
         <div class="container mx-auto py-8 px-4 md:px-6 lg:px-8">
             <div class="flex flex-col lg:flex-row lg:space-x-8">
-                <!-- 主要内容区域 -->
                 <div class="w-full lg:w-3/4">
                     <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-lg shadow-lg p-6 md:p-8">
-                        <!-- 页面标题和元信息 -->
+                        <!-- Header Section -->
                         <div class="mb-8 pb-4 border-b border-gray-200 dark:border-gray-700">
                             <div class="flex flex-col md:flex-row justify-between md:items-start mb-4 gap-4">
                                 <div>
                                     <h1
-                                        class="text-3xl md:text-4xl font-bold mb-2 leading-tight text-gray-900 dark:text-gray-100">
-                                        {{ page.title }}</h1>
+                                        class="text-3xl md:text-4xl font-bold mb-2 leading-tight text-gray-900 dark:text-gray-100 break-words">
+                                        {{ page.title }}
+                                    </h1>
                                     <div
                                         class="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-x-4 gap-y-1">
                                         <span v-if="page.creator" class="whitespace-nowrap flex items-center">
@@ -21,14 +21,15 @@
                                             page.creator.name }} 创建于 {{ formatDateShort(page.created_at) }}
                                         </span>
                                         <span v-if="currentVersion" class="whitespace-nowrap flex items-center">
-                                            <font-awesome-icon :icon="['fas', 'edit']" class="mr-1.5 w-3 h-3" /> 最新 v{{
-                                            currentVersion.version_number }}
-                                            <span v-if="currentVersion.creator">由 {{ currentVersion.creator.name }} 编辑于
-                                                {{ formatDateTime(currentVersion.created_at) }}</span>
+                                            <font-awesome-icon :icon="['fas', 'edit']" class="mr-1.5 w-3 h-3" />
+                                            最新 v{{ currentVersion.version_number }}
+                                            <span v-if="currentVersion.creator" class="ml-1">由 {{
+                                                currentVersion.creator.name }} 编辑于 {{
+                                                formatDateTime(currentVersion.created_at) }}</span>
                                         </span>
                                     </div>
                                 </div>
-                                <div class="flex items-center space-x-2 flex-shrink-0">
+                                <div class="flex items-center space-x-2 flex-shrink-0 mt-2 md:mt-0">
                                     <Link :href="route('wiki.history', page.slug)" class="btn-icon-secondary">
                                     <font-awesome-icon :icon="['fas', 'history']" /> <span>历史</span>
                                     </Link>
@@ -57,7 +58,7 @@
                             </div>
                         </div>
 
-                        <!-- 锁定/冲突/草稿 提示信息 -->
+                        <!-- Alerts Section -->
                         <div v-if="isLocked || page.status === 'conflict'" class="mb-6 space-y-4">
                             <div v-if="isLocked" class="alert-warning">
                                 <div class="flex items-center">
@@ -75,8 +76,7 @@
                                     <p class="text-sm">该页面存在编辑冲突，需要管理员解决。
                                         <Link v-if="canResolveConflict" :href="route('wiki.show-conflicts', page.slug)"
                                             class="underline ml-2 font-medium hover:text-red-800 dark:hover:text-red-300">
-                                        前往解决
-                                        </Link>
+                                        前往解决</Link>
                                     </p>
                                 </div>
                             </div>
@@ -88,18 +88,15 @@
                                         formatDateTime(draft.last_saved_at) }})</span>
                                     <Link :href="route('wiki.edit', page.slug)"
                                         class="ml-2 underline font-medium hover:text-blue-800 dark:hover:text-blue-300">
-                                    继续编辑
-                                    </Link>
+                                    继续编辑</Link>
                                 </p>
                             </div>
                         </div>
 
-                        <!-- Wiki 内容渲染区域 -->
-                        <div
+                        <!-- Content Section -->
+                        <div ref="wikiContentContainerRef"
                             class="prose max-w-none prose-indigo lg:prose-lg xl:prose-xl wiki-content-display dark:prose-invert">
-                            <!-- 使用 ref 绑定这个容器 -->
-                            <div ref="wikiContentContainerRef" v-if="currentVersion && currentVersion.content"
-                                v-html="currentVersion.content"></div>
+                            <div v-if="currentVersion && currentVersion.content" v-html="currentVersion.content"></div>
                             <div v-else
                                 class="text-gray-500 dark:text-gray-400 italic py-8 text-center border rounded-lg bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700 mt-6">
                                 <p>{{ error || '该页面还没有内容。' }}</p>
@@ -109,18 +106,17 @@
                             </div>
                         </div>
 
-                        <!-- 评论区 -->
+                        <!-- Comments Section -->
                         <div class="mt-12 pt-8 border-t border-gray-300 dark:border-gray-700">
                             <h3 class="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-200">评论 ({{ commentsCount
                                 }})</h3>
-
-                            <!-- 发表评论表单 -->
+                            <!-- Comment Form -->
                             <div v-if="$page.props.auth.user && $page.props.auth.user.permissions.includes('wiki.comment')"
                                 class="mb-8 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border dark:border-gray-700">
                                 <form @submit.prevent="submitComment">
                                     <textarea v-model="commentForm.content" rows="3"
                                         class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400"
-                                        placeholder="添加你的评论..."></textarea>
+                                        placeholder="添加你的评论..." :disabled="commentForm.processing"></textarea>
                                     <InputError class="mt-1" :message="commentForm.errors.content" />
                                     <div class="flex justify-end mt-2">
                                         <button type="submit" class="btn-primary text-sm"
@@ -139,16 +135,15 @@
                                 登录</Link>后即可发表评论。
                             </div>
 
-                            <!-- 评论列表 -->
+                            <!-- Comments List -->
                             <div v-if="page.comments && page.comments.length > 0" class="space-y-6">
                                 <div v-for="comment in page.comments" :key="comment.id"
                                     class="comment-item pb-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
                                     <div class="flex items-start space-x-3">
-                                        <!-- 头像 -->
                                         <div class="flex-shrink-0 rounded-full w-8 h-8 flex items-center justify-center text-sm font-semibold"
-                                            :class="getAvatarBgClass(comment.user?.id || 0)">{{
-                                            getInitials(comment.user?.name || '访客') }}</div>
-                                        <!-- 评论内容 -->
+                                            :class="getAvatarBgClass(comment.user?.id || 0)">
+                                            {{ getInitials(comment.user?.name || '访客') }}
+                                        </div>
                                         <div class="flex-1">
                                             <div class="flex justify-between items-center mb-1">
                                                 <div>
@@ -168,40 +163,46 @@
                                                         @click="deleteComment(comment)"
                                                         class="btn-comment-action text-red-600 dark:text-red-400"><font-awesome-icon
                                                             :icon="['fas', 'trash']" class="mr-1" /> 删除</button>
-                                                    <button @click="replyToComment(comment)"
+                                                    <button @click="toggleReply(comment)"
                                                         class="btn-comment-action text-gray-600 dark:text-gray-400"><font-awesome-icon
-                                                            :icon="['fas', 'reply']" class="mr-1" /> 回复</button>
+                                                            :icon="['fas', 'reply']" class="mr-1" /> {{
+                                                        replyingToCommentId === comment.id ? '取消回复' : '回复' }}</button>
                                                 </div>
                                             </div>
-                                            <!-- 编辑评论表单 -->
+                                            <!-- Edit Comment Form -->
                                             <div v-if="editingCommentId === comment.id" class="mt-2">
-                                                <textarea v-model="editCommentForm.content" rows="3"
-                                                    class="w-full p-2 border border-gray-300 rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400"></textarea>
-                                                <InputError class="mt-1" :message="editCommentForm.errors.content" />
-                                                <div class="flex justify-end mt-2 space-x-2">
-                                                    <button @click="cancelEditComment"
-                                                        class="btn-secondary text-xs">取消</button>
-                                                    <button @click="updateComment(comment)" class="btn-primary text-xs"
-                                                        :disabled="!editCommentForm.content.trim() || editCommentForm.processing">
-                                                        <font-awesome-icon v-if="editCommentForm.processing"
-                                                            :icon="['fas', 'spinner']" spin class="mr-1" />
-                                                        {{ editCommentForm.processing ? '更新中...' : '更新' }}
-                                                    </button>
-                                                </div>
+                                                <form @submit.prevent="updateComment(comment)">
+                                                    <textarea v-model="editCommentForm.content" rows="3"
+                                                        class="w-full p-2 border border-gray-300 rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400"
+                                                        :disabled="editCommentForm.processing"></textarea>
+                                                    <InputError class="mt-1"
+                                                        :message="editCommentForm.errors.content" />
+                                                    <div class="flex justify-end mt-2 space-x-2">
+                                                        <button type="button" @click="cancelEditComment"
+                                                            class="btn-secondary text-xs">取消</button>
+                                                        <button type="submit" class="btn-primary text-xs"
+                                                            :disabled="!editCommentForm.content.trim() || editCommentForm.processing">
+                                                            <font-awesome-icon v-if="editCommentForm.processing"
+                                                                :icon="['fas', 'spinner']" spin class="mr-1" />
+                                                            {{ editCommentForm.processing ? '更新中...' : '更新评论' }}
+                                                        </button>
+                                                    </div>
+                                                </form>
                                             </div>
-                                            <!-- 显示评论内容 -->
-                                            <p v-else class="text-gray-800 dark:text-gray-300 text-sm leading-relaxed">
-                                                {{ comment.content }}</p>
+                                            <!-- Display Comment Content -->
+                                            <p v-else
+                                                class="text-gray-800 dark:text-gray-300 text-sm leading-relaxed break-words">
+                                                {{ comment.content }}
+                                            </p>
                                         </div>
                                     </div>
-
-                                    <!-- 回复评论表单 -->
+                                    <!-- Reply Form (Toggled) -->
                                     <div v-if="replyingToCommentId === comment.id"
                                         class="mt-3 ml-11 pl-4 border-l-2 border-gray-200 dark:border-gray-600">
                                         <form @submit.prevent="submitReply(comment)">
                                             <textarea v-model="replyForm.content" rows="2"
-                                                class="w-full p-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400"
-                                                placeholder="添加回复..."></textarea>
+                                                class="w-full p-2 border border-gray-300 rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400"
+                                                placeholder="添加回复..." :disabled="replyForm.processing"></textarea>
                                             <InputError class="mt-1" :message="replyForm.errors.content" />
                                             <div class="flex justify-end mt-2 space-x-2">
                                                 <button type="button" @click="cancelReply"
@@ -215,60 +216,62 @@
                                             </div>
                                         </form>
                                     </div>
-
-                                    <!-- 回复列表 -->
+                                    <!-- Replies List -->
                                     <div v-if="comment.replies && comment.replies.length"
                                         class="mt-4 ml-11 pl-4 border-l-2 border-gray-200 dark:border-gray-600 space-y-4">
-                                        <div v-for="reply in comment.replies" :key="reply.id"
-                                            class="flex items-start space-x-3 reply-item">
-                                            <!-- 回复者头像 -->
-                                            <div class="flex-shrink-0 rounded-full w-6 h-6 flex items-center justify-center text-xs font-semibold"
-                                                :class="getAvatarBgClass(reply.user?.id || 0)">{{
-                                                getInitials(reply.user?.name || '访客') }}</div>
-                                            <!-- 回复内容 -->
-                                            <div class="flex-1">
-                                                <div class="flex justify-between items-center mb-1">
-                                                    <div>
-                                                        <span
-                                                            class="font-semibold text-xs mr-2 text-gray-800 dark:text-gray-300">{{
-                                                            reply.user?.name || '匿名用户' }}</span>
-                                                        <span class="text-xs text-gray-500 dark:text-gray-400">{{
-                                                            formatDateTime(reply.created_at) }}</span>
-                                                    </div>
-                                                    <div class="flex space-x-2 comment-actions"
-                                                        v-if="$page.props.auth.user">
-                                                        <button v-if="canManageComment(reply)"
-                                                            @click="editComment(reply)"
-                                                            class="btn-comment-action text-blue-600 dark:text-blue-400"><font-awesome-icon
-                                                                :icon="['fas', 'edit']" /> 编辑</button>
-                                                        <button v-if="canManageComment(reply)"
-                                                            @click="deleteComment(reply)"
-                                                            class="btn-comment-action text-red-600 dark:text-red-400"><font-awesome-icon
-                                                                :icon="['fas', 'trash']" /> 删除</button>
-                                                    </div>
+                                        <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
+                                            <div class="flex items-start space-x-3">
+                                                <div class="flex-shrink-0 rounded-full w-6 h-6 flex items-center justify-center text-xs font-semibold"
+                                                    :class="getAvatarBgClass(reply.user?.id || 0)">
+                                                    {{ getInitials(reply.user?.name || '访客') }}
                                                 </div>
-                                                <!-- 编辑回复表单 -->
-                                                <div v-if="editingCommentId === reply.id" class="mt-2">
-                                                    <textarea v-model="editCommentForm.content" rows="2"
-                                                        class="w-full p-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"></textarea>
-                                                    <InputError class="mt-1"
-                                                        :message="editCommentForm.errors.content" />
-                                                    <div class="flex justify-end mt-2 space-x-2">
-                                                        <button @click="cancelEditComment"
-                                                            class="btn-secondary text-xs">取消</button>
-                                                        <button @click="updateComment(reply)"
-                                                            class="btn-primary text-xs"
-                                                            :disabled="!editCommentForm.content.trim() || editCommentForm.processing">
-                                                            <font-awesome-icon v-if="editCommentForm.processing"
-                                                                :icon="['fas', 'spinner']" spin class="mr-1" />
-                                                            {{ editCommentForm.processing ? '更新中...' : '更新' }}
-                                                        </button>
+                                                <div class="flex-1">
+                                                    <div class="flex justify-between items-center mb-1">
+                                                        <div>
+                                                            <span
+                                                                class="font-semibold text-xs mr-2 text-gray-800 dark:text-gray-300">{{
+                                                                reply.user?.name || '匿名用户' }}</span>
+                                                            <span class="text-xs text-gray-500 dark:text-gray-400">{{
+                                                                formatDateTime(reply.created_at) }}</span>
+                                                        </div>
+                                                        <div class="flex space-x-2 comment-actions"
+                                                            v-if="$page.props.auth.user">
+                                                            <button v-if="canManageComment(reply)"
+                                                                @click="editComment(reply)"
+                                                                class="btn-comment-action text-blue-600 dark:text-blue-400"><font-awesome-icon
+                                                                    :icon="['fas', 'edit']" /> 编辑</button>
+                                                            <button v-if="canManageComment(reply)"
+                                                                @click="deleteComment(reply)"
+                                                                class="btn-comment-action text-red-600 dark:text-red-400"><font-awesome-icon
+                                                                    :icon="['fas', 'trash']" /> 删除</button>
+                                                        </div>
                                                     </div>
+                                                    <!-- Edit Reply Form -->
+                                                    <div v-if="editingCommentId === reply.id" class="mt-2">
+                                                        <form @submit.prevent="updateComment(reply)">
+                                                            <textarea v-model="editCommentForm.content" rows="2"
+                                                                class="w-full p-2 border border-gray-300 rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
+                                                                :disabled="editCommentForm.processing"></textarea>
+                                                            <InputError class="mt-1"
+                                                                :message="editCommentForm.errors.content" />
+                                                            <div class="flex justify-end mt-2 space-x-2">
+                                                                <button type="button" @click="cancelEditComment"
+                                                                    class="btn-secondary text-xs">取消</button>
+                                                                <button type="submit" class="btn-primary text-xs"
+                                                                    :disabled="!editCommentForm.content.trim() || editCommentForm.processing">
+                                                                    <font-awesome-icon v-if="editCommentForm.processing"
+                                                                        :icon="['fas', 'spinner']" spin class="mr-1" />
+                                                                    {{ editCommentForm.processing ? '更新中...' : '更新回复' }}
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                    <!-- Display Reply Content -->
+                                                    <p v-else
+                                                        class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed break-words">
+                                                        {{ reply.content }}
+                                                    </p>
                                                 </div>
-                                                <!-- 显示回复内容 -->
-                                                <p v-else
-                                                    class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{{
-                                                    reply.content }}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -280,23 +283,24 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- 目录侧边栏 -->
-                <div class="w-full lg:w-1/4 mt-8 lg:mt-0">
+                <!-- Table of Contents -->
+                <div class="w-full lg:w-1/4 mt-8 lg:mt-0 lg:pl-4">
                     <div class="bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm rounded-lg shadow-lg p-4 sticky top-8">
                         <h3
                             class="text-lg font-semibold mb-4 border-b pb-2 dark:border-gray-700 text-gray-800 dark:text-gray-200">
-                            目录</h3>
-                        <!-- 目录容器 -->
-                        <div id="toc-container" class="mt-4 text-sm max-h-[70vh] overflow-y-auto">
-                            <p class="text-gray-500 dark:text-gray-400 italic">正在加载目录...</p>
+                            <font-awesome-icon :icon="['fas', 'list-ul']" class="mr-2" />目录
+                        </h3>
+                        <div id="toc-container" ref="tocContainerRef"
+                            class="mt-4 text-sm max-h-[calc(100vh-8rem)] overflow-y-auto toc-links">
+                            <!-- TOC is generated here -->
+                            <p class="text-gray-500 dark:text-gray-400 italic">正在生成目录...</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 解决冲突模态框 -->
+        <!-- Resolve Conflict Modal -->
         <Modal :show="showResolveConflictModal" @close="closeResolveConflictModal" maxWidth="lg">
             <div class="p-6 bg-white dark:bg-gray-800 rounded-lg">
                 <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
@@ -308,17 +312,17 @@
                     <button @click="closeResolveConflictModal" class="btn-secondary">关闭</button>
                     <Link :href="route('wiki.show-conflicts', page.slug)"
                         class="btn-primary bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-600 dark:hover:bg-yellow-700">
-                    前往解决</Link>
+                    前往解决
+                    </Link>
                 </div>
             </div>
         </Modal>
-
         <FlashMessage ref="flashMessage" />
     </MainLayout>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { Head, Link, router, usePage, useForm } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import Modal from '@/Components/Modal/Modal.vue';
@@ -339,113 +343,120 @@ const props = defineProps({
     canEditPage: { type: Boolean, default: false },
     canResolveConflict: { type: Boolean, default: false },
     error: { type: String, default: '' },
-    comments: { type: Array, default: () => [] } // 确保从 props 接收 comments
+    comments: { type: Array, default: () => [] } // 接收来自Controller的评论
 });
 
 const wikiContentContainerRef = ref(null);
+const tocContainerRef = ref(null);
 const flashMessage = ref(null);
 const replyingToCommentId = ref(null);
 const editingCommentId = ref(null);
 const showResolveConflictModal = ref(false);
+const activeTocId = ref(null);
+let observer = null; // 滚动监听器
 
-const commentForm = useForm({
-    content: '',
-    parent_id: null
+// --- Forms ---
+const commentForm = useForm({ content: '', parent_id: null });
+const replyForm = useForm({ content: '', parent_id: null });
+const editCommentForm = useForm({ content: '' });
+
+// --- Computed Properties ---
+const commentsCount = computed(() => {
+    let count = 0;
+    if (props.page.comments) {
+        props.page.comments.forEach(comment => {
+            count++;
+            if (comment.replies) count += comment.replies.length;
+        });
+    }
+    return count;
 });
 
-const replyForm = useForm({
-    content: '',
-    parent_id: replyingToCommentId // This will be updated dynamically
-});
+// --- Methods ---
 
-const editCommentForm = useForm({
-    content: '',
-});
+// Table of Contents Generation
+const generateSlug = (text) => {
+    if (!text) return '';
+    // 改进 slug 生成，允许中文并处理特殊字符
+    return text.toLowerCase()
+        .replace(/[\s\/\\]+/g, '-') // 替换空格和斜杠为连字符
+        .replace(/[^\w\u4e00-\u9fa5-]+/g, '') // 移除无效字符，保留字母数字中文和连字符
+        .replace(/-+/g, '-') // 合并多个连字符
+        .replace(/^-+|-+$/g, ''); // 移除首尾连字符
+};
+
+const generateUniqueId = (baseId, existingIds) => {
+    let id = baseId;
+    let counter = 1;
+    while (existingIds.has(id)) {
+        id = `${baseId}-${counter}`;
+        counter++;
+    }
+    existingIds.add(id);
+    return id;
+};
 
 const generateTableOfContents = () => {
     nextTick(() => {
         const contentElement = wikiContentContainerRef.value;
-        const tocContainer = document.getElementById('toc-container');
+        const tocContainer = tocContainerRef.value; // 使用 ref 获取 DOM
+        const existingIds = new Set();
 
-        // --- 新增：健壮性检查 ---
         if (!tocContainer) {
-            console.warn('无法找到 TOC 容器 (#toc-container)');
-            return; // 如果没有目录容器，直接退出
+            console.warn('无法找到 TOC 容器 (ref="tocContainerRef")'); return;
         }
         if (!contentElement) {
             console.warn('无法找到内容元素 (ref="wikiContentContainerRef")');
-            // 清空或设置错误消息
-            tocContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 italic">无法生成目录：内容未加载。</p>';
-            return; // 如果没有内容容器，也退出
+            tocContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 italic">无法生成目录：内容未加载。</p>'; return;
         }
-        // --- 检查结束 ---
 
-        // 清空现有目录（或加载中提示）
-        tocContainer.innerHTML = ''; // 确保清空
-
+        tocContainer.innerHTML = ''; // 清空现有目录
         const headings = contentElement.querySelectorAll('h1, h2, h3, h4, h5, h6');
-        console.log("Headings found:", headings.length); // 调试信息
 
         if (headings.length === 0) {
-            tocContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 italic">此页面没有目录。</p>';
-            return;
+            tocContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 italic">此页面没有目录。</p>'; return;
         }
 
         const tocList = document.createElement('ul');
-        tocList.classList.add('space-y-2', 'list-none', 'pl-0');
+        tocList.classList.add('space-y-1.5', 'list-none', 'pl-0'); // 调整间距
 
         headings.forEach((heading, index) => {
             const level = parseInt(heading.tagName.substring(1));
             const text = heading.textContent?.trim() || `无标题 ${index + 1}`;
-
-            // 确保 Heading 有 ID
-            if (!heading.id) {
-                const slug = text.toLowerCase()
-                    .replace(/[^a-z0-9\u4e00-\u9fa5\s-]/g, '') // 允许中文
-                    .trim()
-                    .replace(/\s+/g, '-')
-                    .replace(/-+/g, '-');
-                const finalId = `toc-${slug}-${index}`.replace(/^[^a-zA-Z]+/, 'section-'); // 确保ID以字母开头
-                heading.id = finalId || `toc-heading-${index}`; // 提供备用ID
+            let id = heading.id;
+            if (!id) {
+                const baseSlug = generateSlug(text);
+                id = generateUniqueId(`toc-${baseSlug || 'heading'}-${index}`, existingIds);
+                heading.id = id; // 将生成的 ID 设置回 heading 元素
+            } else {
+                // 如果 heading 已有 ID，也需要确保其唯一性
+                id = generateUniqueId(id, existingIds);
+                heading.id = id;
             }
 
             const listItem = document.createElement('li');
-            listItem.style.marginLeft = `${Math.max(0, level - 1) * 1}rem`; // 使用 rem 或 em 更灵活
+            listItem.style.paddingLeft = `${Math.max(0, level - 1) * 1}rem`; // 使用 padding 替代 margin
 
             const link = document.createElement('a');
-            link.href = `#${heading.id}`;
+            link.href = `#${id}`;
             link.textContent = text;
-            link.classList.add(
-                'text-blue-600',
-                'dark:text-blue-400',
-                'hover:text-blue-800',
-                'dark:hover:text-blue-300',
-                'hover:underline',
-                'transition-colors',
-                'duration-150',
-                'text-sm', // 统一字体大小
-                'block', // 确保链接占满整行以便点击
-                'truncate' // 防止长标题破坏布局
-            );
-            if (level === 1) link.classList.add('font-semibold'); // H1 加粗
-            if (level >= 3) link.classList.add('text-xs'); // H3 及以下更小
+            link.dataset.tocId = id; // 添加 data 属性方便 JS 操作
+            link.classList.add('toc-link'); // 添加统一的类名
 
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const targetElement = document.getElementById(heading.id);
+                const targetElement = document.getElementById(id);
                 if (targetElement) {
-                    const offset = 80; // 顶部导航栏的高度或其他偏移量
+                    const offset = 80; // 导航栏高度 + 额外间距
                     const bodyRect = document.body.getBoundingClientRect().top;
                     const elementRect = targetElement.getBoundingClientRect().top;
                     const elementPosition = elementRect - bodyRect;
                     const offsetPosition = elementPosition - offset;
-
-                    window.scrollTo({
-                        top: offsetPosition,
-                        behavior: 'smooth'
-                    });
+                    window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+                    // 手动更新 history，避免页面刷新但 URL 变化
+                    // history.pushState(null, null, `#${id}`);
                 } else {
-                    console.warn(`Target element not found for ID: ${heading.id}`);
+                    console.warn(`Target element not found for ID: ${id}`);
                 }
             });
 
@@ -454,10 +465,60 @@ const generateTableOfContents = () => {
         });
 
         tocContainer.appendChild(tocList);
-        console.log("TOC generated successfully."); // 确认生成成功
+        setupTocScrollSpy(); // 生成后设置滚动监听
     });
 };
 
+// TOC Scroll Spy Setup
+const setupTocScrollSpy = () => {
+    if (observer) observer.disconnect(); // 清除旧的监听器
+
+    const tocLinks = tocContainerRef.value?.querySelectorAll('.toc-link');
+    if (!tocLinks || tocLinks.length === 0) return;
+
+    const headingElements = Array.from(tocLinks).map(link => {
+        const targetId = link.getAttribute('href')?.substring(1);
+        return targetId ? document.getElementById(targetId) : null;
+    }).filter(el => el !== null);
+
+    if (headingElements.length === 0) return;
+
+    const options = {
+        rootMargin: '-80px 0px -60% 0px', // 调整 rootMargin 使顶部和底部检测更灵敏
+        threshold: 0
+    };
+
+    observer = new IntersectionObserver(entries => {
+        let latestActiveId = null;
+        // 从下往上找第一个可见的
+        entries.reverse().forEach(entry => {
+            if (entry.isIntersecting) {
+                latestActiveId = entry.target.id;
+            }
+        });
+
+        // 如果没有可见的（比如在页面顶部或底部），则尝试找到屏幕上方的最后一个元素
+        if (!latestActiveId) {
+            const visibleAbove = entries.filter(entry => entry.boundingClientRect.bottom < 80); // 80是导航栏高度
+            if (visibleAbove.length > 0) {
+                latestActiveId = visibleAbove[visibleAbove.length - 1].target.id;
+            }
+        }
+
+        activeTocId.value = latestActiveId;
+
+        tocLinks.forEach(link => {
+            link.classList.remove('is-active');
+            if (link.dataset.tocId === activeTocId.value) {
+                link.classList.add('is-active');
+            }
+        });
+    }, options);
+
+    headingElements.forEach(el => observer.observe(el));
+};
+
+// --- Avatar Helpers ---
 const userColors = {};
 const bgColors = [
     'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300', 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
@@ -466,23 +527,21 @@ const bgColors = [
     'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300', 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300'
 ];
 let colorIndex = 0;
-
-const getAvatarBgClass = (userId) => {
-    if (!userId) return bgColors[0]; // Default color for anonymous or system
+const getAvatarBgClass = (userId) => { /* ... (保持不变) ... */
+    if (!userId) return bgColors[0];
     if (!userColors[userId]) {
         userColors[userId] = bgColors[colorIndex % bgColors.length];
         colorIndex++;
     }
     return userColors[userId];
 };
-
-const getInitials = (name) => {
+const getInitials = (name) => { /* ... (保持不变) ... */
     if (!name) return '?';
     const nameTrimmed = name.trim();
     if (!nameTrimmed) return '?';
-    const chineseMatch = nameTrimmed.match(/[\u4E00-\u9FA5]/); // 匹配中文字符
+    const chineseMatch = nameTrimmed.match(/[\u4E00-\u9FA5]/);
     if (chineseMatch) {
-        return chineseMatch[0]; // 返回第一个中文字
+        return chineseMatch[0];
     }
     const parts = nameTrimmed.split(/\s+/);
     if (parts.length > 0 && parts[0]) {
@@ -491,64 +550,43 @@ const getInitials = (name) => {
     return nameTrimmed.charAt(0).toUpperCase() || '?';
 };
 
-const commentsCount = computed(() => {
-    let count = 0;
-    // 使用 props.page.comments 而不是 props.comments
-    if (props.page.comments) {
-        props.page.comments.forEach(comment => {
-            count++; // 计算主评论
-            if (comment.replies) {
-                count += comment.replies.length; // 计算回复
-            }
-        });
-    }
-    return count;
-});
-
-const canManageComment = (comment) => {
+// --- Comment Management ---
+const canManageComment = (comment) => { /* ... (保持不变) ... */
     const user = pageProps.auth.user;
     if (!user) return false;
-    // 检查用户是否有管理权限，或者评论/回复是否由当前用户创建
     return comment.user_id === user.id || user.permissions?.includes('wiki.moderate_comments');
 };
-
-const submitComment = () => {
-    commentForm.parent_id = null; // 主评论没有 parent_id
+const submitComment = () => { /* ... (保持不变，增加处理中状态) ... */
+    commentForm.parent_id = null;
     commentForm.post(route('wiki.comments.store', props.page.slug), {
         preserveScroll: true,
         onSuccess: () => {
             commentForm.reset('content');
             flashMessage.value?.addMessage('success', '评论发布成功！');
-            router.reload({ only: ['page'] }); // 只重新加载 page 数据
+            router.reload({ only: ['page'] }); // 仅重新加载页面数据
         },
         onError: (errors) => {
-            // 显示具体的错误信息
             const firstError = Object.values(errors).flat()[0];
             flashMessage.value?.addMessage('error', firstError || '评论发布失败');
         }
     });
 };
-
-const replyToComment = (comment) => {
+const toggleReply = (comment) => { // 改为切换显示
     if (replyingToCommentId.value === comment.id) {
-        cancelReply(); // 如果点击的是同一个评论的回复按钮，则取消回复
+        cancelReply();
     } else {
         replyingToCommentId.value = comment.id;
-        replyForm.content = ''; // 清空回复内容
-        cancelEditComment(); // 取消可能正在进行的编辑操作
-        // 可以在这里聚焦回复框
-        // nextTick(() => { /* focus logic */ });
+        replyForm.reset('content');
+        cancelEditComment(); // 关闭可能打开的编辑框
     }
 };
-
-const cancelReply = () => {
+const cancelReply = () => { /* ... (保持不变) ... */
     replyingToCommentId.value = null;
     replyForm.reset('content');
     replyForm.clearErrors();
 };
-
-const submitReply = (parentComment) => {
-    replyForm.parent_id = parentComment.id; // 设置父评论ID
+const submitReply = (parentComment) => { /* ... (保持不变，增加处理中状态) ... */
+    replyForm.parent_id = parentComment.id;
     replyForm.post(route('wiki.comments.store', props.page.slug), {
         preserveScroll: true,
         onSuccess: () => {
@@ -562,32 +600,27 @@ const submitReply = (parentComment) => {
         }
     });
 };
-
-const editComment = (comment) => {
+const editComment = (comment) => { /* ... (保持不变) ... */
     if (editingCommentId.value === comment.id) {
-        cancelEditComment(); // 如果点击的是同一个评论的编辑按钮，则取消编辑
+        cancelEditComment();
     } else {
         editingCommentId.value = comment.id;
         editCommentForm.content = comment.content;
-        cancelReply(); // 取消可能正在进行的回复操作
-        // 聚焦编辑框
-        // nextTick(() => { /* focus logic */ });
+        cancelReply(); // 关闭可能打开的回复框
     }
 };
-
-const cancelEditComment = () => {
+const cancelEditComment = () => { /* ... (保持不变) ... */
     editingCommentId.value = null;
     editCommentForm.reset('content');
     editCommentForm.clearErrors();
 };
-
-const updateComment = (comment) => {
+const updateComment = (comment) => { /* ... (保持不变，增加处理中状态) ... */
     editCommentForm.put(route('wiki.comments.update', comment.id), {
         preserveScroll: true,
         onSuccess: () => {
             cancelEditComment();
             flashMessage.value?.addMessage('success', '评论更新成功！');
-            router.reload({ only: ['page'] });
+            router.reload({ only: ['page'] }); // 仅重新加载页面数据
         },
         onError: (errors) => {
             const firstError = Object.values(errors).flat()[0];
@@ -595,8 +628,7 @@ const updateComment = (comment) => {
         }
     });
 };
-
-const deleteComment = (comment) => {
+const deleteComment = (comment) => { /* ... (保持不变) ... */
     const typeText = comment.parent_id ? '回复' : '评论';
     if (confirm(`确定要隐藏这条${typeText}吗？此操作将对其他用户隐藏该内容。`)) {
         router.delete(route('wiki.comments.destroy', comment.id), {
@@ -604,9 +636,8 @@ const deleteComment = (comment) => {
             onSuccess: () => {
                 flashMessage.value?.addMessage('success', `${typeText}已隐藏！`);
                 if (editingCommentId.value === comment.id) cancelEditComment();
-                // 如果正在回复的评论被删除，或者正在回复的评论的回复被删除，则取消回复
                 if (replyingToCommentId.value === comment.id || (comment.parent_id && replyingToCommentId.value === comment.parent_id)) cancelReply();
-                router.reload({ only: ['page'] });
+                router.reload({ only: ['page'] }); // 仅重新加载页面数据
             },
             onError: (errors) => {
                 const errorMsg = Object.values(errors).flat()[0] || `${typeText}删除失败，请重试`;
@@ -616,52 +647,44 @@ const deleteComment = (comment) => {
     }
 };
 
-const openResolveConflictModal = () => {
-    showResolveConflictModal.value = true;
-};
+// --- Modal ---
+const openResolveConflictModal = () => { showResolveConflictModal.value = true; };
+const closeResolveConflictModal = () => { showResolveConflictModal.value = false; };
 
-const closeResolveConflictModal = () => {
-    showResolveConflictModal.value = false;
-};
-
+// --- Lifecycle Hooks ---
 onMounted(() => {
     generateTableOfContents();
-    // 显示来自后端的错误
-    if (props.error) {
-        flashMessage.value?.addMessage('error', props.error);
-    }
-    // 检查页面级别的错误
+    if (props.error) flashMessage.value?.addMessage('error', props.error);
     const pageLevelErrors = usePage().props.errors;
     if (pageLevelErrors && pageLevelErrors.general) {
         flashMessage.value?.addMessage('error', pageLevelErrors.general);
     }
 });
 
-// 监听内容变化以重新生成目录
+onUnmounted(() => {
+    if (observer) observer.disconnect(); // 组件卸载时清除监听器
+});
+
+// --- Watchers ---
 watch(() => props.currentVersion?.content, (newContent, oldContent) => {
     if (newContent !== oldContent) {
-        console.log("Wiki content changed, regenerating TOC.");
         generateTableOfContents();
     }
-}, { immediate: false }); // 首次加载时 onMounted 会处理
+}, { immediate: false }); // 初始加载时由 onMounted 处理
 
 </script>
 
-<style>
-/* --- 核心 Wiki 内容显示样式 --- */
+<style scoped>
+/* Basic styles from original file */
 .wiki-content-display {
     @apply text-base text-gray-700 dark:text-gray-300;
-    /* 基础文字样式 */
 }
 
 .wiki-content-display :deep(p) {
     @apply leading-relaxed mb-5;
-    /* 段落行距和下边距 */
     line-height: 1.8;
-    /* 更宽松的行高 */
 }
 
-/* 标题样式，添加滚动边距 */
 .wiki-content-display :deep(h1),
 .wiki-content-display :deep(h2),
 .wiki-content-display :deep(h3),
@@ -670,19 +693,15 @@ watch(() => props.currentVersion?.content, (newContent, oldContent) => {
 .wiki-content-display :deep(h6) {
     @apply font-semibold text-gray-800 dark:text-gray-200 mt-10 mb-4;
     scroll-margin-top: 80px;
-    /* 增加锚点滚动偏移，避免被顶部导航遮挡 */
     line-height: 1.3;
-    /* 标题行高 */
 }
 
 .wiki-content-display :deep(h1) {
     @apply text-3xl border-b border-gray-300 dark:border-gray-700 pb-2 mb-6;
-    /* H1 样式，带下边框 */
 }
 
 .wiki-content-display :deep(h2) {
     @apply text-2xl border-b border-gray-300 dark:border-gray-700 pb-2 mb-5;
-    /* H2 样式，带下边框 */
 }
 
 .wiki-content-display :deep(h3) {
@@ -693,7 +712,6 @@ watch(() => props.currentVersion?.content, (newContent, oldContent) => {
     @apply text-lg font-medium;
 }
 
-/* 列表样式 */
 .wiki-content-display :deep(ul),
 .wiki-content-display :deep(ol) {
     @apply pl-6 mb-5 list-outside;
@@ -712,25 +730,20 @@ watch(() => props.currentVersion?.content, (newContent, oldContent) => {
 }
 
 .wiki-content-display :deep(li > p) {
-    @apply mb-1;
-    /* 列表项内段落的边距稍小 */
+    @apply mb-1 inline;
 }
 
-/* 引用块样式 */
 .wiki-content-display :deep(blockquote) {
     @apply border-l-4 border-blue-300 dark:border-blue-700 pl-5 italic text-gray-600 dark:text-gray-400 my-6 py-2 bg-blue-50/50 dark:bg-blue-900/20 rounded-r;
 }
 
-/* 代码块样式 */
 .wiki-content-display :deep(pre) {
-    @apply bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-6 text-sm shadow-md leading-relaxed;
+    @apply bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-6 text-sm shadow-md leading-relaxed dark:bg-black/50 dark:text-gray-200;
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    /* 使用等宽字体 */
 }
 
 .wiki-content-display :deep(code:not(pre code)) {
     @apply bg-red-100 text-red-800 px-1.5 py-0.5 rounded text-[0.9em] font-mono dark:bg-red-900/40 dark:text-red-300;
-    /* 行内代码样式 */
 }
 
 .wiki-content-display :deep(pre code) {
@@ -741,7 +754,6 @@ watch(() => props.currentVersion?.content, (newContent, oldContent) => {
     line-height: inherit;
 }
 
-/* 代码高亮基础样式 (示例，实际高亮由JS库处理) */
 .wiki-content-display :deep(pre code .hljs-comment) {
     @apply text-gray-400 italic;
 }
@@ -758,115 +770,94 @@ watch(() => props.currentVersion?.content, (newContent, oldContent) => {
     @apply text-yellow-400;
 }
 
-/* 链接样式 */
 .wiki-content-display :deep(a) {
     @apply text-cyan-600 dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300 underline decoration-cyan-600/50 hover:decoration-cyan-800 transition-colors duration-150;
 }
 
-/* 图片样式 */
 .wiki-content-display :deep(img) {
     @apply max-w-full h-auto my-8 rounded-lg shadow-lg mx-auto block;
     border: 1px solid #eee;
-    /* 给图片加一个细边框 */
     dark: border-gray-700;
 }
 
-/* --- 表格增强样式 --- */
 .wiki-content-display :deep(table) {
     @apply w-full my-8 border-collapse border border-gray-400 dark:border-gray-600 shadow-md;
-    /* 加强边框颜色和阴影 */
     table-layout: auto;
 }
 
 .wiki-content-display :deep(th),
 .wiki-content-display :deep(td) {
     @apply border border-gray-300 dark:border-gray-600 px-5 py-3 text-left text-sm;
-    /* 增加水平内边距 */
+    vertical-align: top;
 }
 
 .wiki-content-display :deep(th) {
     @apply bg-gray-200 dark:bg-gray-700 font-semibold text-gray-800 dark:text-gray-100;
-    /* 更明显的表头背景色和文字颜色 */
 }
 
 .wiki-content-display :deep(tr:nth-child(even)) {
-    @apply bg-gray-100 dark:bg-gray-800;
-    /* 更明显的斑马纹 */
+    @apply bg-gray-100 dark:bg-gray-800/50;
 }
 
 .wiki-content-display :deep(tr:hover) {
     @apply bg-gray-200/50 dark:bg-gray-700/50;
-    /* 行悬浮效果 */
 }
 
-/* --- 表格样式结束 --- */
-
-/* --- 目录样式 --- */
-#toc-container ul {
-    list-style: none;
-    padding-left: 0;
+/* TOC Styles */
+.toc-links {
+    scroll-behavior: smooth;
 }
 
-#toc-container li a {
-    @apply text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition-colors duration-150 text-sm block truncate;
+/* 使目录内滚动平滑 */
+.toc-link {
+    @apply block truncate transition-colors duration-150 text-sm py-0.5;
+    @apply text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400;
 }
 
-#toc-container li[style*="margin-left: 1rem"] a {
-    /* H2 Indentation */
+.toc-link.is-active {
+    @apply text-blue-600 dark:text-blue-400 font-semibold;
+    transform: translateX(2px);
+    /* 轻微偏移以示激活 */
+}
+
+#toc-container li[style*="padding-left: 1rem"] a {
     @apply pl-4;
 }
 
-#toc-container li[style*="margin-left: 2rem"] a {
-    /* H3 Indentation */
+#toc-container li[style*="padding-left: 2rem"] a {
     @apply pl-8 text-xs;
 }
 
-#toc-container li[style*="margin-left: 3rem"] a {
-    /* H4 Indentation */
+#toc-container li[style*="padding-left: 3rem"] a {
     @apply pl-12 text-xs;
 }
 
-/* Add more levels if needed */
-#toc-container li a.font-semibold {
-    /* H1 Style */
-    /* Removed @apply font-semibold; as it's handled by the class */
-}
-
-/* --- 评论区样式 --- */
-/* 评论项和回复项的基本样式 */
-.comment-item,
-.reply-item {
-    @apply flex items-start space-x-3;
-}
-
-/* 评论操作按钮 */
+/* Comment Action Buttons */
 .comment-item:hover .comment-actions,
 .reply-item:hover .comment-actions {
     opacity: 1;
 }
 
 .comment-actions {
-    opacity: 1;
-    /* 或者保持 0，如果确实需要悬停显示 */
+    opacity: 0;
     transition: opacity 0.2s ease-in-out;
     @apply flex;
-    /* 保持 flex 布局 */
 }
 
+/* 默认隐藏，悬停显示 */
 .btn-comment-action {
     @apply text-xs flex items-center transition-colors duration-150 cursor-pointer p-1 rounded;
 }
 
 .btn-comment-action:hover {
     @apply bg-gray-100 dark:bg-gray-700;
-    /* 添加悬浮背景色 */
 }
 
 .btn-comment-action svg {
     @apply h-3 w-3;
 }
 
-/* --- 通用按钮和提示样式 --- */
+/* Button Styles */
 .btn-primary {
     @apply inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition text-sm font-medium disabled:opacity-50 dark:focus:ring-offset-gray-800;
 }
@@ -875,7 +866,6 @@ watch(() => props.currentVersion?.content, (newContent, oldContent) => {
     @apply inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition text-sm font-medium dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 dark:focus:ring-offset-gray-800;
 }
 
-/* 图标按钮 */
 .btn-icon-primary {
     @apply inline-flex items-center px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition;
 }
@@ -894,7 +884,7 @@ watch(() => props.currentVersion?.content, (newContent, oldContent) => {
     @apply mr-1 h-3 w-3;
 }
 
-/* 提示框 */
+/* Alert Styles */
 .alert-error {
     @apply bg-red-50 border-l-4 border-red-400 text-red-700 p-4 rounded-md dark:bg-red-900/30 dark:text-red-300 dark:border-red-600;
 }
@@ -907,7 +897,7 @@ watch(() => props.currentVersion?.content, (newContent, oldContent) => {
     @apply bg-blue-50 border-l-4 border-blue-400 text-blue-700 p-4 rounded-md dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-600;
 }
 
-/* 分类和标签 Tag 样式 */
+/* Tag Styles */
 .tag-category {
     @apply px-2.5 py-0.5 bg-gray-200 text-gray-700 text-xs rounded-full hover:bg-gray-300 transition dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600;
 }
@@ -916,25 +906,41 @@ watch(() => props.currentVersion?.content, (newContent, oldContent) => {
     @apply px-2.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full hover:bg-blue-200 transition dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60;
 }
 
-/* 暗色模式 Prose 适配 */
+/* Dark Mode Prose Overrides */
 .dark .dark\:prose-invert {
     --tw-prose-body: theme(colors.gray.300);
     --tw-prose-headings: theme(colors.gray.100);
     --tw-prose-links: theme(colors.cyan.400);
     --tw-prose-bold: theme(colors.white);
-    --tw-prose-bullets: theme(colors.gray.600);
+    --tw-prose-bullets: theme(colors.gray.500);
+    /* Adjusted bullet color */
     --tw-prose-hr: theme(colors.gray.700);
     --tw-prose-quotes: theme(colors.gray.300);
     --tw-prose-quote-borders: theme(colors.blue.700);
     --tw-prose-code: theme(colors.red.300);
     --tw-prose-pre-code: theme(colors.gray.300);
-    --tw-prose-pre-bg: theme(colors.gray.800);
+    --tw-prose-pre-bg: theme(colors.gray.900);
+    /* Darker pre background */
     --tw-prose-th-borders: theme(colors.gray.600);
     --tw-prose-td-borders: theme(colors.gray.700);
-    /* 暗色模式下表格背景 */
-    --tw-prose-tbody: theme(colors.gray.900);
-    /* 修复暗色模式下 tbody 背景色 */
+    --tw-prose-tbody: theme(colors.gray.800/50);
+    /* Darker tbody background */
     --tw-prose-thead: theme(colors.gray.700);
-    /* 确保表头背景适配 */
+}
+
+/* Break words for long unbroken strings in content and comments */
+.break-words {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    /* More aggressive break */
+    -webkit-hyphens: auto;
+    /* Enable hyphens */
+    -moz-hyphens: auto;
+    hyphens: auto;
+}
+
+.prose :deep(code) {
+    word-break: break-all;
+    /* Force break in code blocks */
 }
 </style>

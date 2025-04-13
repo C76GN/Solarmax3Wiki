@@ -168,7 +168,7 @@ const revertToVersion = () => {
 
 </script>
 
-<style>
+<style scoped>
 /* 针对 jfcherng/php-diff 的优化样式 */
 .specific-diff-styling .diff {
     @apply w-full border-collapse text-xs font-mono;
