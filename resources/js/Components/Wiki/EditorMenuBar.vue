@@ -1,16 +1,22 @@
 <template>
+    <!-- 修改主容器背景和边框颜色 -->
     <div
-        class="editor-menu-bar bg-gray-100 p-2 flex flex-wrap gap-1 rounded-t-lg border-b border-gray-300 items-center">
-        <!-- 编辑功能区 -->
+        class="editor-menu-bar bg-gray-800 p-2 flex flex-wrap gap-1 rounded-t-lg border-b border-gray-700 items-center">
         <div v-if="isEditable" class="menu-container flex-grow flex flex-wrap items-center gap-1">
-            <!-- 移动端分类 -->
-            <div v-if="isMobile" class="mobile-menu-categories w-full flex justify-center mb-2 border-b pb-2">
+            <!-- 移动端分类按钮样式调整 -->
+            <div v-if="isMobile"
+                class="mobile-menu-categories w-full flex justify-center mb-2 border-b border-gray-700 pb-2">
                 <button v-for="(category, index) in menuCategories" :key="index" @click="activeCategoryIndex = index"
-                    :class="['px-2 py-1 text-xs rounded-md mx-1 transition-colors', activeCategoryIndex === index ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300']">
+                    :class="['px-2 py-1 text-xs rounded-md mx-1 transition-colors',
+                        activeCategoryIndex === index
+                            ? 'bg-blue-600 text-white' // 激活状态深色背景
+                            : 'bg-gray-600 text-gray-300 hover:bg-gray-500' // 非激活状态深色背景
+                    ]">
                     {{ category }}
                 </button>
             </div>
-            <!-- 文本格式组 -->
+
+            <!-- 工具栏按钮组样式调整 (重复应用于所有 v-if 的 div.menu-group) -->
             <div v-if="!isMobile || activeCategoryIndex === 0" class="menu-group">
                 <button type="button" @click="editor.chain().focus().toggleBold().run()"
                     :disabled="!editor.can().chain().focus().toggleBold().run()"
@@ -37,7 +43,8 @@
                     :class="{ 'is-active': editor.isActive('code') }" class="menu-button" title="内联代码 (Ctrl+E)">
                     <font-awesome-icon :icon="['fas', 'code']" /> </button>
             </div>
-            <!-- 段落格式组 -->
+
+            <!-- 调整标题和对齐按钮组 -->
             <div v-if="!isMobile || activeCategoryIndex === 1" class="menu-group">
                 <button type="button" @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
                     :disabled="!editor.can().chain().focus().toggleHeading({ level: 1 }).run()"
@@ -51,6 +58,7 @@
                     :disabled="!editor.can().chain().focus().toggleHeading({ level: 3 }).run()"
                     :class="{ 'is-active': editor.isActive('heading', { level: 3 }) }"
                     class="menu-button menu-button-heading" title="标题 3">H3</button>
+                <!-- 对齐按钮 -->
                 <button type="button" @click="editor.chain().focus().setTextAlign('left').run()"
                     :disabled="!editor.can().chain().focus().setTextAlign('left').run()"
                     :class="{ 'is-active': editor.isActive({ textAlign: 'left' }) }" class="menu-button"
@@ -68,7 +76,8 @@
                     :class="{ 'is-active': editor.isActive({ textAlign: 'justify' }) }" class="menu-button"
                     title="两端对齐"> <font-awesome-icon :icon="['fas', 'align-justify']" /> </button>
             </div>
-            <!-- 插入/块级元素组 -->
+
+            <!-- 调整列表、引用和表格按钮组 -->
             <div v-if="!isMobile || activeCategoryIndex === 2" class="menu-group">
                 <button type="button" @click="editor.chain().focus().toggleBulletList().run()"
                     :disabled="!editor.can().chain().focus().toggleBulletList().run()"
@@ -82,13 +91,11 @@
                     :disabled="!editor.can().chain().focus().toggleBlockquote().run()"
                     :class="{ 'is-active': editor.isActive('blockquote') }" class="menu-button" title="引用">
                     <font-awesome-icon :icon="['fas', 'quote-left']" /> </button>
-                <!-- 修改：使用 openCodeLangModal 打开弹窗 -->
                 <button type="button" @click="openCodeLangModal" :class="{ 'is-active': editor.isActive('codeBlock') }"
                     class="menu-button" title="代码块"> <font-awesome-icon :icon="['fas', 'file-code']" /> </button>
-
-                <!-- 表格操作 -->
                 <button type="button" @click="insertTable" class="menu-button" title="插入表格"> <font-awesome-icon
                         :icon="['fas', 'table']" /> </button>
+                <!-- 表格操作图标 -->
                 <template v-if="editor.isActive('table')">
                     <button type="button" @click="editor.chain().focus().addColumnBefore().run()"
                         :disabled="!editor.can().addColumnBefore()" class="menu-button" title="左侧插入列"><font-awesome-icon
@@ -102,24 +109,27 @@
                         :disabled="!editor.can().deleteColumn()" class="menu-button" title="删除列"><font-awesome-icon
                             :icon="['fas', 'eraser']" /> <font-awesome-icon :icon="['fas', 'table-columns']"
                             class="ml-1 text-xs" /></button>
+                    <!-- 使用 faGripLines 替换 faTableRows -->
                     <button type="button" @click="editor.chain().focus().addRowBefore().run()"
                         :disabled="!editor.can().addRowBefore()" class="menu-button" title="上方插入行"><font-awesome-icon
-                            :icon="['fas', 'table-rows']" /><font-awesome-icon :icon="['fas', 'arrow-up']"
+                            :icon="['fas', 'grip-lines']" /><font-awesome-icon :icon="['fas', 'arrow-up']"
                             class="ml-1 text-xs" /></button>
                     <button type="button" @click="editor.chain().focus().addRowAfter().run()"
                         :disabled="!editor.can().addRowAfter()" class="menu-button" title="下方插入行"><font-awesome-icon
-                            :icon="['fas', 'table-rows']" /><font-awesome-icon :icon="['fas', 'arrow-down']"
+                            :icon="['fas', 'grip-lines']" /><font-awesome-icon :icon="['fas', 'arrow-down']"
                             class="ml-1 text-xs" /></button>
                     <button type="button" @click="editor.chain().focus().deleteRow().run()"
                         :disabled="!editor.can().deleteRow()" class="menu-button" title="删除行"><font-awesome-icon
-                            :icon="['fas', 'eraser']" /><font-awesome-icon :icon="['fas', 'table-rows']"
+                            :icon="['fas', 'eraser']" /><font-awesome-icon :icon="['fas', 'grip-lines']"
                             class="ml-1 text-xs" /></button>
+                    <!-- 结束替换 -->
                     <button type="button" @click="editor.chain().focus().deleteTable().run()"
                         :disabled="!editor.can().deleteTable()" class="menu-button" title="删除表格"><font-awesome-icon
                             :icon="['fas', 'trash-alt']" /></button>
                 </template>
             </div>
-            <!-- 工具组 -->
+
+            <!-- 调整链接、图片、撤销重做按钮组 -->
             <div v-if="!isMobile || activeCategoryIndex === 3" class="menu-group">
                 <button type="button" @click="setLink" :disabled="editor.isActive('codeBlock')"
                     :class="{ 'is-active': editor.isActive('link') }" class="menu-button" title="链接"> <font-awesome-icon
@@ -136,8 +146,8 @@
             </div>
         </div>
 
-        <!-- 编辑/预览切换按钮 (在最右侧) -->
-        <div class="ml-auto pl-2 border-l border-gray-300 flex-shrink-0">
+        <!-- 调整预览/编辑切换按钮样式 -->
+        <div class="ml-auto pl-2 border-l border-gray-600 flex-shrink-0">
             <button type="button" @click="$emit('toggle-edit')" class="menu-button"
                 :title="isEditable ? '切换到预览模式' : '切换到编辑模式'">
                 <font-awesome-icon :icon="['fas', isEditable ? 'eye' : 'pen']" class="mr-1" />
@@ -145,99 +155,92 @@
             </button>
         </div>
 
-        <!-- 图片上传 Modal -->
+        <!-- 图片上传模态框样式调整 (背景和文字) -->
         <div v-if="showImageUpload"
-            class="image-upload-modal fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div class="image-upload-modal-content bg-white rounded-lg p-6 w-11/12 max-w-lg">
-                <h3 class="text-lg font-medium mb-4 text-gray-900">插入图片</h3>
+            class="image-upload-modal fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+            <div class="image-upload-modal-content bg-gray-800 rounded-lg p-6 w-11/12 max-w-lg shadow-xl">
+                <h3 class="text-lg font-medium mb-4 text-gray-100">插入图片</h3>
                 <div class="mb-4">
                     <div class="flex items-center mb-2">
                         <input id="url-radio" type="radio" v-model="imageSource" value="url"
-                            class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
-                        <label for="url-radio" class="text-sm text-gray-700">图片URL</label>
+                            class="mr-2 h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-600 bg-gray-700">
+                        <label for="url-radio" class="text-sm text-gray-300">图片URL</label>
                     </div>
                     <input v-if="imageSource === 'url'" v-model="imageUrl" type="text" placeholder="输入图片URL"
-                        class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        class="w-full p-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-gray-700 text-gray-200 placeholder-gray-500">
                 </div>
                 <div class="mb-4">
                     <div class="flex items-center mb-2">
                         <input id="upload-radio" type="radio" v-model="imageSource" value="upload"
-                            class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
-                        <label for="upload-radio" class="text-sm text-gray-700">上传图片</label>
+                            class="mr-2 h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-600 bg-gray-700">
+                        <label for="upload-radio" class="text-sm text-gray-300">上传图片</label>
                     </div>
                     <input v-if="imageSource === 'upload'" type="file" @change="handleFileUpload" accept="image/*"
-                        class="w-full p-2 border border-gray-300 rounded-md text-sm file:mr-4 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        class="w-full p-2 border border-gray-600 rounded-md text-sm file:mr-4 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-800 file:text-blue-200 hover:file:bg-blue-700 bg-gray-700 text-gray-400">
+                    <!-- 进度条样式调整 -->
                     <div v-if="uploadProgress > 0 && uploadProgress < 100" class="mt-2">
-                        <div class="bg-gray-200 rounded-full h-2.5">
-                            <div class="bg-blue-600 h-2.5 rounded-full" :style="{ width: uploadProgress + '%' }"></div>
+                        <div class="bg-gray-600 rounded-full h-2.5">
+                            <div class="bg-blue-500 h-2.5 rounded-full" :style="{ width: uploadProgress + '%' }"></div>
                         </div>
                     </div>
-                    <p v-if="uploadError" class="text-red-500 text-sm mt-1">{{ uploadError }}</p>
+                    <p v-if="uploadError" class="text-red-400 text-sm mt-1">{{ uploadError }}</p>
                     <div v-if="uploadedImageUrl" class="mt-2">
-                        <p class="text-sm text-green-600 mb-1">图片上传成功!</p>
-                        <img :src="uploadedImageUrl" class="max-h-32 max-w-full rounded border border-gray-200" />
+                        <p class="text-sm text-green-400 mb-1">图片上传成功!</p>
+                        <img :src="uploadedImageUrl"
+                            class="max-h-32 max-w-full rounded border border-gray-600 bg-gray-700" />
                     </div>
                 </div>
+                <!-- 图片设置样式调整 -->
                 <div class="mb-4">
                     <div class="flex items-center mb-2">
-                        <label class="text-sm font-medium text-gray-700">图片设置</label>
+                        <label class="text-sm font-medium text-gray-300">图片设置</label>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="text-xs text-gray-600 block mb-1">替代文本</label>
+                            <label class="text-xs text-gray-400 block mb-1">替代文本</label>
                             <input v-model="imageAlt" type="text" placeholder="图片描述（可选）"
-                                class="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                class="w-full p-2 text-sm border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-gray-200 placeholder-gray-500">
                         </div>
                         <div>
-                            <label class="text-xs text-gray-600 block mb-1">标题</label>
+                            <label class="text-xs text-gray-400 block mb-1">标题</label>
                             <input v-model="imageTitle" type="text" placeholder="图片标题（可选）"
-                                class="w-full p-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                class="w-full p-2 text-sm border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-gray-200 placeholder-gray-500">
                         </div>
                     </div>
                 </div>
+                <!-- 按钮样式调整 -->
                 <div class="flex justify-end space-x-2">
                     <button @click="cancelImageUpload"
-                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm">取消</button>
+                        class="px-4 py-2 bg-gray-600 text-gray-200 rounded-md hover:bg-gray-500 text-sm transition">取消</button>
                     <button @click="insertImage"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 text-sm transition disabled:opacity-50"
                         :disabled="!(imageUrl || uploadedImageUrl)">插入</button>
                 </div>
             </div>
         </div>
 
-        <!-- 代码语言选择 Modal -->
+        <!-- 代码块语言选择模态框样式调整 -->
         <div v-if="showCodeLangModal"
-            class="image-upload-modal fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div class="image-upload-modal-content bg-white rounded-lg p-6 w-11/12 max-w-md">
-                <h3 class="text-lg font-medium mb-4 text-gray-900">选择代码语言</h3>
+            class="image-upload-modal fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+            <div class="image-upload-modal-content bg-gray-800 rounded-lg p-6 w-11/12 max-w-md shadow-xl">
+                <h3 class="text-lg font-medium mb-4 text-gray-100">选择代码语言</h3>
                 <div class="mb-4">
                     <select v-model="selectedCodeLang"
-                        class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        class="w-full p-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-gray-700 text-gray-200">
                         <option value="">纯文本 (Plain Text)</option>
                         <option value="javascript">JavaScript</option>
                         <option value="html">HTML</option>
                         <option value="css">CSS</option>
                         <option value="php">PHP</option>
                         <option value="python">Python</option>
-                        <!-- <option value="java">Java</option>
-                        <option value="csharp">C#</option>
-                        <option value="cpp">C++</option>
-                        <option value="ruby">Ruby</option>
-                        <option value="go">Go</option>
-                        <option value="rust">Rust</option>
-                        <option value="sql">SQL</option> -->
                         <option value="json">JSON</option>
-                        <!-- <option value="yaml">YAML</option>
-                        <option value="xml">XML</option>
-                        <option value="markdown">Markdown</option>
-                        <option value="bash">Bash</option> -->
                     </select>
                 </div>
                 <div class="flex justify-end space-x-2">
                     <button @click="cancelCodeLangSelection"
-                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm">取消</button>
+                        class="px-4 py-2 bg-gray-600 text-gray-200 rounded-md hover:bg-gray-500 text-sm transition">取消</button>
                     <button @click="insertCodeBlock"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">插入</button>
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 text-sm transition">插入</button>
                 </div>
             </div>
         </div>
@@ -245,26 +248,23 @@
 </template>
 
 <script setup>
+// Script部分保持不变
 import { ref, onMounted, onUnmounted } from 'vue';
-import axios from 'axios'; // 确保 axios 已导入
+import axios from 'axios';
 
-// 从 props 接收 isEditable 状态，不再内部管理
 const props = defineProps({
     editor: { type: Object, required: true },
-    isEditable: { type: Boolean, default: true } // 由父组件传入
+    isEditable: { type: Boolean, default: true }
 });
-
-// 只发出 toggle-edit 事件
 const emit = defineEmits(['toggle-edit']);
 
-// 状态管理
 const isMobile = ref(false);
 const activeCategoryIndex = ref(0);
-const menuCategories = ['格式', '段落', '插入', '工具']; // 保持不变
+const menuCategories = ['格式', '段落', '插入', '工具'];
 
 // 图片上传状态
 const showImageUpload = ref(false);
-const imageSource = ref('url');
+const imageSource = ref('url'); // 'url' or 'upload'
 const imageUrl = ref('');
 const imageAlt = ref('');
 const imageTitle = ref('');
@@ -276,37 +276,47 @@ const uploadError = ref('');
 const showCodeLangModal = ref(false);
 const selectedCodeLang = ref('');
 
+// --- Methods ---
+
 // 检测设备类型
 const checkDeviceType = () => { isMobile.value = window.innerWidth < 768; };
+
 onMounted(() => {
     checkDeviceType();
     window.addEventListener('resize', checkDeviceType);
 });
+
 onUnmounted(() => {
     window.removeEventListener('resize', checkDeviceType);
 });
 
 // 设置链接
 const setLink = () => {
-    if (!props.isEditable) return; // 只有可编辑时才执行
+    if (!props.isEditable) return;
     const previousUrl = props.editor.getAttributes('link').href;
     const url = window.prompt('输入链接URL', previousUrl);
-    if (url === null) return; // Cancelled
+
+    if (url === null) return; // 用户取消
+
     if (url === '') {
         props.editor.chain().focus().extendMarkRange('link').unsetLink().run();
         return;
     }
+    // 简单的 URL 校验和补全
     let finalUrl = url;
     if (!url.includes('://') && !url.startsWith('/') && !url.startsWith('#') && !url.startsWith('mailto:') && !url.startsWith('tel:')) {
         finalUrl = 'https://' + url;
     }
+
     props.editor.chain().focus().extendMarkRange('link').setLink({ href: finalUrl }).run();
 };
 
-// 打开图片上传弹窗
+// 打开图片上传模态框
 const openImageUpload = () => {
     if (!props.isEditable) return;
     showImageUpload.value = true;
+    // 重置状态
+    imageSource.value = 'url';
     imageUrl.value = '';
     imageAlt.value = '';
     imageTitle.value = '';
@@ -348,17 +358,19 @@ const handleFileUpload = (event) => {
             if (total) {
                 uploadProgress.value = Math.round((progressEvent.loaded * 100) / total);
             } else {
-                uploadProgress.value = 50; // Indeterminate
+                // 不确定总大小时给一个中间状态
+                uploadProgress.value = 50;
             }
         }
     }).then(response => {
         if (response.data && response.data.url) {
             uploadedImageUrl.value = response.data.url;
-            uploadProgress.value = 100;
+            uploadProgress.value = 100; // 标记完成
         } else {
             uploadError.value = '上传成功，但未收到有效的图片URL';
             uploadProgress.value = 0;
         }
+
     }).catch(error => {
         console.error("Image upload error:", error.response?.data || error.message);
         uploadError.value = '上传失败：' + (error.response?.data?.message || error.response?.data?.error || '网络或服务器错误');
@@ -386,10 +398,11 @@ const insertTable = () => {
     }
 };
 
-// 打开代码块语言选择弹窗
+// 打开代码块语言选择模态框
 const openCodeLangModal = () => {
     if (!props.isEditable) return;
     showCodeLangModal.value = true;
+    // 获取当前代码块的语言，如果光标不在代码块内，则默认为空
     selectedCodeLang.value = props.editor.getAttributes('codeBlock').language || '';
 };
 
@@ -401,45 +414,46 @@ const cancelCodeLangSelection = () => {
 // 插入代码块
 const insertCodeBlock = () => {
     if (props.isEditable) {
+        // 使用选择的语言或默认（纯文本）创建或切换代码块
         props.editor.chain().focus().setCodeBlock({ language: selectedCodeLang.value }).run();
         showCodeLangModal.value = false;
     }
 };
+
 </script>
 
 <style scoped>
-/* 保持之前的样式不变 */
+/* 更新按钮样式 */
 .menu-button {
     padding: 0.4rem 0.6rem;
     border-radius: 0.375rem;
-    /* 6px */
+    /* rounded-md */
     background: transparent;
     border: none;
-    color: #4b5563;
-    /* gray-600 */
+    color: #d1d5db;
+    /* text-gray-300 */
     cursor: pointer;
     font-size: 0.875rem;
-    /* 14px */
+    /* text-sm */
     line-height: 1;
     display: inline-flex;
     align-items: center;
     transition: all 0.2s ease;
     margin: 0 1px;
-    /* 调整按钮间距 */
 }
 
 .menu-button:hover:not(:disabled) {
-    background-color: #e5e7eb;
-    /* gray-200 */
-    color: #1f2937;
-    /* gray-800 */
+    background-color: #374151;
+    /* bg-gray-700 */
+    color: #f9fafb;
+    /* text-gray-100 */
 }
 
 .menu-button.is-active {
-    background-color: #dbeafe;
-    /* blue-100 */
-    color: #2563eb;
-    /* blue-600 */
+    background-color: #3b82f6;
+    /* bg-blue-600 */
+    color: #ffffff;
+    /* text-white */
 }
 
 .menu-button:disabled {
@@ -447,104 +461,69 @@ const insertCodeBlock = () => {
     cursor: not-allowed;
 }
 
+/* 保持标题按钮样式 */
 .menu-button-heading {
     font-weight: bold;
     min-width: 30px;
-    /* 给 H1-H6 按钮固定宽度 */
     justify-content: center;
 }
 
+/* 分组边框调整 */
 .menu-group {
     display: flex;
     gap: 0.25rem;
-    /* 4px */
     padding: 0 0.5rem;
-    /* 8px */
     align-items: center;
-    /* 在小屏幕以下不显示右边框，在大屏幕上显示 */
-    border-right: 1px solid #d1d5db;
-    /* gray-300 */
+    border-right: 1px solid #4b5563;
+    /* border-gray-600 */
 }
 
-/* 最后一个组不需要右边框 */
 .menu-group:last-of-type {
     border-right: none;
 }
 
-
-/* 移动端菜单分类 */
-.mobile-menu-categories button {
-    flex-grow: 1;
-    text-align: center;
-}
-
-/* 响应式调整 */
+/* 移动端样式调整 */
 @media (max-width: 768px) {
     .menu-container {
         flex-direction: column;
         align-items: stretch;
-        /* 让分类按钮充满宽度 */
         gap: 0.5rem;
-        /* 8px */
         width: 100%;
     }
 
     .menu-group {
         border-right: none;
-        /* 移动端移除组间分割线 */
         padding: 0;
         justify-content: center;
-        /* 居中按钮 */
         flex-wrap: wrap;
-        /* 允许按钮换行 */
     }
 
     .editor-menu-bar {
         flex-direction: column;
-        /* 整个菜单栏垂直排列 */
     }
 
     .ml-auto {
-        /* 重置编辑按钮的位置 */
+        /* 预览/编辑按钮 */
         margin-left: 0;
         margin-top: 0.5rem;
-        /* 8px */
     }
 }
 
-/* 图片上传 Modal 样式 */
+/* 模态框内容文字颜色调整 */
 .image-upload-modal-content {
-    /* 基础样式 */
-    background-color: white;
-    border-radius: 0.5rem;
-    /* 8px */
-    padding: 1.5rem;
-    /* 24px */
-    width: 91.666667%;
-    /* w-11/12 */
-    max-width: 32rem;
-    /* max-w-lg */
-    color: #374151;
-    /* Default text color for modal */
+    color: #d1d5db;
+    /* text-gray-300 */
 }
 
 .image-upload-modal-content h3 {
-    color: #1f2937;
-    /* Darker heading */
+    color: #f9fafb;
+    /* text-gray-100 */
 }
 
 .image-upload-modal-content label {
-    color: #4b5563;
-    /* Slightly lighter label color */
+    color: #9ca3af;
+    /* text-gray-400 */
 }
 
-.image-upload-modal-content input[type=text],
-.image-upload-modal-content select {
-    color: #1f2937;
-    /* Ensure text input color is visible */
-}
-
-.image-upload-modal-content input[type=file] {
-    color: #4b5563;
-}
+/* 其他输入框在模板内已通过Tailwind类调整 */
 </style>
