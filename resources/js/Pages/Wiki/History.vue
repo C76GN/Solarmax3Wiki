@@ -8,12 +8,11 @@
                     class="flex flex-col md:flex-row justify-between md:items-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
                     <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 md:mb-0">{{ page.title }} - 版本历史
                     </h1>
-                    <Link :href="route('wiki.show', page.slug)" class="btn-link text-sm"> <!-- 使用统一样式类 -->
+                    <Link :href="route('wiki.show', page.slug)" class="btn-link text-sm">
                     <font-awesome-icon :icon="['fas', 'arrow-left']" class="mr-1" /> 返回页面
                     </Link>
                 </div>
 
-                <!-- 版本比较表单 -->
                 <div v-if="versions.data.length > 1"
                     class="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
                     <form @submit.prevent="compareVersions">
@@ -23,14 +22,14 @@
                                     对比版本
                                 </label>
                                 <div class="flex items-center gap-2 text-sm">
-                                    <select v-model="compareFrom" class="select-field"> <!-- 使用统一样式类 -->
+                                    <select v-model="compareFrom" class="select-field">
                                         <option v-for="version in versions.data" :key="`from-${version.id}`"
                                             :value="version.version_number">
                                             v{{ version.version_number }} ({{ formatDate(version.created_at) }})
                                         </option>
                                     </select>
                                     <span class="text-gray-600 dark:text-gray-400">与</span>
-                                    <select v-model="compareTo" class="select-field"> <!-- 使用统一样式类 -->
+                                    <select v-model="compareTo" class="select-field">
                                         <option v-for="version in versions.data" :key="`to-${version.id}`"
                                             :value="version.version_number">
                                             v{{ version.version_number }} ({{ formatDate(version.created_at) }})
@@ -39,14 +38,12 @@
                                 </div>
                             </div>
                             <button type="submit" class="btn-primary text-sm" :disabled="compareFrom === compareTo">
-                                <!-- 使用统一样式类 -->
                                 比较版本
                             </button>
                         </div>
                     </form>
                 </div>
 
-                <!-- 版本历史表格 -->
                 <div class="overflow-x-auto">
                     <table class="w-full text-left table-fixed">
                         <thead class="bg-gray-100 dark:bg-gray-700/50">
@@ -99,14 +96,12 @@
                         </tbody>
                     </table>
                 </div>
-
-                <!-- 分页 -->
                 <Pagination :links="versions.links" class="mt-6" />
             </div>
         </div>
 
-        <!-- 恢复版本确认 Modal -->
-        <Modal :show="showRevertModal" @close="closeRevertModal" maxWidth="md" title="确认恢复版本">
+        <!-- Revert Confirmation Modal - Added :showFooter="true" -->
+        <Modal :show="showRevertModal" @close="closeRevertModal" maxWidth="md" title="确认恢复版本" :showFooter="true">
             <div class="p-6">
                 <p class="mb-6 text-sm text-gray-600 dark:text-gray-300">
                     您确定要将页面恢复到 <strong class="font-semibold text-gray-900 dark:text-gray-100">版本 v{{
@@ -117,14 +112,13 @@
             <template #footer>
                 <button @click="closeRevertModal" class="btn-secondary">取消</button>
                 <button @click="revertToVersion" class="btn-primary ml-3" :disabled="isReverting">
-                    <!-- 保持按钮在 Modal 组件内 -->
                     <font-awesome-icon v-if="isReverting" :icon="['fas', 'spinner']" spin class="mr-1" />
                     {{ isReverting ? '恢复中...' : '确认恢复' }}
                 </button>
             </template>
         </Modal>
-        <FlashMessage ref="flashMessage" /> <!-- FlashMessage 现在也应该在这里 -->
 
+        <FlashMessage ref="flashMessage" />
     </MainLayout>
 </template>
 
@@ -133,26 +127,36 @@ import { ref, computed } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import Pagination from '@/Components/Other/Pagination.vue';
-import Modal from '@/Components/Modal/Modal.vue';
-import FlashMessage from '@/Components/Other/FlashMessage.vue'; // 引入FlashMessage
+import Modal from '@/Components/Modal/Modal.vue'; // Modal component
+import FlashMessage from '@/Components/Other/FlashMessage.vue'; // Flash message component
 import { formatDate, formatDateTime } from '@/utils/formatters';
-import { mainNavigationLinks } from '@/config/navigationConfig';
+import { mainNavigationLinks } from '@/config/navigationConfig'; // Navigation links
 
 const navigationLinks = mainNavigationLinks;
 const pageProps = usePage().props;
 
+// Props definition
 const props = defineProps({
     page: { type: Object, required: true },
     versions: { type: Object, required: true },
 });
 
-// 版本比较逻辑
+// Refs for component state
 const compareFrom = ref(props.versions.data.length > 0 ? props.versions.data[0].version_number : 1);
 const compareTo = ref(props.versions.data.length > 1 ? props.versions.data[1].version_number : 1);
+const showRevertModal = ref(false);
+const isReverting = ref(false);
+const revertVersion = ref(null);
+const flashMessage = ref(null);
 
+// Computed property to check revert permission
+const canRevert = computed(() => {
+    return pageProps.auth?.user?.permissions?.includes('wiki.edit') || false;
+});
+
+// Method to initiate version comparison
 const compareVersions = () => {
     if (compareFrom.value === compareTo.value) {
-        // 可以选择用 FlashMessage 提示
         flashMessage.value?.addMessage('warning', '请选择两个不同的版本进行比较。');
         return;
     }
@@ -163,16 +167,7 @@ const compareVersions = () => {
     }));
 };
 
-// 恢复版本逻辑
-const showRevertModal = ref(false);
-const isReverting = ref(false); // 添加处理状态
-const revertVersion = ref(null);
-const flashMessage = ref(null); // 引用 FlashMessage 组件
-
-const canRevert = computed(() => {
-    return pageProps.auth?.user?.permissions?.includes('wiki.edit') || false;
-});
-
+// Methods for handling revert modal
 const confirmRevert = (version) => {
     revertVersion.value = version;
     showRevertModal.value = true;
@@ -183,6 +178,7 @@ const closeRevertModal = () => {
     revertVersion.value = null;
 };
 
+// Method to perform revert action
 const revertToVersion = () => {
     if (!revertVersion.value) return;
     isReverting.value = true;
@@ -208,7 +204,7 @@ const revertToVersion = () => {
 </script>
 
 <style scoped>
-/* 定义表格和按钮的基础和暗色模式样式 */
+/* Styles remain the same as before, ensuring consistency */
 .th-cell {
     @apply px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider;
 }
@@ -217,24 +213,25 @@ const revertToVersion = () => {
     @apply px-4 py-4 text-sm;
 }
 
-/* 统一样式类 */
 .select-field {
     @apply rounded border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200;
 }
 
 .btn-primary {
-    @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed;
+    /* Added font-medium */
 }
 
 .btn-secondary {
-    @apply px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500;
+    @apply px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 text-sm font-medium;
+    /* Added font-medium */
 }
 
 .btn-link {
     @apply text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition;
 }
 
-/* 可选：为 Modal 内容添加样式 */
+/* Modal content styles */
 .modal-content p {
     @apply text-gray-600 dark:text-gray-300;
 }

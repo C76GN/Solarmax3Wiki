@@ -2,14 +2,11 @@
 # Example:
 # *.log
 # tmp/
-public/tinymce
 resources/js/Components/Svg
 public/images
 public/favicon.ico
 composer.lock
 package-lock.json
-resources/lang/en
-resources/lang/zh
 READMEexample.md
 resources/.repomixignore
 resources/repomix-output.txt

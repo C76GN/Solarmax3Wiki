@@ -1,18 +1,18 @@
 <template>
     <MainLayout :navigationLinks="navigationLinks">
 
-        <Head title="创建 Wiki 分类" />
+        <Head :title="`编辑分类: ${category.name}`" />
         <div class="container mx-auto py-6 px-4">
             <div class="max-w-2xl mx-auto bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-lg shadow-lg p-6">
                 <div class="flex justify-between items-center mb-6 pb-4 border-b dark:border-gray-700">
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">创建新分类</h1>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">编辑分类: {{ form.name }}</h1>
                     <Link :href="route('wiki.categories.index')"
                         class="text-blue-600 dark:text-blue-400 hover:underline text-sm">
                     <font-awesome-icon :icon="['fas', 'arrow-left']" class="mr-1" /> 返回列表
                     </Link>
                 </div>
 
-                <form @submit.prevent="createCategory">
+                <form @submit.prevent="updateCategory">
                     <div class="space-y-6">
                         <div>
                             <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -37,11 +37,12 @@
                             </label>
                             <select id="parent_id" v-model="form.parent_id" class="select-field">
                                 <option :value="null">-- 无（设为顶级分类） --</option>
-                                <option v-for="category in categories" :key="category.id" :value="category.id">
-                                    {{ category.name }}
+                                <option v-for="cat in availableParents" :key="cat.id" :value="cat.id">
+                                    {{ cat.name }}
                                 </option>
                             </select>
                             <InputError class="mt-1" :message="form.errors.parent_id" />
+                            <p v-if="isSelfParentSelected" class="mt-1 text-xs text-red-500">不能选择自己作为父分类。</p>
                         </div>
                         <div>
                             <label for="order" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -58,10 +59,11 @@
                             <Link :href="route('wiki.categories.index')" class="btn-secondary">
                             取消
                             </Link>
-                            <button type="submit" class="btn-primary" :disabled="form.processing">
+                            <button type="submit" class="btn-primary"
+                                :disabled="form.processing || isSelfParentSelected">
                                 <font-awesome-icon v-if="form.processing" :icon="['fas', 'spinner']" spin
                                     class="mr-1" />
-                                {{ form.processing ? '创建中...' : '创建分类' }}
+                                {{ form.processing ? '更新中...' : '更新分类' }}
                             </button>
                         </div>
                     </div>
@@ -72,36 +74,55 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
-import InputError from '@/Components/Other/InputError.vue'; // Make sure this path is correct
+import InputError from '@/Components/Other/InputError.vue'; // Make sure path is correct
 import { adminNavigationLinks } from '@/config/navigationConfig';
 
 const navigationLinks = adminNavigationLinks;
 
 const props = defineProps({
-    categories: { // List of potential parent categories
+    category: { // The category being edited
+        type: Object,
+        required: true
+    },
+    categories: { // All other categories (for parent selection)
         type: Array,
         required: true
     },
-    errors: Object // Passed by Inertia on validation failure
+    errors: Object // Passed by Inertia
 });
 
 const form = useForm({
-    name: '',
-    description: '',
-    parent_id: null, // Default to top-level
-    order: 0
+    name: props.category.name,
+    description: props.category.description || '',
+    parent_id: props.category.parent_id || null, // Ensure null if no parent
+    order: props.category.order || 0
 });
 
-const createCategory = () => {
-    form.post(route('wiki.categories.store'), {
+// Filter out the current category from the parent selection list
+const availableParents = computed(() => {
+    return props.categories.filter(cat => cat.id !== props.category.id);
+});
+
+// Computed property to check if the current category is selected as its own parent
+const isSelfParentSelected = computed(() => {
+    return form.parent_id === props.category.id;
+});
+
+const updateCategory = () => {
+    if (isSelfParentSelected.value) {
+        // This check should ideally be done on the backend too, but good for UX
+        form.setError('parent_id', '分类不能选择自己作为父分类。');
+        return;
+    }
+    form.put(route('wiki.categories.update', props.category.id), {
         preserveScroll: true,
         onError: (pageErrors) => {
-            console.error("创建分类失败:", pageErrors);
-            // Optional: Add a general error message if specific field errors aren't helpful
+            console.error("更新分类失败:", pageErrors);
             if (!pageErrors.name && !pageErrors.parent_id) {
-                form.setError('general', '创建分类时发生未知错误。');
+                form.setError('general', '更新分类时发生未知错误。');
             }
         }
     });

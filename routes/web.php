@@ -24,14 +24,27 @@ Route::prefix('wiki')->name('wiki.')->group(function () {
             Route::post('', [WikiController::class, 'store'])->name('store');
         });
 
+        Route::prefix('trash')->name('trash.')->middleware('permission:wiki.trash.view')->group(function () {
+            Route::get('', [WikiController::class, 'trashIndex'])->name('index');
+            Route::put('{pageId}/restore', [WikiController::class, 'restore'])
+                ->where('pageId', '[0-9]+')
+                ->middleware('permission:wiki.trash.restore') // 添加恢复权限
+                ->name('restore');
+            Route::delete('{pageId}/force-delete', [WikiController::class, 'forceDelete'])
+                ->where('pageId', '[0-9]+')
+                ->middleware('permission:wiki.trash.force_delete') // 添加永久删除权限
+                ->name('force-delete');
+        });
+        Route::middleware('permission:wiki.delete')
+            ->delete('{page:slug}', [WikiController::class, 'destroy'])
+            ->name('destroy');
+
         Route::middleware('permission:wiki.edit')->group(function () {
             Route::get('{page:slug}/edit', [WikiController::class, 'edit'])->name('edit');
             Route::put('{page:slug}', [WikiController::class, 'update'])->name('update');
             Route::post('{page}/draft', [WikiController::class, 'saveDraft'])->where('page', '[0-9]+')->name('save-draft');
             Route::post('{page:slug}/revert/{version}', [WikiController::class, 'revertToVersion'])->where('version', '[0-9]+')->name('revert-version');
         });
-
-        Route::middleware('permission:wiki.delete')->delete('{page:slug}', [WikiController::class, 'destroy'])->name('destroy');
 
         Route::middleware('permission:wiki.resolve_conflict')->group(function () {
             Route::get('{page:slug}/conflicts', [WikiController::class, 'showConflicts'])->name('show-conflicts');

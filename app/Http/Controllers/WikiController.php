@@ -12,6 +12,7 @@ use App\Models\WikiVersion;
 use App\Services\CollaborationService;
 use App\Services\DiffService;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -167,9 +168,11 @@ class WikiController extends Controller
 
     public function create(): InertiaResponse
     {
+        // 使用 Policy
+        $this->authorize('create', WikiPage::class);
+
         $categories = WikiCategory::select('id', 'name')->orderBy('order')->get();
         $tags = WikiTag::select('id', 'name')->get();
-
         return Inertia::render('Wiki/Create', [
             'categories' => $categories,
             'tags' => $tags,
@@ -178,6 +181,8 @@ class WikiController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+
+        $this->authorize('create', WikiPage::class);
         $validated = $request->validate([
             'title' => 'required|string|max:255|unique:wiki_pages,title',
             'content' => 'required|string',
@@ -244,10 +249,11 @@ class WikiController extends Controller
 
     public function edit(WikiPage $page): InertiaResponse|RedirectResponse
     {
+        $this->authorize('update', $page);
         $user = Auth::user();
         $isInConflict = $page->status === WikiPage::STATUS_CONFLICT;
-        $canResolveConflict = $user && Gate::allows('resolve_conflict', $page);
-
+        $canResolveConflict = $user && $user->can('wiki.resolve_conflict');
+        $isEditable = Gate::allows('update', $page);
         $draft = WikiPageDraft::where('wiki_page_id', $page->id)
             ->where('user_id', $user->id)
             ->select('content', 'last_saved_at')
@@ -278,6 +284,7 @@ class WikiController extends Controller
             'lastSaved' => $draft ? $draft->last_saved_at->toIso8601String() : null,
             'canResolveConflict' => $canResolveConflict,
             'isConflict' => $isInConflict,
+            'editorIsEditable' => $isEditable,
             'errors' => session('errors') ? session('errors')->getBag('default')->getMessages() : (object) [],
             'flash' => session('flash'),
         ];
@@ -287,6 +294,7 @@ class WikiController extends Controller
 
     public function update(Request $request, WikiPage $page): RedirectResponse
     {
+        $this->authorize('update', $page);
         $user = Auth::user(); // 保留获取用户，但不再检查是否为空
 
         $validated = $request->validate([
@@ -427,7 +435,15 @@ class WikiController extends Controller
 
     public function saveDraft(Request $request, $pageId): JsonResponse
     {
-        $page = WikiPage::findOrFail((int) $pageId);
+        try {
+            // 使用 findOrFail 获取页面，确保它存在且未被软删除
+            $page = WikiPage::findOrFail((int) $pageId);
+        } catch (ModelNotFoundException $e) {
+            Log::warning("Attempted to save draft for non-existent or deleted page ID: {$pageId}");
+
+            return response()->json(['message' => '页面不存在或已被删除'], SymfonyResponse::HTTP_NOT_FOUND);
+        }
+
         $user = Auth::user();
 
         if ($page->status === WikiPage::STATUS_CONFLICT) {
@@ -446,6 +462,7 @@ class WikiController extends Controller
                     'last_saved_at' => now(),
                 ]
             );
+
             Log::info("Draft saved for page {$page->id} by user {$user->id}. Draft ID: {$draft->id}");
 
             return response()->json([
@@ -463,30 +480,142 @@ class WikiController extends Controller
 
     public function destroy(WikiPage $page): RedirectResponse
     {
-        DB::beginTransaction();
+        // 注意：这里不再需要 DB::beginTransaction() 和 commit/rollback
+        // 因为软删除通常是一个原子操作，除非你有非常复杂的关联删除逻辑
+        $this->authorize('delete', $page);
         try {
             $pageTitle = $page->title;
             $pageId = $page->id;
             $userId = Auth::id();
 
-            $page->delete();
-            $this->logActivity('delete', $page, ['title' => $pageTitle]);
+            // 使用 delete() 方法触发软删除
+            if ($page->delete()) { // delete() 返回 true 或 false
+                $this->logActivity('delete', $page, ['title' => $pageTitle, 'soft_deleted' => true]); // 标记为软删除
+                Log::info("Wiki page {$pageId} ('{$pageTitle}') soft deleted by user {$userId}.");
 
-            DB::commit();
-            Log::info("Wiki page {$pageId} ('{$pageTitle}') deleted by user {$userId}.");
+                return redirect()->route('wiki.index')
+                    ->with('flash', ['message' => ['type' => 'success', 'text' => '页面已移至回收站！']]);
+            } else {
+                Log::error("Failed to soft delete page {$pageId} ('{$pageTitle}') by user {$userId}.");
 
-            return redirect()->route('wiki.index')
-                ->with('flash', ['message' => ['type' => 'success', 'text' => '页面已删除！']]);
+                return back()->withErrors(['general' => '将页面移至回收站时出错，请稍后重试。']);
+            }
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error("Error deleting page {$page->id}: ".$e->getMessage());
+            Log::error("Error soft deleting page {$page->id}: ".$e->getMessage());
 
-            return back()->withErrors(['general' => '删除页面时出错，请稍后重试。']);
+            return back()->withErrors(['general' => '删除页面时发生内部错误，请稍后重试。']);
+        }
+    }
+
+    /**
+     * 显示回收站中的页面列表.
+     */
+    public function trashIndex(Request $request): InertiaResponse
+    {
+        $this->authorize('viewTrash', WikiPage::class);
+
+        $query = WikiPage::onlyTrashed() // 只查询软删除的页面
+            ->with(['creator:id,name', 'categories:id,name,slug', 'tags:id,name,slug']);
+
+        // 可以添加搜索功能
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%");
+            });
+        }
+
+        $trashedPages = $query->latest('deleted_at') // 按删除时间排序
+            ->paginate(15)
+            ->withQueryString();
+
+        return Inertia::render('Wiki/Trash/Index', [
+            'trashedPages' => $trashedPages,
+            'filters' => $request->only(['search']),
+            'flash' => session('flash'),
+        ]);
+    }
+
+    /**
+     * 从回收站恢复页面.
+     * 使用 ID 而不是 slug，因为 slug 可能不唯一（如果原 slug 被重用）
+     */
+    public function restore(int $pageId): RedirectResponse
+    {
+        $this->authorize('restore', WikiPage::class);
+
+        try {
+            $page = WikiPage::onlyTrashed()->findOrFail($pageId);
+            $this->authorize('restore', $page); // 使用实例检查更精确
+            $page->restore(); // 恢复页面
+
+            $this->logActivity('restore', $page);
+            Log::info("Wiki page {$page->id} ('{$page->title}') restored from trash by user ".Auth::id());
+
+            return redirect()->route('wiki.trash.index')
+                ->with('flash', ['message' => ['type' => 'success', 'text' => '页面已成功恢复！']]);
+        } catch (ModelNotFoundException $e) {
+            Log::warning("Attempted to restore non-existent or not-trashed page ID: {$pageId}");
+
+            return redirect()->route('wiki.trash.index')
+                ->withErrors(['general' => '无法找到要恢复的页面。']);
+        } catch (\Exception $e) {
+            Log::error("Error restoring page {$pageId} from trash: ".$e->getMessage());
+
+            return redirect()->route('wiki.trash.index')
+                ->withErrors(['general' => '恢复页面时出错，请稍后重试。']);
+        }
+    }
+
+    /**
+     * 永久删除页面.
+     * 使用 ID
+     */
+    public function forceDelete(int $pageId): RedirectResponse
+    {
+        $this->authorize('forceDelete', WikiPage::class);
+
+        try {
+            $page = WikiPage::onlyTrashed()->findOrFail($pageId);
+            $this->authorize('forceDelete', $page);
+            $pageTitle = $page->title;
+
+            DB::beginTransaction();
+            try {
+                // 在这里可以添加删除关联数据的逻辑，如果需要的话
+                // 例如：$page->versions()->delete(); $page->comments()->delete(); 等
+                // 注意：如果设置了外键约束的 onDelete('cascade')，则不需要手动删除关联数据
+
+                $page->forceDelete(); // 永久删除
+
+                $this->logActivity('force_delete', $page, ['title' => $pageTitle]);
+                Log::info("Wiki page {$pageId} ('{$pageTitle}') permanently deleted by user ".Auth::id());
+
+                DB::commit();
+
+                return redirect()->route('wiki.trash.index')
+                    ->with('flash', ['message' => ['type' => 'success', 'text' => '页面已永久删除！']]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e; // 重新抛出异常以便外部捕获
+            }
+        } catch (ModelNotFoundException $e) {
+            Log::warning("Attempted to force delete non-existent or not-trashed page ID: {$pageId}");
+
+            return redirect()->route('wiki.trash.index')
+                ->withErrors(['general' => '无法找到要永久删除的页面。']);
+        } catch (\Exception $e) {
+            Log::error("Error force deleting page {$pageId}: ".$e->getMessage());
+
+            return redirect()->route('wiki.trash.index')
+                ->withErrors(['general' => '永久删除页面时出错，请稍后重试。']);
         }
     }
 
     public function showVersion(WikiPage $page, int $versionNumber): InertiaResponse
     {
+        $this->authorize('viewHistory', $page); // 添加检查
         $versionRecord = WikiVersion::where('wiki_page_id', $page->id)
             ->where('version_number', $versionNumber)
             ->with('creator:id,name')
@@ -502,6 +631,7 @@ class WikiController extends Controller
 
     public function history(WikiPage $page): InertiaResponse
     {
+        $this->authorize('viewHistory', $page);
         $versions = WikiVersion::where('wiki_page_id', $page->id)
             ->with('creator:id,name')
             ->orderBy('version_number', 'desc')
@@ -516,6 +646,7 @@ class WikiController extends Controller
 
     public function compareVersions(WikiPage $page, int $fromVersionNumber, int $toVersionNumber): InertiaResponse|RedirectResponse
     {
+        $this->authorize('viewHistory', $page);
         if ($fromVersionNumber === $toVersionNumber) {
             return redirect()->route('wiki.history', $page->slug)
                 ->with('flash', ['message' => ['type' => 'warning', 'text' => '请选择两个不同的版本进行比较。']]);
@@ -549,6 +680,7 @@ class WikiController extends Controller
 
     public function revertToVersion(Request $request, WikiPage $page, int $versionNumberToRevertTo): RedirectResponse
     {
+        $this->authorize('revert', $page);
         $user = Auth::user();
 
         $versionToRevert = WikiVersion::where('wiki_page_id', $page->id)
@@ -598,6 +730,7 @@ class WikiController extends Controller
 
     public function showConflicts(WikiPage $page, DiffService $diffService): InertiaResponse|RedirectResponse
     {
+        $this->authorize('resolveConflict', $page);
         if ($page->status !== WikiPage::STATUS_CONFLICT) {
             Log::info("Attempted to show conflicts for page {$page->id} which is not in conflict.");
 
@@ -634,6 +767,7 @@ class WikiController extends Controller
 
     public function resolveConflict(Request $request, WikiPage $page): RedirectResponse
     {
+        $this->authorize('resolveConflict', $page);
         $user = Auth::user();
 
         if ($page->status !== WikiPage::STATUS_CONFLICT) {

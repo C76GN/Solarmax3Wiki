@@ -7,42 +7,37 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
-/**
- * 权限检查中间件
- *
- * 用于路由权限控制，检查用户是否拥有指定的权限，
- * 如果用户未登录或没有所需权限，则返回403错误响应
- */
 class CheckPermission
 {
     /**
-     * 处理请求并检查用户权限
+     * Handle an incoming request.
      *
-     * @param  Request  $request  当前请求实例
-     * @param  Closure  $next  下一个中间件闭包
-     * @param  string  $permission  需要检查的权限名称
-     * @return mixed 下一个中间件的响应或403错误响应
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, string $permission): mixed
+    public function handle(Request $request, Closure $next, string $permission): mixed // 参数 $permission 是路由中定义的权限字符串
     {
+        // 获取当前认证的用户
         $user = $request->user();
 
-        // 检查用户是否登录并拥有所需权限
-        if (! $user || ! $user->hasPermission($permission)) {
-            // 对API请求返回JSON格式的错误响应
-            if ($request->wantsJson()) {
+        // 检查用户是否存在以及是否拥有指定权限
+        // 使用 Spatie 的 hasPermissionTo() 方法
+        if (! $user || ! $user->hasPermissionTo($permission)) { // <--- 修改这里：使用 hasPermissionTo()
+
+            // 如果是 API 请求，返回 JSON 错误
+            if ($request->wantsJson() || $request->expectsJson()) {
                 return response()->json([
-                    'message' => '权限不足',
+                    'message' => '权限不足 (Forbidden)', // 更明确的错误消息
                 ], SymfonyResponse::HTTP_FORBIDDEN);
             }
 
-            // 对Web请求返回Inertia渲染的错误页面
+            // 如果是 Web 请求，返回 Inertia 错误页面
+            // 确保 Error/Unauthorized 页面存在
             return Inertia::render('Error/Unauthorized', [
-                'message' => '您没有权限执行此操作',
+                'message' => '您没有权限执行此操作 (' . $permission . ')', // 可以带上具体权限名
             ])->toResponse($request)->setStatusCode(SymfonyResponse::HTTP_FORBIDDEN);
         }
 
-        // 用户具有所需权限，继续处理请求
+        // 用户有权限，继续处理请求
         return $next($request);
     }
 }

@@ -9,22 +9,22 @@ use Tighten\Ziggy\Ziggy;
 class HandleInertiaRequests extends Middleware
 {
     /**
-     * 定义根视图模板。
+     * The root template that is loaded on the first page visit.
      *
      * @var string
      */
     protected $rootView = 'app';
 
     /**
-     * 确定当前请求的资源版本。
+     * Determine the current asset version.
      */
-    public function version(Request $request): ?string
+    public function version(Request $request): string|null
     {
         return parent::version($request);
     }
 
     /**
-     * 定义默认情况下与 Inertia 共享的 props。
+     * Define the props that are shared by default.
      *
      * @return array<string, mixed>
      */
@@ -33,32 +33,34 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
 
         return array_merge(parent::share($request), [
-            'csrf' => csrf_token(), // 添加 CSRF token
+            'csrf' => csrf_token(),
             'auth' => [
                 'user' => $user ? [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'permissions' => $user?->getAllPermissionsAttribute() ?? [], // 获取用户所有权限
-                    'roles' => $user?->roles?->pluck('name') ?? [], // 获取用户角色名称
+                    // 使用 Spatie 的 getAllPermissions() 方法，并提取 name
+                    'permissions' => $user->getAllPermissions()->pluck('name')->toArray() ?? [], // <--- 修改这里
+                    // 获取角色名称列表（保持不变，Spatie 有 roles 关系）
+                    'roles' => $user->roles->pluck('name')->toArray() ?? [],
                 ] : null,
             ],
-            'flash' => function () use ($request) {
+            'flash' => function () use ($request) { // 共享 Flash 消息
                 return [
-                    'message' => $request->session()->get('flash.message'), // 添加 flash 消息
+                    'message' => $request->session()->get('flash.message'),
                 ];
             },
-            'errors' => function () use ($request) {
-                // 分享验证错误
+            'errors' => function () use ($request) { // 共享验证错误
                 return $request->session()->get('errors')
                     ? $request->session()->get('errors')->getBag('default')->getMessages()
                     : (object) [];
             },
-            'ziggy' => fn () => [
-                // 使用 new Ziggy() 来获取路由信息
-                ...(new Ziggy)->toArray(), // 这一行现在应该可以工作了
-                'location' => $request->url(), // 当前 URL
+            'ziggy' => fn() => [ // Ziggy 配置用于前端路由
+                ...(new Ziggy)->toArray(),
+                'location' => $request->url(),
             ],
+            // 你可以在这里添加其他需要全局共享的数据
+            // 'appName' => config('app.name'),
         ]);
     }
 }

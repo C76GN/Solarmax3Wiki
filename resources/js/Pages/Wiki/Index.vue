@@ -1,9 +1,12 @@
 <template>
     <MainLayout :navigationLinks="navigationLinks">
+
+        <Head title="Wiki 页面列表" />
         <div class="container mx-auto py-6 px-4">
             <div class="flex flex-col md:flex-row md:space-x-8">
-                <!-- Sidebar -->
+                <!-- Sidebar: Categories & Tags -->
                 <div class="w-full md:w-1/4 mb-6 md:mb-0 flex-shrink-0">
+                    <!-- Categories Card -->
                     <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg p-4 mb-6">
                         <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">分类</h2>
                         <ul v-if="categories.length > 0" class="space-y-2">
@@ -14,12 +17,13 @@
                                 <span>{{ category.name }}</span>
                                 <span
                                     class="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full px-2 py-0.5">{{
-                                    category.pages_count }}</span>
+                                        category.pages_count }}</span>
                                 </Link>
                             </li>
                         </ul>
                         <p v-else class="text-sm text-gray-500 dark:text-gray-400 italic">暂无分类</p>
                     </div>
+                    <!-- Tags Card -->
                     <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg p-4">
                         <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">标签</h2>
                         <div v-if="tags.length > 0" class="flex flex-wrap gap-2">
@@ -28,21 +32,22 @@
                                 :class="filters.tag === tag.slug
                                     ? 'bg-blue-600 text-white hover:bg-blue-700'
                                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'">
-                            {{ tag.name }} ({{ tag.pages_count }})
+                            {{ tag.name }} ({{ tag.pages_count }}) <!-- Added non-breaking space -->
                             </Link>
                         </div>
                         <p v-else class="text-sm text-gray-500 dark:text-gray-400 italic">暂无标签</p>
                     </div>
                 </div>
 
-                <!-- Main Content -->
+                <!-- Main Content: Wiki Pages List -->
                 <div class="w-full md:w-3/4">
                     <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg p-4 md:p-6 mb-6">
-                        <!-- Header & Actions -->
+                        <!-- Header and Search/Create -->
                         <div
                             class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b dark:border-gray-700">
                             <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 sm:mb-0">Wiki 页面</h1>
                             <div class="flex items-center gap-4 w-full sm:w-auto">
+                                <!-- Search Input -->
                                 <div class="relative flex-grow sm:flex-grow-0">
                                     <input type="text" v-model="search" @keyup.enter="performSearch"
                                         placeholder="搜索页面标题或Slug..."
@@ -52,6 +57,7 @@
                                         <font-awesome-icon :icon="['fas', 'search']" />
                                     </div>
                                 </div>
+                                <!-- Create Button -->
                                 <Link
                                     v-if="$page.props.auth.user && $page.props.auth.user.permissions.includes('wiki.create')"
                                     :href="route('wiki.create')"
@@ -61,7 +67,7 @@
                             </div>
                         </div>
 
-                        <!-- Filters Display -->
+                        <!-- Active Filters Display -->
                         <div v-if="hasFilters"
                             class="flex items-center flex-wrap gap-2 mb-4 text-sm border-b dark:border-gray-700 pb-4">
                             <span class="mr-2 text-gray-600 dark:text-gray-400 font-medium">筛选条件:</span>
@@ -98,7 +104,8 @@
                                 <div v-for="page in pages.data" :key="page.id"
                                     class="py-5 group transition duration-150 ease-in-out hover:bg-gray-50 dark:hover:bg-gray-700/50 px-2 -mx-2 rounded-md">
                                     <div class="flex flex-col sm:flex-row justify-between sm:items-start">
-                                        <div class="flex-grow mb-3 sm:mb-0">
+                                        <!-- Page Info -->
+                                        <div class="flex-grow mb-3 sm:mb-0 mr-4"> <!-- Added margin-right -->
                                             <Link :href="route('wiki.show', page.slug)"
                                                 class="text-xl font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mb-1 block break-words">
                                             {{ page.title }}
@@ -109,7 +116,6 @@
                                                 <span class="mx-1">|</span>
                                                 <span>最后更新于 {{ formatDate(page.updated_at) }}</span>
                                             </div>
-                                            <!-- Simplified tags display -->
                                             <div class="flex flex-wrap gap-1.5 mt-2">
                                                 <Link v-for="category in page.categories" :key="`cat-${category.id}`"
                                                     :href="route('wiki.index', { category: category.slug })"
@@ -122,30 +128,35 @@
                                                 </Link>
                                             </div>
                                         </div>
+                                        <!-- Actions -->
                                         <div class="flex items-center space-x-3 flex-shrink-0 ml-0 sm:ml-4">
                                             <Link
                                                 v-if="$page.props.auth.user && $page.props.auth.user.permissions.includes('wiki.edit')"
                                                 :href="route('wiki.edit', page.slug)"
-                                                class="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-150"
+                                                class="action-btn text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                                                 title="编辑">
-                                            <font-awesome-icon :icon="['fas', 'edit']" class="h-4 w-4" />
+                                            <font-awesome-icon :icon="['fas', 'edit']" />
                                             </Link>
                                             <Link :href="route('wiki.history', page.slug)"
-                                                class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-150"
+                                                class="action-btn text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                                 title="查看历史">
-                                            <font-awesome-icon :icon="['fas', 'history']" class="h-4 w-4" />
+                                            <font-awesome-icon :icon="['fas', 'history']" />
                                             </Link>
-                                            <!-- Potential Delete Button -->
-                                            <!-- <button v-if="$page.props.auth.user && $page.props.auth.user.permissions.includes('wiki.delete')" @click="confirmDelete(page)" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-150" title="删除">
-                                                <font-awesome-icon :icon="['fas', 'trash']" class="h-4 w-4"/>
-                                            </button> -->
+                                            <!-- Delete Button Added -->
+                                            <button
+                                                v-if="$page.props.auth.user && $page.props.auth.user.permissions.includes('wiki.delete')"
+                                                @click="confirmDelete(page)"
+                                                class="action-btn text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                                title="删除">
+                                                <font-awesome-icon :icon="['fas', 'trash']" />
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <Pagination :links="pages.links" class="mt-6" />
                         </div>
-                        <!-- Empty State -->
+                        <!-- No Pages Found Message -->
                         <div v-else class="py-12 text-center text-gray-500 dark:text-gray-400">
                             <font-awesome-icon :icon="['far', 'file-alt']"
                                 class="text-5xl mb-4 text-gray-400 dark:text-gray-600" />
@@ -162,6 +173,29 @@
                 </div>
             </div>
         </div>
+
+        <!-- Delete Confirmation Modal -->
+        <Modal :show="showDeleteConfirm" @close="cancelDelete" @confirm="deletePage" :showFooter="true" dangerAction
+            confirmText="移至回收站" cancelText="取消" maxWidth="md">
+            <template #default>
+                <div class="p-6">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+                        <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="text-yellow-500 mr-2" />
+                        确认删除页面
+                    </h3>
+                    <p class="mb-4 text-gray-600 dark:text-gray-300">
+                        确定要将页面 “<strong class="font-semibold text-gray-800 dark:text-gray-200">{{ pageToDelete?.title
+                            }}</strong>”
+                        移至回收站吗？
+                    </p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        页面可以在回收站中恢复或永久删除。
+                    </p>
+                </div>
+            </template>
+        </Modal>
+
+        <FlashMessage ref="flashMessage" />
     </MainLayout>
 </template>
 
@@ -170,7 +204,9 @@ import { ref, computed } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import Pagination from '@/Components/Other/Pagination.vue';
-import { formatDate, formatDateShort } from '@/utils/formatters'; // 确保引入了 formatDateShort
+import Modal from '@/Components/Modal/Modal.vue'; // 引入Modal组件
+import FlashMessage from '@/Components/Other/FlashMessage.vue'; // 引入FlashMessage
+import { formatDate, formatDateShort } from '@/utils/formatters';
 import { mainNavigationLinks } from '@/config/navigationConfig';
 
 const navigationLinks = mainNavigationLinks;
@@ -183,25 +219,25 @@ const props = defineProps({
 });
 
 const search = ref(props.filters.search || '');
+const flashMessage = ref(null); // Ref for flash messages
+const showDeleteConfirm = ref(false); // 控制删除确认模态框的显示
+const pageToDelete = ref(null); // 存储待删除的页面对象
 
 const hasFilters = computed(() => {
-    // 检查是否有任何非空的过滤条件
     return Object.values(props.filters).some(value => value !== null && value !== '' && value !== undefined);
 });
 
 const performSearch = () => {
-    // 仅在搜索词非空时添加到过滤器，或当搜索词为空但之前有搜索词时进行清除搜索
     const currentFilters = { ...props.filters };
     if (search.value.trim()) {
         currentFilters.search = search.value.trim();
     } else {
-        delete currentFilters.search; // 如果搜索框为空，则移除搜索过滤器
+        delete currentFilters.search;
     }
-
     router.get(route('wiki.index'), currentFilters, {
-        preserveState: true, // 保留组件状态，例如滚动位置
-        preserveScroll: true, // 保留滚动位置
-        replace: true // 避免浏览器历史记录堆叠过多相同的过滤 URL
+        preserveState: true,
+        preserveScroll: true,
+        replace: true
     });
 };
 
@@ -209,7 +245,7 @@ const removeFilter = (filterKey) => {
     const newFilters = { ...props.filters };
     delete newFilters[filterKey];
     if (filterKey === 'search') {
-        search.value = ''; // 清空搜索框
+        search.value = '';
     }
     router.get(route('wiki.index'), newFilters, {
         preserveState: true,
@@ -219,8 +255,8 @@ const removeFilter = (filterKey) => {
 };
 
 const clearFilters = () => {
-    search.value = ''; // 清空搜索框
-    router.get(route('wiki.index'), {}, { // 传递空对象以清除所有过滤器
+    search.value = '';
+    router.get(route('wiki.index'), {}, {
         preserveState: true,
         preserveScroll: true,
         replace: true
@@ -236,10 +272,39 @@ const getTagName = (slug) => {
     const tag = props.tags.find(t => t.slug === slug);
     return tag ? tag.name : slug;
 };
+
+// --- Delete Logic ---
+const confirmDelete = (page) => {
+    pageToDelete.value = page;
+    showDeleteConfirm.value = true;
+};
+
+const cancelDelete = () => {
+    showDeleteConfirm.value = false;
+    pageToDelete.value = null;
+};
+
+const deletePage = () => {
+    if (!pageToDelete.value) return;
+
+    // 使用 page slug 而不是 id，根据你的路由定义
+    router.delete(route('wiki.destroy', pageToDelete.value.slug), {
+        preserveScroll: true,
+        onSuccess: () => {
+            flashMessage.value?.addMessage('success', `页面 "${pageToDelete.value.title}" 已移至回收站。`);
+        },
+        onError: (errors) => {
+            const errorMsg = Object.values(errors).flat()[0] || '删除页面失败，请重试。';
+            flashMessage.value?.addMessage('error', errorMsg);
+        },
+        onFinish: () => {
+            cancelDelete(); // 关闭模态框
+        }
+    });
+};
 </script>
 
 <style scoped>
-/* Filter Tag Styles */
 .filter-tag {
     @apply flex items-center rounded-full px-3 py-1 text-xs font-medium;
 }
@@ -252,12 +317,29 @@ const getTagName = (slug) => {
     @apply h-2 w-2;
 }
 
-/* Tag styles from Show.vue for consistency */
 .tag-category {
-    @apply inline-block px-2 py-0.5 bg-gray-200 text-gray-700 text-xs rounded-full hover:bg-gray-300 transition dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600;
+    @apply inline-block px-2 py-0.5 bg-gray-200 text-gray-700 text-xs rounded-full hover:bg-gray-300 transition dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 whitespace-nowrap;
 }
 
 .tag-tag {
-    @apply inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full hover:bg-blue-200 transition dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60;
+    @apply inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full hover:bg-blue-200 transition dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 whitespace-nowrap;
+}
+
+/* Action Button Style */
+.action-btn {
+    @apply p-1 rounded transition-colors duration-150 ease-in-out;
+}
+
+.action-btn svg {
+    @apply h-4 w-4;
+}
+
+/* Modal content text styling (consistent with Roles/Index) */
+.modal-content p {
+    @apply text-gray-600 dark:text-gray-300;
+}
+
+.modal-content strong {
+    @apply font-semibold text-gray-800 dark:text-gray-200;
 }
 </style>

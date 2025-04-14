@@ -2,11 +2,15 @@
 
 namespace App\Providers;
 
-// use Illuminate\Support\Facades\Gate; // 如果你还需要定义 Gate，取消注释
+use App\Models\User; // 引入 User
 use App\Models\WikiComment;
-// 引入你的模型和策略
+use App\Models\WikiPage;    // 引入 WikiPage
+use App\Policies\RolePolicy; // 引入 RolePolicy
+use App\Policies\UserPolicy; // 引入 UserPolicy
 use App\Policies\WikiCommentPolicy;
+use App\Policies\WikiPagePolicy; // 引入 WikiPagePolicy
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Spatie\Permission\Models\Role; // 引入 Spatie Role
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -16,10 +20,11 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        // 将你的模型和策略关联起来
-        WikiComment::class => WikiCommentPolicy::class,
-        // 如果还有其他 Policy，也在这里注册
-        // Model::class => ModelPolicy::class,
+        // 你的模型 => 对应的 Policy
+        User::class => UserPolicy::class,          // 注册 UserPolicy
+        Role::class => RolePolicy::class,          // 注册 RolePolicy (关联 Spatie Role)
+        WikiPage::class => WikiPagePolicy::class,    // 注册 WikiPagePolicy
+        WikiComment::class => WikiCommentPolicy::class, // 保持 WikiCommentPolicy
     ];
 
     /**
@@ -27,11 +32,10 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // 注册 Policies (这行通常默认存在)
         $this->registerPolicies();
 
-        // 如果你还需要定义 Gate 规则，可以在这里定义
-        // Gate::define('edit-settings', function (User $user) {
-        //     return $user->isAdmin();
-        // });
+        // 可以在这里定义 Gates (如果需要)，但 Policy 通常是更好的选择
+        // Gate::define('view-dashboard', function (User $user) { ... });
     }
 }
