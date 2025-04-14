@@ -29,6 +29,7 @@ class WikiPagePolicy
         if ($wikiPage->status === WikiPage::STATUS_PUBLISHED) {
             return true;
         }
+
         // 草稿、冲突等状态需要登录并有查看权限
         // 这里简化处理，假设有 'wiki.view' 权限就能看所有状态
         // 注意：如果 $user 为 null (未登录), $user?->can 会返回 null，你需要处理这种情况
@@ -56,6 +57,7 @@ class WikiPagePolicy
         if ($wikiPage->isLocked() && $wikiPage->locked_by !== $user->id) {
             return false;
         }
+
         // 检查是否有编辑权限
         return $user->can('wiki.edit');
     }

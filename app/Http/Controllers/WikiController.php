@@ -173,6 +173,7 @@ class WikiController extends Controller
 
         $categories = WikiCategory::select('id', 'name')->orderBy('order')->get();
         $tags = WikiTag::select('id', 'name')->get();
+
         return Inertia::render('Wiki/Create', [
             'categories' => $categories,
             'tags' => $tags,
@@ -879,5 +880,65 @@ class WikiController extends Controller
         } catch (\Exception $e) {
             Log::error("Failed to log activity: Action={$action}, Subject={$subject->getTable()}:{$subject->getKey()}, Error: ".$e->getMessage());
         }
+    }
+
+    public function preview(Request $request): InertiaResponse
+    {
+        // 不需要检查权限，因为这是用户正在编辑内容的预览
+        $user = Auth::user();
+
+        // 1. 验证输入 - 基本检查，确保核心字段存在
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+            'category_ids' => 'nullable|array',
+            'category_ids.*' => 'integer|exists:wiki_categories,id',
+            'tag_ids' => 'nullable|array',
+            'tag_ids.*' => 'integer|exists:wiki_tags,id',
+        ]);
+
+        // 2. 清理内容 - *非常重要*
+        $cleanContent = Purifier::clean($validated['content']);
+
+        // 3. 模拟页面和版本数据结构
+        $categories = WikiCategory::whereIn('id', $validated['category_ids'] ?? [])->select('id', 'name', 'slug')->get();
+        $tags = WikiTag::whereIn('id', $validated['tag_ids'] ?? [])->select('id', 'name', 'slug')->get();
+
+        // 使用 stdClass 创建一个类似 Page 的对象
+        $pseudoPage = new \stdClass;
+        $pseudoPage->id = 0; // 表示未保存
+        $pseudoPage->title = $validated['title'];
+        $pseudoPage->slug = 'preview'; // Slug for preview doesn't matter much
+        $pseudoPage->creator = $user ? $user->only('id', 'name') : ['id' => 0, 'name' => '预览用户'];
+        $pseudoPage->created_at = now();
+        $pseudoPage->updated_at = now();
+        $pseudoPage->categories = $categories->map(fn ($cat) => $cat->toArray())->toArray(); // Ensure arrays
+        $pseudoPage->tags = $tags->map(fn ($tag) => $tag->toArray())->toArray(); // Ensure arrays
+        $pseudoPage->status = 'preview'; // Custom status
+
+        // 使用 stdClass 创建一个类似 Version 的对象
+        $pseudoVersion = new \stdClass;
+        $pseudoVersion->id = 0; // 表示未保存
+        $pseudoVersion->content = $cleanContent;
+        $pseudoVersion->creator = $pseudoPage->creator;
+        $pseudoVersion->created_at = now();
+        $pseudoVersion->version_number = '预览';
+        $pseudoVersion->comment = '实时预览内容';
+        $pseudoVersion->is_current = true;
+
+        // 4. 渲染 Show.vue 组件，传入模拟数据
+        return Inertia::render('Wiki/Show', [
+            'page' => (array) $pseudoPage,             // 确保是数组
+            'currentVersion' => (array) $pseudoVersion, // 确保是数组
+            'isLocked' => false,                      // Preview is never locked
+            'lockedBy' => null,
+            'draft' => null,                          // No draft concept in pure preview
+            'canEditPage' => false,                   // Cannot edit a preview view
+            'canResolveConflict' => false,            // No conflict in preview
+            'error' => null,
+            'comments' => [],                         // No comments in preview
+            'flash' => null,
+            'isPreview' => true,                      // Flag to indicate preview mode
+        ]);
     }
 }

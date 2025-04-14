@@ -19,6 +19,8 @@ Route::prefix('wiki')->name('wiki.')->group(function () {
 
     Route::middleware(['auth'])->group(function () {
 
+        Route::post('preview', [WikiController::class, 'preview'])->name('preview');
+
         Route::middleware('permission:wiki.create')->group(function () {
             Route::get('create', [WikiController::class, 'create'])->name('create');
             Route::post('', [WikiController::class, 'store'])->name('store');

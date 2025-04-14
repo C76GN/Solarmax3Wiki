@@ -33,7 +33,7 @@ class CheckPermission
             // 如果是 Web 请求，返回 Inertia 错误页面
             // 确保 Error/Unauthorized 页面存在
             return Inertia::render('Error/Unauthorized', [
-                'message' => '您没有权限执行此操作 (' . $permission . ')', // 可以带上具体权限名
+                'message' => '您没有权限执行此操作 ('.$permission.')', // 可以带上具体权限名
             ])->toResponse($request)->setStatusCode(SymfonyResponse::HTTP_FORBIDDEN);
         }
 

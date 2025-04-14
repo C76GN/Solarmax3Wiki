@@ -3,8 +3,8 @@
 namespace App\Policies;
 
 use App\Models\User; // 使用 App\Models\User
-use Spatie\Permission\Models\Role; // 使用 Spatie\Models\Role
-use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access\HandlesAuthorization; // 使用 Spatie\Models\Role
+use Spatie\Permission\Models\Role;
 
 class RolePolicy
 {
@@ -48,6 +48,7 @@ class RolePolicy
             // 可以在这里决定是否完全禁止，或只允许特定用户（如 superadmin）
             return false; // 简单处理：禁止编辑 admin
         }
+
         return $user->can('role.edit');
     }
 
@@ -61,6 +62,7 @@ class RolePolicy
         if ($role->name === 'admin') {
             return false;
         }
+
         // 还可以检查角色是否仍被用户使用
         // if ($role->users()->exists()) {
         //     return false; // 可以在控制器或这里检查

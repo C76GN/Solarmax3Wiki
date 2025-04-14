@@ -27,16 +27,16 @@ class UserController extends Controller // 确保继承了 Controller
         $users = User::with('roles:id,name') // 只需加载 name
             ->latest()
             ->paginate(10)
-            ->through(fn($user) => [
+            ->through(fn ($user) => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'created_at' => $user->created_at,
-                'roles' => $user->roles->map(fn($role) => [
+                'roles' => $user->roles->map(fn ($role) => [
                     'id' => $role->id,
                     'name' => $role->name,
                     // 从语言文件获取显示名称
-                    'display_name' => __('roles.' . $role->name . '.display_name', [], 'zh_CN') ?? ucfirst($role->name),
+                    'display_name' => __('roles.'.$role->name.'.display_name', [], 'zh_CN') ?? ucfirst($role->name),
                     'is_system' => $role->name === 'admin',
                 ])->toArray(),
             ]);
@@ -67,11 +67,11 @@ class UserController extends Controller // 确保继承了 Controller
                 'roles' => $user->roles()->pluck('id')->toArray(), // 当前角色 ID
             ],
             // 传递所有可选的角色，并包含从语言文件获取的元数据
-            'roles' => $allRoles->map(fn($role) => [
+            'roles' => $allRoles->map(fn ($role) => [
                 'id' => $role->id,
                 'name' => $role->name,
-                'display_name' => __('roles.' . $role->name . '.display_name', [], 'zh_CN') ?? ucfirst($role->name),
-                'description' => __('roles.' . $role->name . '.description', [], 'zh_CN'), // 可能为 null
+                'display_name' => __('roles.'.$role->name.'.display_name', [], 'zh_CN') ?? ucfirst($role->name),
+                'description' => __('roles.'.$role->name.'.description', [], 'zh_CN'), // 可能为 null
                 'is_system' => $role->name === 'admin',
             ])->toArray(),
         ]);
@@ -87,13 +87,13 @@ class UserController extends Controller // 确保继承了 Controller
 
         $validated = $request->validate([
             'roles' => 'required|array',
-            'roles.*' => 'exists:' . config('permission.table_names.roles') . ',id',
+            'roles.*' => 'exists:'.config('permission.table_names.roles').',id',
         ]);
 
         // 阻止用户移除自己的管理员角色 (保持不变)
         if ($user->id === Auth::id() && $user->hasRole('admin')) {
             $adminRoleId = Role::where('name', 'admin')->value('id');
-            if ($adminRoleId && !in_array($adminRoleId, $validated['roles'])) {
+            if ($adminRoleId && ! in_array($adminRoleId, $validated['roles'])) {
                 return back()->with('flash', ['message' => ['type' => 'error', 'text' => '不能移除自己的管理员角色。']]);
             }
         }
@@ -106,7 +106,8 @@ class UserController extends Controller // 确保继承了 Controller
             return redirect()->route('users.index')
                 ->with('flash', ['message' => ['type' => 'success', 'text' => '用户角色更新成功！']]);
         } catch (\Exception $e) {
-            Log::error("Error updating user roles for user {$user->id}: " . $e->getMessage());
+            Log::error("Error updating user roles for user {$user->id}: ".$e->getMessage());
+
             return back()->with('flash', ['message' => ['type' => 'error', 'text' => '更新用户角色时出错。']]);
         }
     }

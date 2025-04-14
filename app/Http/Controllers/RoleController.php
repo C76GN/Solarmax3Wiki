@@ -6,11 +6,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth; // 保留 Auth 用于获取用户 ID
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
-use Illuminate\Support\Str; // 保留 Str 用于 fallback
+use Spatie\Permission\Models\Role; // 保留 Str 用于 fallback
 
 class RoleController extends Controller
 {
@@ -31,18 +31,17 @@ class RoleController extends Controller
         $canEdit = $currentUser?->can('role.edit') ?? false;
         $canDelete = $currentUser?->can('role.delete') ?? false;
 
-
         // 查询 Spatie Role，只选择数据库列
         $roles = Role::withCount('permissions')
             ->select('id', 'name', 'created_at')
             ->latest()
             ->paginate(10)
-            ->through(fn($role) => [
+            ->through(fn ($role) => [
                 'id' => $role->id,
                 'name' => $role->name,
-                //直接使用 __() 获取翻译
-                'display_name' => __('roles.' . $role->name . '.display_name', [], 'zh_CN') ?? ucfirst($role->name),
-                'description' => __('roles.' . $role->name . '.description', [], 'zh_CN'), // 可能返回 null
+                // 直接使用 __() 获取翻译
+                'display_name' => __('roles.'.$role->name.'.display_name', [], 'zh_CN') ?? ucfirst($role->name),
+                'description' => __('roles.'.$role->name.'.description', [], 'zh_CN'), // 可能返回 null
                 'permissions_count' => $role->permissions_count,
                 'created_at' => $role->created_at,
                 'is_system' => $role->name === 'admin',
@@ -69,26 +68,26 @@ class RoleController extends Controller
         // 处理权限元数据和分组
         $permissionsData = $allPermissions->map(function ($permission) {
             // 标准化语言文件键名
-            $langKeyBase = 'permissions.' . str_replace('.', '_', $permission->name);
+            $langKeyBase = 'permissions.'.str_replace('.', '_', $permission->name);
 
             // 尝试从语言文件获取元数据
-            $displayName = __($langKeyBase . '.display_name', [], 'zh_CN');
-            $description = __($langKeyBase . '.description', [], 'zh_CN');
-            $group = __($langKeyBase . '.group', [], 'zh_CN');
+            $displayName = __($langKeyBase.'.display_name', [], 'zh_CN');
+            $description = __($langKeyBase.'.description', [], 'zh_CN');
+            $group = __($langKeyBase.'.group', [], 'zh_CN');
 
             // 如果语言文件没有定义 group，则从 name 推断
-            if ($group === $langKeyBase . '.group') { // 检查是否返回了键名本身
+            if ($group === $langKeyBase.'.group') { // 检查是否返回了键名本身
                 $group = Str::before($permission->name, '.');
                 if (empty($group) || $group === $permission->name) {
                     $group = 'other'; // 如果没有点，归入 'other' 分组
                 }
             }
             // 如果语言文件没有定义 display_name，则生成一个
-            if ($displayName === $langKeyBase . '.display_name') {
+            if ($displayName === $langKeyBase.'.display_name') {
                 $displayName = ucfirst(str_replace(['.', '_'], ' ', $permission->name));
             }
             // 如果语言文件没有定义 description，则为 null
-            if ($description === $langKeyBase . '.description') {
+            if ($description === $langKeyBase.'.description') {
                 $description = null;
             }
 
@@ -149,23 +148,24 @@ class RoleController extends Controller
 
         // 处理权限元数据和分组 (逻辑与 create 方法一致)
         $permissionsData = $allPermissions->map(function ($permission) {
-            $langKeyBase = 'permissions.' . str_replace('.', '_', $permission->name);
-            $displayName = __($langKeyBase . '.display_name', [], 'zh_CN');
-            $description = __($langKeyBase . '.description', [], 'zh_CN');
-            $group = __($langKeyBase . '.group', [], 'zh_CN');
-            if ($group === $langKeyBase . '.group') {
+            $langKeyBase = 'permissions.'.str_replace('.', '_', $permission->name);
+            $displayName = __($langKeyBase.'.display_name', [], 'zh_CN');
+            $description = __($langKeyBase.'.description', [], 'zh_CN');
+            $group = __($langKeyBase.'.group', [], 'zh_CN');
+            if ($group === $langKeyBase.'.group') {
                 $group = Str::before($permission->name, '.');
                 if (empty($group) || $group === $permission->name) {
                     $group = 'other';
                 }
             }
+
             return [
                 'id' => $permission->id,
                 'name' => $permission->name,
-                'display_name' => ($displayName === $langKeyBase . '.display_name')
+                'display_name' => ($displayName === $langKeyBase.'.display_name')
                     ? ucfirst(str_replace(['.', '_'], ' ', $permission->name))
                     : $displayName,
-                'description' => ($description === $langKeyBase . '.description') ? null : $description,
+                'description' => ($description === $langKeyBase.'.description') ? null : $description,
                 'group' => $group,
             ];
         })->groupBy('group')->sortKeys();
@@ -174,15 +174,14 @@ class RoleController extends Controller
             'role' => [
                 'id' => $role->id,
                 'name' => $role->name,
-                'display_name' => __('roles.' . $role->name . '.display_name', [], 'zh_CN') ?? ucfirst($role->name),
-                'description' => __('roles.' . $role->name . '.description', [], 'zh_CN'),
+                'display_name' => __('roles.'.$role->name.'.display_name', [], 'zh_CN') ?? ucfirst($role->name),
+                'description' => __('roles.'.$role->name.'.description', [], 'zh_CN'),
                 'permissions' => $role->permissions()->pluck('id')->toArray(),
                 'is_system' => $role->name === 'admin',
             ],
             'permissions' => $permissionsData,
         ]);
     }
-
 
     /**
      * 更新角色信息 (主要是权限).
@@ -204,7 +203,7 @@ class RoleController extends Controller
         if ($role->name === 'admin') {
             // 保留 admin 的权限不变
             $validated['permissions'] = $role->permissions()->pluck('id')->toArray();
-            Log::warning("Attempted to modify permissions for admin role (ID: {$role->id}) by user " . Auth::id() . ". Modification prevented by controller logic.");
+            Log::warning("Attempted to modify permissions for admin role (ID: {$role->id}) by user ".Auth::id().'. Modification prevented by controller logic.');
         }
 
         // 只同步权限
