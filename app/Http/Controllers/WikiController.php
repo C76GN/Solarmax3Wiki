@@ -296,7 +296,7 @@ class WikiController extends Controller
     public function update(Request $request, WikiPage $page): RedirectResponse
     {
         $this->authorize('update', $page);
-        $user = Auth::user(); // 保留获取用户，但不再检查是否为空
+        $user = Auth::user();
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -306,11 +306,10 @@ class WikiController extends Controller
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'exists:wiki_tags,id',
             'comment' => 'nullable|string|max:255',
-            'version_id' => [ // 确保 version_id 是必需的，且有效
+            'version_id' => [
                 'required',
                 'integer',
                 function ($attribute, $value, $fail) use ($page) {
-                    // 允许基于任何历史版本提交，但在后面检查冲突
                     if (! WikiVersion::where('wiki_page_id', $page->id)->where('id', $value)->exists()) {
                         $fail('提交所基于的版本ID无效或不属于此页面。');
                     }
@@ -319,44 +318,47 @@ class WikiController extends Controller
         ]);
 
         $newContent = Purifier::clean($validated['content']);
-        $currentVersionIdInDb = $page->fresh()->current_version_id; // 获取最新的数据库中的版本ID
-        $submittedBaseVersionId = (int) $validated['version_id']; // 用户提交时基于的版本ID
+        $submittedBaseVersionId = (int) $validated['version_id'];
 
-        // 核心冲突检测逻辑
+        // 重新加载页面以获取最新版本ID，并预加载需要的关联关系
+        $page->refresh()->load(['currentVersion', 'categories', 'tags']);
+        $currentVersionIdInDb = $page->current_version_id;
+        $currentVersionContent = $page->currentVersion?->content ?? ''; // 获取当前数据库版本内容
+
+        // --- 冲突检测逻辑 (保持不变) ---
         if ($page->status !== WikiPage::STATUS_CONFLICT && $currentVersionIdInDb !== $submittedBaseVersionId) {
             Log::info("Potential Conflict Check: User {$user->id} submitted based on version {$submittedBaseVersionId}, but current DB version is {$currentVersionIdInDb} for page {$page->id}. Running DiffService check.");
             $baseVersion = WikiVersion::find($submittedBaseVersionId);
-            $currentDbVersion = WikiVersion::find($currentVersionIdInDb);
+            $currentDbVersion = $page->currentVersion; // 直接使用预加载的关联
 
             if ($baseVersion && $currentDbVersion) {
                 $diffService = app(DiffService::class);
-                // 只有当数据库版本和提交基线版本不同时，才需要检查内容冲突
                 if ($diffService->hasConflict($baseVersion->content, $currentDbVersion->content, $newContent)) {
                     Log::warning("Conflict DETECTED on page {$page->id} by DiffService. User: {$user->id}, Base: {$submittedBaseVersionId}, Current: {$currentVersionIdInDb}");
-
-                    // 标记为冲突，保存用户提交的内容作为非当前版本
                     $latestVersionNumber = $page->versions()->latest('version_number')->value('version_number') ?? 0;
+
+                    // 创建冲突版本 (仅当内容不同时，但逻辑简化为总是创建)
                     WikiVersion::create([
                         'wiki_page_id' => $page->id,
-                        'content' => $newContent, // 保存用户尝试提交的内容
+                        'content' => $newContent,
                         'created_by' => $user->id,
-                        'version_number' => $latestVersionNumber + 1,
+                        'version_number' => $latestVersionNumber + 1, // 注意，这里版本号可能需要重新考虑，但根据原逻辑保持
                         'comment' => $validated['comment'] ?: '提交时检测到冲突',
-                        'is_current' => false, // 这个版本不是当前版本
+                        'is_current' => false, // 标记为非当前
                     ]);
 
-                    $page->markAsConflict(); // 将页面状态设为冲突
-
-                    // 清理草稿并注销编辑者
+                    $page->markAsConflict();
+                    // 删除草稿并注销编辑者
                     WikiPageDraft::where('wiki_page_id', $page->id)->where('user_id', $user->id)->delete();
-                    app(CollaborationService::class)->unregisterEditor($page, $user); // 确保服务存在
+                    app(CollaborationService::class)->unregisterEditor($page, $user);
 
-                    // 重定向到冲突显示页面
                     return redirect()->route('wiki.show-conflicts', $page->slug)
                         ->with('flash', ['message' => ['type' => 'error', 'text' => '编辑冲突：在您编辑期间，其他用户已修改此页面。您的更改已保存为待处理的冲突版本，请解决冲突。']]);
                 } else {
                     Log::info("No actual content conflict detected by DiffService for page {$page->id} despite version mismatch. Proceeding with update based on submitted content.");
-                    // 虽然版本号不匹配，但内容无冲突，允许继续保存，将用户的新内容作为最新版本
+                    // 如果没有内容冲突，可以考虑让用户基于他们的版本进行保存，或者强制他们基于最新版（取决于产品逻辑）
+                    // 当前逻辑是继续执行保存，这可能覆盖非冲突的并发修改，但简化了流程。
+                    // 安全起见，也可以在这里返回错误要求刷新，但当前保持原逻辑。
                 }
             } else {
                 Log::error("Conflict check failed for page {$page->id}: Base version {$submittedBaseVersionId} or Current DB version {$currentVersionIdInDb} not found.");
@@ -364,70 +366,119 @@ class WikiController extends Controller
                 return back()->withErrors(['general' => '无法验证页面版本，请刷新后重试。'])->withInput();
             }
         }
+        // --- 冲突检测逻辑结束 ---
 
-        // --- 开始数据库事务 ---
+        // --- 新增：检查是否有实际更改 ---
+        $titleChanged = $validated['title'] !== $page->title;
+        $contentChanged = $newContent !== $currentVersionContent;
+
+        $currentCategoryIds = $page->categories->pluck('id')->sort()->values()->toArray();
+        $newCategoryIds = collect($validated['category_ids'])->map(fn ($id) => (int) $id)->sort()->values()->toArray();
+        $categoriesChanged = $currentCategoryIds != $newCategoryIds;
+
+        $currentTagIds = $page->tags->pluck('id')->sort()->values()->toArray();
+        $newTagIds = collect($validated['tag_ids'] ?? [])->map(fn ($id) => (int) $id)->sort()->values()->toArray();
+        $tagsChanged = $currentTagIds != $newTagIds;
+
+        $hasChanges = $titleChanged || $contentChanged || $categoriesChanged || $tagsChanged;
+        // --- 检查结束 ---
+
+        // 如果没有实际更改
+        if (! $hasChanges && $page->status !== WikiPage::STATUS_CONFLICT) { // 同时检查不是在解决冲突
+            Log::info("No actual changes detected for page {$page->id} by user {$user->id}. Skipping new version creation.");
+
+            // 即使没有变化，也要删除草稿并注销编辑状态
+            WikiPageDraft::where('wiki_page_id', $page->id)->where('user_id', $user->id)->delete();
+            app(CollaborationService::class)->unregisterEditor($page, $user);
+
+            // 可以选择不显示 flash 消息，或者显示一个不同的消息
+            // return redirect()->route('wiki.show', $page->slug);
+            return redirect()->route('wiki.show', $page->slug)
+                ->with('flash', ['message' => ['type' => 'info', 'text' => '未检测到更改，页面未更新版本。']]);
+            // 或者继续使用成功消息：
+            // return redirect()->route('wiki.show', $page->slug)
+            //     ->with('flash', ['message' => ['type' => 'success', 'text' => '页面编辑已提交（无内容变更）。']]);
+        }
+
+        // --- 如果有更改或正在解决冲突，则执行数据库事务 ---
         DB::beginTransaction();
         try {
-            // 如果页面原处于冲突状态，这次提交视为解决冲突
+            // 处理冲突状态 (如果需要)
             if ($page->status === WikiPage::STATUS_CONFLICT) {
                 Log::info("User {$user->id} is resolving conflict for page {$page->id} by saving a new version.");
-                $page->markAsResolved($user); // 标记为已解决（会更新status和lock状态）
+                $page->markAsResolved($user); // 这会更新 status 和 lock 状态
             }
 
-            // 更新页面标题（如果允许）
-            $page->update(['title' => $validated['title']]);
+            // 更新标题 (只有当标题改变时才更新)
+            if ($titleChanged) {
+                $page->update(['title' => $validated['title']]);
+            }
 
-            // 创建新版本
-            $latestVersionNumber = $page->versions()->lockForUpdate()->latest('version_number')->value('version_number') ?? 0; // 加锁获取最新版本号
+            // --- 版本创建逻辑 ---
+            $latestVersionNumber = $page->versions()->lockForUpdate()->latest('version_number')->value('version_number') ?? 0;
             $newVersion = WikiVersion::create([
                 'wiki_page_id' => $page->id,
-                'content' => $newContent,
+                'content' => $newContent, // 使用清理后的内容
                 'created_by' => $user->id,
                 'version_number' => $latestVersionNumber + 1,
-                'comment' => $validated['comment'] ?: '更新页面',
-                'is_current' => true, // 新提交的版本成为当前版本
+                'comment' => $validated['comment'] ?: ($page->status === WikiPage::STATUS_CONFLICT ? '解决冲突' : '更新页面'), // 根据状态调整默认注释
+                'is_current' => true,
             ]);
 
-            // 将旧的当前版本标记为非当前
+            // 更新旧的当前版本
             $previousCurrentVersionId = $page->current_version_id;
             if ($previousCurrentVersionId && $previousCurrentVersionId !== $newVersion->id) {
                 WikiVersion::where('id', $previousCurrentVersionId)->update(['is_current' => false]);
             }
 
-            // 更新页面的当前版本ID指向新版本
+            // 更新页面的当前版本ID (status 已在 markAsResolved 中处理或保持 published)
             $page->update(['current_version_id' => $newVersion->id]);
+            // --- 版本创建逻辑结束 ---
 
-            // 同步分类和标签
-            $page->categories()->sync($validated['category_ids']);
-            $page->tags()->sync($validated['tag_ids'] ?? []);
+            // 同步分类和标签 (只有改变时才同步，减少数据库操作)
+            if ($categoriesChanged) {
+                $page->categories()->sync($validated['category_ids']);
+            }
+            if ($tagsChanged) {
+                $page->tags()->sync($validated['tag_ids'] ?? []);
+            }
 
-            // 删除当前用户的草稿
+            // 删除草稿并注销编辑状态
             WikiPageDraft::where('wiki_page_id', $page->id)->where('user_id', $user->id)->delete();
-
-            // 注销编辑者状态
             app(CollaborationService::class)->unregisterEditor($page, $user);
 
             // 记录活动日志
-            $this->logActivity('update', $page, ['version' => $newVersion->version_number]);
+            $logProperties = ['version' => $newVersion->version_number];
+            if ($titleChanged) {
+                $logProperties['title_changed'] = true;
+            }
+            if ($contentChanged) {
+                $logProperties['content_changed'] = true;
+            }
+            if ($categoriesChanged) {
+                $logProperties['categories_changed'] = true;
+            }
+            if ($tagsChanged) {
+                $logProperties['tags_changed'] = true;
+            }
+            $this->logActivity('update', $page, $logProperties);
 
-            DB::commit(); // --- 提交数据库事务 ---
-
+            DB::commit();
             Log::info("Page {$page->id} updated successfully to version {$newVersion->version_number} by user {$user->id}.");
 
-            // --- 广播页面版本更新事件 ---
+            // 广播事件
             try {
                 event(new WikiPageVersionUpdated($page->id, $newVersion->id));
                 Log::info("Broadcasted WikiPageVersionUpdated event for page {$page->id}, new version ID: {$newVersion->id}");
             } catch (\Exception $e) {
                 Log::error("Failed to broadcast WikiPageVersionUpdated event for page {$page->id}: ".$e->getMessage());
             }
-            // --- 广播结束 ---
 
-            // 重定向到显示页面
+            // 重定向
             return redirect()->route('wiki.show', $page->slug)
                 ->with('flash', ['message' => ['type' => 'success', 'text' => '页面更新成功！']]);
         } catch (\Exception $e) {
-            DB::rollBack(); // --- 回滚数据库事务 ---
+            DB::rollBack();
             Log::error("Error updating page {$page->id} by user {$user->id}: ".$e->getMessage()."\n".$e->getTraceAsString());
 
             return back()->withErrors(['general' => '保存页面时发生内部错误，请稍后重试。'])->withInput();

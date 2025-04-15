@@ -1,37 +1,86 @@
 <script setup>
-// 保持之前的 imports 不变
-import { ref, onMounted, onUnmounted, computed } from 'vue'; // 引入 computed
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+// 从 'vue' 和 '@inertiajs/vue3' 导入必要的函数和组件
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3'; // 保持原有的 usePage 导入
+
+// 导入布局和组件
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import Editor from '@/Components/Wiki/Editor.vue';
 import InputError from '@/Components/Other/InputError.vue';
 import WikiPreviewPane from '@/Components/Wiki/WikiPreviewPane.vue';
-import { mainNavigationLinks } from '@/config/navigationConfig';
+import { mainNavigationLinks } from '@/config/navigationConfig'; // 导入导航链接配置
 
+// --- 修正点：在这里调用 usePage() 获取 pageProps ---
+const pageProps = usePage().props;
+// ----------------------------------------------------
+
+// 定义导航链接
 const navigationLinks = mainNavigationLinks;
 
-const openPreviewInNewTab = () => {
-    const url = route('wiki.preview'); // 后端路由
-    const csrfToken = pageProps.csrf; // 从 Inertia props 获取 CSRF token
+// 定义 Props
+const props = defineProps({
+    categories: { type: Array, required: true }, // Wiki 分类列表
+    tags: { type: Array, required: true }, // Wiki 标签列表
+    errors: Object // 后端传递的验证错误
+});
 
-    // 创建一个临时的 form 元素
+// 初始化表单数据
+const form = useForm({
+    title: '', // 页面标题
+    content: '<p></p>', // 页面内容，默认为一个空的段落
+    category_ids: [], // 选中的分类 ID 数组
+    tag_ids: [], // 选中的标签 ID 数组
+});
+
+// 引用 Tiptap 编辑器实例
+const tiptapEditorRef = ref(null);
+// 控制编辑器是否可编辑的状态 (在创建页面时始终为 true)
+const editorIsEditable = ref(true);
+// 控制预览窗格是否显示的状态
+const showPreviewPane = ref(true);
+
+// --- 方法 ---
+
+// 切换预览窗格的显示状态
+const togglePreviewPane = () => {
+    showPreviewPane.value = !showPreviewPane.value;
+};
+
+// 在新标签页中打开预览
+const openPreviewInNewTab = () => {
+    const currentContent = tiptapEditorRef.value?.editor?.getHTML() || form.content;
+
+    // 1. 检查标题是否为空
+    if (!form.title.trim()) {
+        alert('请先输入页面标题再进行预览！'); // 使用 alert 简单提示，也可以替换为更复杂的通知组件
+        return; // 阻止后续操作
+    }
+
+    // 2. 检查内容是否为空 (考虑 Tiptap 的默认 <p></p>)
+    if (!currentContent || currentContent === '<p></p>' || currentContent.trim() === '') {
+        alert('请先输入页面内容再进行预览！');
+        return; // 阻止后续操作
+    }
+
+    // --- 如果检查通过，继续执行原有的逻辑 ---
+    const url = route('wiki.preview');
+    const csrfToken = pageProps.csrf;
     const tempForm = document.createElement('form');
+
     tempForm.method = 'POST';
     tempForm.action = url;
-    tempForm.target = '_blank'; // 关键：在新标签页打开
-    tempForm.style.display = 'none'; // 隐藏表单
+    tempForm.target = '_blank';
+    tempForm.style.display = 'none';
 
-    // 添加 CSRF token
     const csrfInput = document.createElement('input');
     csrfInput.type = 'hidden';
     csrfInput.name = '_token';
     csrfInput.value = csrfToken;
     tempForm.appendChild(csrfInput);
 
-    // 添加表单数据
     const fields = {
         title: form.title,
-        content: tiptapEditorRef.value?.editor?.getHTML() || form.content, // 获取最新编辑器内容
+        content: currentContent, // 使用获取到的当前内容
         category_ids: form.category_ids,
         tag_ids: form.tag_ids,
     };
@@ -39,17 +88,15 @@ const openPreviewInNewTab = () => {
     for (const key in fields) {
         if (Object.prototype.hasOwnProperty.call(fields, key)) {
             const value = fields[key];
-            // 处理数组，例如 category_ids 和 tag_ids
             if (Array.isArray(value)) {
                 value.forEach((item, index) => {
                     const input = document.createElement('input');
                     input.type = 'hidden';
-                    input.name = `${key}[${index}]`; // PHP 需要这种格式来接收数组
+                    input.name = `${key}[${index}]`;
                     input.value = item;
                     tempForm.appendChild(input);
                 });
             } else {
-                // 处理普通字段
                 const input = document.createElement('input');
                 input.type = 'hidden';
                 input.name = key;
@@ -59,55 +106,37 @@ const openPreviewInNewTab = () => {
         }
     }
 
-    // 将表单添加到 body 并提交，然后移除
     document.body.appendChild(tempForm);
     tempForm.submit();
     document.body.removeChild(tempForm);
 };
 
-const props = defineProps({
-    categories: { type: Array, required: true },
-    tags: { type: Array, required: true },
-    errors: Object
-});
 
-const form = useForm({
-    title: '',
-    content: '<p></p>',
-    category_ids: [],
-    tag_ids: [],
-});
-
-const tiptapEditorRef = ref(null);
-const editorIsEditable = ref(true);
-const showPreviewPane = ref(true); // 现在是响应式变量
-
-// --- 新增：切换预览窗格的函数 ---
-const togglePreviewPane = () => {
-    showPreviewPane.value = !showPreviewPane.value;
-};
-
-// --- 新增：计算编辑区和预览区的动态 Class ---
+// 计算编辑区和预览区的动态 Class
 const editorPaneClass = computed(() => {
     return showPreviewPane.value ? 'w-full md:w-1/2 h-full' : 'w-full h-full';
 });
-
 const previewPaneClass = computed(() => {
-    return showPreviewPane.value ? 'w-full md:w-1/2 h-full' : 'hidden'; // 使用hidden来完全移除
+    return showPreviewPane.value ? 'w-full md:w-1/2 h-full' : 'hidden';
 });
 
-
+// 创建 Wiki 页面
 const createPage = () => {
+    // 获取编辑器的最新 HTML 内容
     if (tiptapEditorRef.value && tiptapEditorRef.value.editor) {
         form.content = tiptapEditorRef.value.editor.getHTML();
     }
+    // 检查内容是否为空（Tiptap 默认空内容是 <p></p>）
     if (form.content === '<p></p>') {
         form.setError('content', '内容不能为空。');
-        return;
+        return; // 阻止提交
     }
+    // 发起 POST 请求到后端存储页面
     form.post(route('wiki.store'), {
+        // 请求失败时的回调
         onError: (pageErrors) => {
             console.error("创建页面失败:", pageErrors);
+            // 如果没有具体的字段错误，显示一个通用错误消息
             if (!pageErrors.title && !pageErrors.content && !pageErrors.category_ids && !pageErrors.tag_ids) {
                 form.setError('general', '创建页面时发生未知错误。');
             }
@@ -115,21 +144,20 @@ const createPage = () => {
     });
 };
 
-// isMobile 逻辑保持不变，用于移动端按钮显示，但布局现在主要靠 showPreviewPane 控制
+// 判断是否为移动设备（用于响应式布局）
 const isMobile = ref(false);
 const updateMobileStatus = () => {
-    isMobile.value = window.innerWidth < 768;
-    // 不再根据 isMobile 自动隐藏预览
-    // if (!isMobile.value) {
-    //     showPreviewPane.value = true;
-    // }
+    isMobile.value = window.innerWidth < 768; // 阈值可以根据需要调整
 };
+
+// --- 生命周期钩子 ---
 onMounted(() => {
-    updateMobileStatus();
-    window.addEventListener('resize', updateMobileStatus);
+    updateMobileStatus(); // 组件挂载时检查设备类型
+    window.addEventListener('resize', updateMobileStatus); // 监听窗口大小变化
 });
+
 onUnmounted(() => {
-    window.removeEventListener('resize', updateMobileStatus);
+    window.removeEventListener('resize', updateMobileStatus); // 组件卸载时移除监听器
 });
 </script>
 
@@ -137,28 +165,32 @@ onUnmounted(() => {
     <MainLayout :navigationLinks="navigationLinks">
 
         <Head title="创建 Wiki 页面" />
-        <!-- 移除外部容器的固定高度和 overflow-hidden，让页面自然滚动 -->
+
         <div class="container mx-auto py-6 px-4 flex flex-col">
+            <!-- 主内容区域卡片 -->
             <div
                 class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-lg shadow-lg p-6 flex flex-col flex-grow">
-                <!-- Header Section -->
+                <!-- 顶部操作栏 -->
                 <div class="flex justify-between items-start mb-4 pb-4 border-b dark:border-gray-700 flex-shrink-0">
                     <div>
                         <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">创建新 Wiki 页面</h1>
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
-                        <!-- 新增：切换预览按钮 (桌面端也显示) -->
+                        <!-- 切换预览按钮 -->
                         <button @click="togglePreviewPane" class="btn-secondary text-xs px-2 py-1">
                             <font-awesome-icon :icon="['fas', showPreviewPane ? 'eye-slash' : 'eye']" class="mr-1" />
                             {{ showPreviewPane ? '隐藏' : '显示' }}预览
                         </button>
+                        <!-- 新标签页预览按钮 -->
                         <button @click="openPreviewInNewTab" type="button" class="btn-secondary text-sm"
                             title="在新标签页中预览页面">
                             <font-awesome-icon :icon="['fas', 'external-link-alt']" class="mr-1" /> 在新标签页预览
                         </button>
+                        <!-- 取消按钮 -->
                         <Link :href="route('wiki.index')" class="btn-secondary text-sm">
                         取消
                         </Link>
+                        <!-- 创建页面按钮 -->
                         <button @click="createPage" class="btn-primary text-sm" :disabled="form.processing">
                             <font-awesome-icon v-if="form.processing" :icon="['fas', 'spinner']" spin class="mr-1" />
                             {{ form.processing ? '正在创建...' : '创建页面' }}
@@ -166,14 +198,12 @@ onUnmounted(() => {
                     </div>
                 </div>
 
-                <!-- Main Content Area (Editor + Preview) -->
-                <!-- 移除这里的固定高度和 overflow-hidden -->
+                <!-- 编辑区和预览区布局 -->
                 <div class="flex-grow flex flex-col md:flex-row gap-6">
-                    <!-- Editing Pane: 使用动态 Class -->
+                    <!-- 编辑区 -->
                     <div :class="editorPaneClass" class="flex flex-col overflow-y-auto pr-2 editor-pane">
-                        <!-- Form content moved inside the scrollable div -->
                         <div class="space-y-5 flex-grow flex flex-col">
-                            <!-- Title -->
+                            <!-- 标题输入 -->
                             <div>
                                 <label for="title"
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">标题 <span
@@ -181,8 +211,7 @@ onUnmounted(() => {
                                 <input id="title" v-model="form.title" type="text" class="input-field" required />
                                 <InputError class="mt-1" :message="form.errors.title" />
                             </div>
-
-                            <!-- Editor -->
+                            <!-- 内容编辑器 -->
                             <div class="flex-grow flex flex-col">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">内容 <span
                                         class="text-red-500">*</span></label>
@@ -190,8 +219,7 @@ onUnmounted(() => {
                                     ref="tiptapEditorRef" placeholder="开始编辑页面内容..." class="flex-grow" />
                                 <InputError class="mt-1" :message="form.errors.content" />
                             </div>
-
-                            <!-- Categories -->
+                            <!-- 分类选择 -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">分类 <span
                                         class="text-red-500">*</span></label>
@@ -206,8 +234,7 @@ onUnmounted(() => {
                                 </div>
                                 <InputError class="mt-1" :message="form.errors.category_ids" />
                             </div>
-
-                            <!-- Tags -->
+                            <!-- 标签选择 -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">标签
                                     (可选)</label>
@@ -221,19 +248,18 @@ onUnmounted(() => {
                                 </div>
                                 <InputError class="mt-1" :message="form.errors.tag_ids" />
                             </div>
-
-                            <!-- Error Message -->
+                            <!-- 通用错误显示 -->
                             <div v-if="form.errors.general"
                                 class="mt-1 text-sm text-red-600 dark:text-red-400 text-right font-medium">
                                 <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="mr-1" /> {{
-                                form.errors.general }}
+                                    form.errors.general }}
                             </div>
                         </div>
                     </div>
 
-                    <!-- Preview Pane: 使用动态 Class -->
+                    <!-- 预览区 -->
                     <div :class="previewPaneClass" class="flex flex-col">
-                        <!-- 添加 h-full 来尝试让它填充 flex item 的高度 -->
+                        <!-- 使用 WikiPreviewPane 组件显示预览 -->
                         <WikiPreviewPane class="h-full" :form="form" :categories="categories" :tags="tags" :page="null"
                             :currentVersion="null" />
                     </div>
@@ -244,16 +270,18 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* 移除 editor-pane 的固定高度或最大高度（如果之前有） */
+/* 编辑区滚动条样式 */
 .editor-pane {
     scrollbar-width: thin;
+    /* Firefox */
     scrollbar-color: #a0aec0 #e2e8f0;
-    /* 确保内部元素可以使其增长 */
+    /* Firefox: thumb track */
     flex-grow: 1;
     min-height: 400px;
-    /* 或根据需要调整 */
+    /* 保证编辑器有最小高度 */
 }
 
+/* Webkit 浏览器滚动条样式 (Chrome, Safari) */
 .dark .editor-pane {
     scrollbar-color: #4a5568 #2d3748;
 }
@@ -280,37 +308,41 @@ onUnmounted(() => {
     background-color: #4a5568;
 }
 
-/* Ensure Tiptap editor takes up available space */
+/* 确保 Tiptap 编辑器能够填充可用空间 */
 :deep(.tiptap-editor) {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    /* 可能需要移除或调整 min-height */
     min-height: 250px;
+    /* Tiptap 编辑器本身也需要最小高度 */
 }
 
 :deep(.editor-content) {
     flex-grow: 1;
     max-height: none;
-    /* Override any max-height set in the component */
+    /* 移除可能的最大高度限制 */
     height: auto;
-    /* Allow it to grow naturally */
+    /* 高度自适应 */
 }
 
+/* 输入框、文本域和下拉选择框的基础样式 */
 .input-field,
 .textarea-field,
 select {
     @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 text-sm;
 }
 
+/* 复选框组样式 */
 .checkbox-group {
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-48 overflow-y-auto p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50;
 }
 
+/* 复选框样式 */
 .checkbox {
     @apply h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800;
 }
 
+/* 按钮样式 */
 .btn-primary {
     @apply px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed;
 }
@@ -319,15 +351,31 @@ select {
     @apply px-4 py-1.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 text-sm font-medium;
 }
 
-/* 保持响应式按钮的隐藏逻辑（如果还需要的话） */
-.md\\:hidden {
+/* 响应式隐藏 (针对预览窗格) */
+.md\:hidden {
     display: none;
 }
 
 @media (max-width: 767px) {
-    .md\\:hidden {
+
+    /* Tailwind 的 md断点是 768px */
+    .md\:hidden {
         display: block;
-        /* 或者 flex, inline-flex 等 */
+    }
+
+    .flex-col.md\:flex-row {
+        flex-direction: column;
+        /* 强制在小屏幕下垂直排列 */
+    }
+
+    .md\:w-1\/2 {
+        width: 100%;
+        /* 在小屏幕下占满宽度 */
+    }
+
+    .editor-pane {
+        padding-right: 0;
+        /* 移除编辑区的右边距 */
     }
 }
 </style>
