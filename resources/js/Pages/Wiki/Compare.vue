@@ -1,12 +1,85 @@
+<script setup>
+import { ref, computed } from 'vue';
+import { Link, Head, router, usePage } from '@inertiajs/vue3';
+import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
+import Modal from '@/Components/Modal/Modal.vue';
+import FlashMessage from '@/Components/Other/FlashMessage.vue';
+import { formatDateTime } from '@/utils/formatters';
+import { mainNavigationLinks } from '@/config/navigationConfig';
+
+const navigationLinks = mainNavigationLinks;
+const pageProps = usePage().props;
+const flashMessage = ref(null);
+
+const props = defineProps({
+    page: { type: Object, required: true },
+    fromVersion: { type: Object, required: true },
+    toVersion: { type: Object, required: true },
+    fromCreator: { type: Object, required: true },
+    toCreator: { type: Object, required: true },
+    diffHtml: { type: String, default: '<p>无差异信息</p>' } // HTML for the code diff view
+});
+
+const showRevertModal = ref(false);
+const isReverting = ref(false);
+const versionToRevert = ref(null);
+
+const canRevert = computed(() => {
+    // 检查用户是否有 'wiki.edit' 权限，因为恢复版本本质上是创建新版本
+    return pageProps.auth?.user?.permissions?.includes('wiki.edit') || false;
+});
+
+const confirmRevert = (version) => {
+    versionToRevert.value = version;
+    showRevertModal.value = true;
+};
+
+const closeRevertModal = () => {
+    showRevertModal.value = false;
+    versionToRevert.value = null;
+};
+
+const revertToVersion = () => {
+    if (!versionToRevert.value) return;
+    isReverting.value = true;
+
+    router.post(route('wiki.revert-version', {
+        page: props.page.slug,
+        version: versionToRevert.value.version_number
+    }), {}, {
+        preserveScroll: true,
+        onSuccess: (pageResponse) => {
+            closeRevertModal();
+            // 手动设置 flash 消息，因为 onSuccess 可能不会自动更新 props.flash
+            // router.page.props.flash = { message: { type: 'success', text: `页面已成功恢复到 v${versionToRevert.value.version_number}` } };
+            // 改为调用 flashMessage 组件的方法
+            flashMessage.value?.addMessage('success', `页面已成功恢复到 v${versionToRevert.value.version_number}`);
+        },
+        onError: (errors) => {
+            console.error('Revert failed:', errors);
+            const errorMsg = Object.values(errors).flat()[0] || '恢复版本失败，请重试。';
+            // router.page.props.flash = { message: { type: 'error', text: errorMsg } };
+            flashMessage.value?.addMessage('error', errorMsg);
+        },
+        onFinish: () => {
+            isReverting.value = false;
+        }
+    });
+};
+</script>
+
 <template>
     <MainLayout :navigationLinks="navigationLinks">
 
         <Head :title="`比较版本: v${fromVersion.version_number} vs v${toVersion.version_number} - ${page.title}`" />
+
         <div class="container mx-auto py-6 px-4">
             <div class="bg-gray-800/90 text-gray-200 backdrop-blur-sm rounded-lg shadow-lg p-6">
+
+                <!-- 页面和版本信息标题 -->
                 <div
                     class="flex flex-col md:flex-row justify-between md:items-center mb-6 border-b pb-4 border-gray-700">
-                    <h1 class="text-2xl md:text-3xl font-bold text-gray-100 mb-2 md:mb-0">
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-100 mb-2 md:mb-0 break-words">
                         {{ page.title }} - 版本比较
                     </h1>
                     <div class="flex items-center space-x-3 text-sm">
@@ -21,7 +94,9 @@
                     </div>
                 </div>
 
+                <!-- 版本元数据 -->
                 <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- 旧版本信息卡片 -->
                     <div class="p-4 bg-red-900/40 rounded-lg border border-red-700/60 shadow-sm">
                         <h3 class="font-semibold mb-2 text-red-300 flex items-center">
                             <font-awesome-icon :icon="['fas', 'history']" class="mr-2 text-red-400" />
@@ -43,6 +118,7 @@
                             </button>
                         </div>
                     </div>
+                    <!-- 新版本信息卡片 -->
                     <div class="p-4 bg-green-900/40 rounded-lg border border-green-700/60 shadow-sm">
                         <h3 class="font-semibold mb-2 text-green-300 flex items-center">
                             <font-awesome-icon :icon="['fas', 'history']" class="mr-2 text-green-400" />
@@ -66,16 +142,42 @@
                     </div>
                 </div>
 
-                <div class="mb-6">
-                    <h2 class="text-xl font-bold mb-4 text-gray-200">内容差异</h2>
-                    <div class="diff-container">
-                        <div v-if="diffHtml" v-html="diffHtml" class="specific-diff-styling leading-relaxed"></div>
+                <!-- HTML 源码差异对比 -->
+                <div class="mb-8">
+                    <h2 class="text-xl font-bold mb-4 text-gray-200">源码差异对比</h2>
+                    <div class="diff-container specific-diff-styling">
+                        <div v-if="diffHtml" v-html="diffHtml" class="leading-relaxed"></div>
                         <div v-else class="p-4 text-gray-400 italic">无法加载差异视图或无差异。</div>
                     </div>
                 </div>
+
+                <!-- 新增：渲染效果预览 -->
+                <div class="mt-8">
+                    <h2 class="text-xl font-bold mb-4 text-gray-200">效果预览</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- 旧版本预览 -->
+                        <div>
+                            <h3 class="text-lg font-semibold mb-3 text-red-300">旧版本 (v{{ fromVersion.version_number }})
+                                预览</h3>
+                            <div class="preview-pane border border-red-700/60 bg-gray-800/70 prose dark:prose-invert"
+                                v-html="fromVersion.content || '<p><em>无内容</em></p>'">
+                            </div>
+                        </div>
+                        <!-- 新版本预览 -->
+                        <div>
+                            <h3 class="text-lg font-semibold mb-3 text-green-300">新版本 (v{{ toVersion.version_number }})
+                                预览</h3>
+                            <div class="preview-pane border border-green-700/60 bg-gray-800/70 prose dark:prose-invert"
+                                v-html="toVersion.content || '<p><em>无内容</em></p>'">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
+        <!-- 恢复版本确认 Modal -->
         <Modal :show="showRevertModal" @close="closeRevertModal" maxWidth="md">
             <div class="p-6 bg-gray-800 rounded-lg">
                 <h3 class="text-lg font-medium text-gray-100 mb-4 flex items-center">
@@ -102,157 +204,122 @@
                 </div>
             </div>
         </Modal>
+
         <FlashMessage ref="flashMessage" />
+
     </MainLayout>
 </template>
 
-<script setup>
-// Script 部分保持不变
-import { ref, computed, onMounted } from 'vue';
-import { Link, Head, router, usePage } from '@inertiajs/vue3';
-import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
-import Modal from '@/Components/Modal/Modal.vue';
-import FlashMessage from '@/Components/Other/FlashMessage.vue';
-import { formatDateTime } from '@/utils/formatters';
-import { mainNavigationLinks } from '@/config/navigationConfig';
-const navigationLinks = mainNavigationLinks;
-const pageProps = usePage().props;
-const flashMessage = ref(null); // Ref for flash message component
-const props = defineProps({
-    page: { type: Object, required: true },
-    fromVersion: { type: Object, required: true },
-    toVersion: { type: Object, required: true },
-    fromCreator: { type: Object, required: true },
-    toCreator: { type: Object, required: true },
-    diffHtml: { type: String, default: '<p>无差异信息</p>' }
-});
-const showRevertModal = ref(false);
-const isReverting = ref(false);
-const versionToRevert = ref(null);
-const canRevert = computed(() => {
-    // Ensure auth.user and permissions exist before accessing
-    return pageProps.auth?.user?.permissions?.includes('wiki.edit') || false;
-});
-const confirmRevert = (version) => {
-    versionToRevert.value = version;
-    showRevertModal.value = true;
-};
-const closeRevertModal = () => {
-    showRevertModal.value = false;
-    versionToRevert.value = null;
-};
-const revertToVersion = () => {
-    if (!versionToRevert.value) return;
-    isReverting.value = true;
-    router.post(route('wiki.revert-version', {
-        page: props.page.slug,
-        version: versionToRevert.value.version_number
-    }), {}, {
-        preserveScroll: true,
-        onSuccess: () => {
-            closeRevertModal();
-            // Use the flash prop directly if available and correctly handled by MainLayout/FlashMessage
-            router.page.props.flash = { message: { type: 'success', text: `页面已成功恢复到 v${versionToRevert.value.version_number}` } };
-            // Or trigger the FlashMessage component instance if needed
-            // flashMessage.value?.addMessage('success', `页面已成功恢复到 v${versionToRevert.value.version_number}`);
-        },
-        onError: (errors) => {
-            console.error('Revert failed:', errors);
-            const errorMsg = Object.values(errors).flat()[0] || '恢复版本失败，请重试。';
-            router.page.props.flash = { message: { type: 'error', text: errorMsg } };
-            // flashMessage.value?.addMessage('error', errorMsg);
-        },
-        onFinish: () => {
-            isReverting.value = false;
-        }
-    });
-};
-</script>
-
 <style scoped>
-/* Scoped styles specific to Compare.vue */
 .diff-container {
-    max-height: 70vh;
+    max-height: 60vh;
+    /* 调整源码对比区域的最大高度 */
     overflow-y: auto;
     background-color: #111827;
-    /* Ensure diff container background is dark */
+    /* 深色背景 */
     border: 1px solid #4b5563;
-    /* Dark border */
+    /* 边框颜色 */
     border-radius: 0.5rem;
-    /* rounded-lg */
 }
 
-/* Use :deep to style v-html content */
+/* jfcherng/php-diff 样式微调（如果需要） */
 :deep(.diff-container table.diff) {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    /* 调小字体 */
+    line-height: 1.4;
+    /* 调整行高 */
     color: #d1d5db;
-    /* Ensure default text color is light */
     background-color: #111827;
-    /* Match container background */
 }
 
 :deep(.diff-container td) {
-    border-color: #4b5563 !important;
-    /* Darker border for cells */
+    border-color: #374151 !important;
+    /* 更深的边框色 */
     color: #d1d5db;
-    /* Light text in cells */
+    padding-top: 0.1rem !important;
+    /* 减少上下内边距 */
+    padding-bottom: 0.1rem !important;
 }
 
 :deep(.diff-container th) {
-    background-color: #374151 !important;
-    /* Tailwind gray-700 for headers */
+    background-color: #1f2937 !important;
+    /* 稍亮的表头背景 */
     border-color: #4b5563 !important;
-    /* Darker border for headers */
     color: #f3f4f6 !important;
-    /* Tailwind gray-100 for header text */
+    padding: 0.25rem 0.5rem !important;
+    /* 调整表头内边距 */
 }
 
 :deep(.diff-container td.lines-no) {
-    width: 35px !important;
-    min-width: 35px !important;
+    width: 30px !important;
+    /* 缩小行号列宽 */
+    min-width: 30px !important;
     padding-right: 0.5rem;
     background-color: #1f2937 !important;
-    /* Tailwind gray-800 for line numbers */
     color: #6b7280 !important;
-    /* Tailwind gray-500 for line number text */
     border-right-color: #4b5563 !important;
 }
 
-/* Ensure deletion/insertion styles from app.css apply correctly */
+/* 删除和插入行的背景和文本颜色保持明显 */
 :deep(.diff-container .ChangeDelete .Left) {
-    background-color: rgba(127, 29, 29, 0.4) !important;
-    /* Tailwind red-900/40 */
+    background-color: rgba(127, 29, 29, 0.3) !important;
 }
 
 :deep(.diff-container .ChangeDelete .Left del) {
-    background-color: rgba(185, 28, 28, 0.5) !important;
-    color: #fecaca !important;
-    /* Tailwind red-200 */
+    background-color: rgba(185, 28, 28, 0.4) !important;
+    color: #fca5a5 !important;
 }
 
 :deep(.diff-container .ChangeInsert .Right) {
-    background-color: rgba(6, 78, 59, 0.4) !important;
-    /* Tailwind green-900/40 */
+    background-color: rgba(6, 78, 59, 0.3) !important;
 }
 
 :deep(.diff-container .ChangeInsert .Right ins) {
-    background-color: rgba(4, 120, 87, 0.5) !important;
+    background-color: rgba(4, 120, 87, 0.4) !important;
     color: #a7f3d0 !important;
-    /* Tailwind green-200 */
 }
 
-/* Version Content Preview */
-.version-content {
-    @apply border p-4 rounded bg-gray-700/50 border-gray-600 max-h-96 overflow-y-auto text-sm prose max-w-none prose-invert;
+/* 替换行的样式 */
+:deep(.diff-container .ChangeReplace .Left) {
+    background-color: rgba(127, 29, 29, 0.3) !important;
 }
 
-.version-content.border-red-700\/60 {
-    /* More specific class if needed */
-    border-color: rgba(185, 28, 28, 0.6);
+:deep(.diff-container .ChangeReplace .Right) {
+    background-color: rgba(6, 78, 59, 0.3) !important;
 }
 
-.version-content.bg-red-900\/40 {
-    /* More specific class if needed */
-    background-color: rgba(127, 29, 29, 0.4);
+:deep(.diff-container td.Left .ChangeReplace del) {
+    background-color: rgba(185, 28, 28, 0.4) !important;
+    color: #fecaca !important;
 }
+
+:deep(.diff-container td.Right .ChangeReplace ins) {
+    background-color: rgba(4, 120, 87, 0.4) !important;
+    color: #a7f3d0 !important;
+}
+
+/* 预览窗格样式 */
+.preview-pane {
+    @apply p-4 rounded-lg max-h-[60vh] overflow-y-auto;
+    /* 预览区最大高度和滚动 */
+    /* 使用 Tailwind 的 prose 类来格式化 wiki 内容 */
+}
+
+/* 确保 prose 样式在预览窗格内生效 */
+.preview-pane :deep(h1),
+.preview-pane :deep(h2),
+.preview-pane :deep(h3),
+.preview-pane :deep(h4),
+.preview-pane :deep(h5),
+.preview-pane :deep(h6) {
+    @apply mt-4 mb-2;
+    /* 调整标题间距 */
+}
+
+.preview-pane :deep(p) {
+    @apply mb-3 leading-relaxed;
+    /* 段落间距和行高 */
+}
+
+/* 其他必要的 prose 覆盖或调整 */
 </style>

@@ -373,11 +373,11 @@ class WikiController extends Controller
         $contentChanged = $newContent !== $currentVersionContent;
 
         $currentCategoryIds = $page->categories->pluck('id')->sort()->values()->toArray();
-        $newCategoryIds = collect($validated['category_ids'])->map(fn ($id) => (int) $id)->sort()->values()->toArray();
+        $newCategoryIds = collect($validated['category_ids'])->map(fn($id) => (int) $id)->sort()->values()->toArray();
         $categoriesChanged = $currentCategoryIds != $newCategoryIds;
 
         $currentTagIds = $page->tags->pluck('id')->sort()->values()->toArray();
-        $newTagIds = collect($validated['tag_ids'] ?? [])->map(fn ($id) => (int) $id)->sort()->values()->toArray();
+        $newTagIds = collect($validated['tag_ids'] ?? [])->map(fn($id) => (int) $id)->sort()->values()->toArray();
         $tagsChanged = $currentTagIds != $newTagIds;
 
         $hasChanges = $titleChanged || $contentChanged || $categoriesChanged || $tagsChanged;
@@ -471,7 +471,7 @@ class WikiController extends Controller
                 event(new WikiPageVersionUpdated($page->id, $newVersion->id));
                 Log::info("Broadcasted WikiPageVersionUpdated event for page {$page->id}, new version ID: {$newVersion->id}");
             } catch (\Exception $e) {
-                Log::error("Failed to broadcast WikiPageVersionUpdated event for page {$page->id}: ".$e->getMessage());
+                Log::error("Failed to broadcast WikiPageVersionUpdated event for page {$page->id}: " . $e->getMessage());
             }
 
             // 重定向
@@ -479,7 +479,7 @@ class WikiController extends Controller
                 ->with('flash', ['message' => ['type' => 'success', 'text' => '页面更新成功！']]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error updating page {$page->id} by user {$user->id}: ".$e->getMessage()."\n".$e->getTraceAsString());
+            Log::error("Error updating page {$page->id} by user {$user->id}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
 
             return back()->withErrors(['general' => '保存页面时发生内部错误，请稍后重试。'])->withInput();
         }
