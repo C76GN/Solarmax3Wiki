@@ -1,6 +1,5 @@
 <template>
     <MainLayout :navigationLinks="navigationLinks">
-
         <Head :title="`${page.title} - 版本历史`" />
         <div class="container mx-auto py-6 px-4">
             <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-lg shadow-lg p-6">
@@ -12,7 +11,6 @@
                     <font-awesome-icon :icon="['fas', 'arrow-left']" class="mr-1" /> 返回页面
                     </Link>
                 </div>
-
                 <div v-if="versions.data.length > 1"
                     class="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
                     <form @submit.prevent="compareVersions">
@@ -43,7 +41,6 @@
                         </div>
                     </form>
                 </div>
-
                 <div class="overflow-x-auto">
                     <table class="w-full text-left table-fixed">
                         <thead class="bg-gray-100 dark:bg-gray-700/50">
@@ -100,23 +97,34 @@
             </div>
         </div>
 
-        <!-- Revert Confirmation Modal - Added :showFooter="true" -->
-        <Modal :show="showRevertModal" @close="closeRevertModal" maxWidth="md" title="确认恢复版本" :showFooter="true">
-            <div class="p-6">
-                <p class="mb-6 text-sm text-gray-600 dark:text-gray-300">
-                    您确定要将页面恢复到 <strong class="font-semibold text-gray-900 dark:text-gray-100">版本 v{{
+        <!-- ***** 修改点在这里 ***** -->
+        <Modal
+            :show="showRevertModal"
+            @close="closeRevertModal"
+            @confirm="revertToVersion"  
+            maxWidth="md"
+            title="确认恢复版本"
+            :showFooter="true"
+            :confirmDisabled="isReverting" 
+            confirmText="确认恢复"
+            cancelText="取消">
+            <template #default>
+                <div class="p-6">
+                    <p class="mb-6 text-sm text-gray-600 dark:text-gray-300">
+                        您确定要将页面恢复到 <strong class="font-semibold text-gray-900 dark:text-gray-100">版本 v{{
                         revertVersion?.version_number || '' }}</strong> 吗？
-                    <br>此操作将在当前版本之后创建一个包含所选版本内容的新版本，并保留所有历史记录。当前版本将不再是最新版本。
-                </p>
-            </div>
-            <template #footer>
-                <button @click="closeRevertModal" class="btn-secondary">取消</button>
-                <button @click="revertToVersion" class="btn-primary ml-3" :disabled="isReverting">
-                    <font-awesome-icon v-if="isReverting" :icon="['fas', 'spinner']" spin class="mr-1" />
-                    {{ isReverting ? '恢复中...' : '确认恢复' }}
-                </button>
+                        <br>此操作将在当前版本之后创建一个包含所选版本内容的新版本，并保留所有历史记录。当前版本将不再是最新版本。
+                    </p>
+                    <!-- 你也可以在这里添加确认图标 -->
+                    <div v-if="isReverting" class="flex justify-center items-center mt-4">
+                        <font-awesome-icon :icon="['fas', 'spinner']" spin class="text-blue-500 text-xl" />
+                        <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">正在处理...</span>
+                    </div>
+                </div>
             </template>
+            <!-- Footer slot is no longer needed here, Modal handles buttons -->
         </Modal>
+        <!-- ***** 修改结束 ***** -->
 
         <FlashMessage ref="flashMessage" />
     </MainLayout>
@@ -127,21 +135,19 @@ import { ref, computed } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import Pagination from '@/Components/Other/Pagination.vue';
-import Modal from '@/Components/Modal/Modal.vue'; // Modal component
-import FlashMessage from '@/Components/Other/FlashMessage.vue'; // Flash message component
+import Modal from '@/Components/Modal/Modal.vue';
+import FlashMessage from '@/Components/Other/FlashMessage.vue';
 import { formatDate, formatDateTime } from '@/utils/formatters';
-import { mainNavigationLinks } from '@/config/navigationConfig'; // Navigation links
+import { mainNavigationLinks } from '@/config/navigationConfig';
 
 const navigationLinks = mainNavigationLinks;
 const pageProps = usePage().props;
 
-// Props definition
 const props = defineProps({
     page: { type: Object, required: true },
     versions: { type: Object, required: true },
 });
 
-// Refs for component state
 const compareFrom = ref(props.versions.data.length > 0 ? props.versions.data[0].version_number : 1);
 const compareTo = ref(props.versions.data.length > 1 ? props.versions.data[1].version_number : 1);
 const showRevertModal = ref(false);
@@ -149,12 +155,11 @@ const isReverting = ref(false);
 const revertVersion = ref(null);
 const flashMessage = ref(null);
 
-// Computed property to check revert permission
 const canRevert = computed(() => {
+    // 确保访问权限存在
     return pageProps.auth?.user?.permissions?.includes('wiki.edit') || false;
 });
 
-// Method to initiate version comparison
 const compareVersions = () => {
     if (compareFrom.value === compareTo.value) {
         flashMessage.value?.addMessage('warning', '请选择两个不同的版本进行比较。');
@@ -167,7 +172,6 @@ const compareVersions = () => {
     }));
 };
 
-// Methods for handling revert modal
 const confirmRevert = (version) => {
     revertVersion.value = version;
     showRevertModal.value = true;
@@ -178,16 +182,15 @@ const closeRevertModal = () => {
     revertVersion.value = null;
 };
 
-// Method to perform revert action
 const revertToVersion = () => {
     if (!revertVersion.value) return;
     isReverting.value = true;
     router.post(route('wiki.revert-version', {
         page: props.page.slug,
-        version: revertVersion.value.version_number
+        version: revertVersion.value.version_number // Ensure 'version' is the correct param name in the route
     }), {}, {
         preserveScroll: true,
-        onSuccess: () => {
+        onSuccess: (pageResponse) => { // Using pageResponse to potentially get updated data if needed
             flashMessage.value?.addMessage('success', `页面已成功恢复到 v${revertVersion.value.version_number}`);
         },
         onError: (errors) => {
@@ -196,15 +199,16 @@ const revertToVersion = () => {
             flashMessage.value?.addMessage('error', errorMsg);
         },
         onFinish: () => {
-            closeRevertModal();
-            isReverting.value = false;
+            closeRevertModal(); // Close modal regardless of success/error
+            isReverting.value = false; // Reset loading state
+            // Optionally, force a reload if needed, though Inertia should handle updates
+            // router.reload({ only: ['versions'] });
         }
     });
 };
 </script>
 
 <style scoped>
-/* Styles remain the same as before, ensuring consistency */
 .th-cell {
     @apply px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider;
 }
@@ -215,28 +219,20 @@ const revertToVersion = () => {
 
 .select-field {
     @apply rounded border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200;
+    /* Adjusted padding for better look */
+    padding: 0.4rem 0.8rem;
+    min-width: 180px;
 }
 
 .btn-primary {
     @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed;
-    /* Added font-medium */
 }
 
 .btn-secondary {
     @apply px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 text-sm font-medium;
-    /* Added font-medium */
 }
 
 .btn-link {
     @apply text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition;
-}
-
-/* Modal content styles */
-.modal-content p {
-    @apply text-gray-600 dark:text-gray-300;
-}
-
-.modal-content strong {
-    @apply font-semibold text-gray-900 dark:text-gray-100;
 }
 </style>
