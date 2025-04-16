@@ -44,9 +44,10 @@ import { usePage, router } from '@inertiajs/vue3';
 const messages = ref([]);
 let nextId = 0;
 
-const addMessage = (type, text, duration = 5000) => { // Default duration 5 seconds
+const addMessage = (type, text, duration = 5000) => {
     const id = nextId++;
     messages.value.push({ id, type, text });
+    // 设置自动移除
     setTimeout(() => {
         removeMessage(id);
     }, duration);
@@ -61,33 +62,39 @@ const removeMessage = (id) => {
 
 onMounted(() => {
     const page = usePage();
+
+    // 监听 Inertia 的 flash prop
     watch(() => page.props.flash, (flash) => {
         if (flash && flash.message) {
             const { type = 'info', text } = flash.message;
             if (text) {
-                addMessage(type, text);
+                addMessage(type, text); // 调用 addMessage
             }
-            // Clear the flash message from session after showing it
-            // This requires backend cooperation or manual clearing in Inertia event listeners
+            // 清空 flash 数据，防止重复显示
             if (router && router.page && router.page.props.flash) {
-                router.page.props.flash = {}; // Attempt to clear, might need backend adjustment
+                 // 直接修改 props 可能不是最佳实践，但对于 flash 消息通常是可接受的
+                 // 更好的方法是在 Controller 中使用 ->with('flash', ...) 一次性消息
+                 // 或者使用事件总线
+                 router.page.props.flash = {};
             }
         }
     }, { immediate: true, deep: true });
 
-    // Watch for general page errors as well
+    // 监听 Inertia 的 errors prop (主要是 general 错误)
     watch(() => page.props.errors, (errors) => {
         if (errors && errors.general) {
-            addMessage('error', errors.general);
-            // Clear the general error after showing
-            if (router && router.page && router.page.props.errors) {
-                router.page.props.errors = { ...router.page.props.errors, general: undefined };
-            }
+            addMessage('error', errors.general); // 调用 addMessage
+             if (router && router.page && router.page.props.errors) {
+                 // 尝试清除 general 错误
+                 const newErrors = { ...router.page.props.errors };
+                 delete newErrors.general;
+                 router.page.props.errors = newErrors;
+             }
         }
     }, { deep: true });
 });
 
-// Expose addMessage to be callable from parent components if needed
+// **确保暴露 addMessage 方法给父组件**
 defineExpose({
     addMessage
 });

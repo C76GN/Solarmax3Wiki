@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\WikiPage;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use App\Models\ActivityLog; // Added import for ActivityLog
 
 class CollaborationService
 {
@@ -21,27 +22,67 @@ class CollaborationService
 
     const MAX_MESSAGES = 100; // 最大保留消息数
 
-    public function registerEditor(WikiPage $page, User $user): void
+    const TEMP_LOCK_PREFIX = 'wiki_temp_lock_'; // 新增常量
+    const TEMP_LOCK_DURATION = 60; // 临时锁定持续时间（秒），例如 1 分钟
+
+    public function registerEditor(WikiPage $page, User $user): bool // 修改返回类型为 bool
     {
         $cacheKey = $this->getEditorsKey($page->id);
-        $editors = $this->getEditors($page->id);
+        $editors = $this->getEditors($page->id); // getEditors 内部会清理超时的
 
+        // --- 新增：检查临时锁 ---
+        $tempLockKey = self::TEMP_LOCK_PREFIX . $page->id;
+        if (Cache::has($tempLockKey) && !isset($editors[$user->id])) {
+            // 如果存在临时锁，并且当前用户不是已在编辑列表中的用户，则拒绝
+            Log::warning("Temporary lock active for page {$page->id}. User {$user->id} registration denied.");
+            return false; // 返回 false 表示注册失败
+        }
+        // --- 结束新增 ---
+
+
+        // --- 新增：检查编辑人数限制 ---
+        $editorCount = count($editors);
+        $isCurrentUserEditing = isset($editors[$user->id]);
+
+        if ($editorCount >= 2 && !$isCurrentUserEditing) {
+            Log::warning("Editor limit (2) reached for page {$page->id}. User {$user->id} registration denied.");
+            return false; // 返回 false 表示注册失败
+        }
+        // --- 结束新增 ---
+
+        // 如果用户已经在编辑，只更新时间戳
         $editors[$user->id] = [
             'id' => $user->id,
             'name' => $user->name,
             'last_active' => now()->timestamp,
             'editing_since' => $editors[$user->id]['editing_since'] ?? now()->timestamp,
-            'avatar' => $user->avatar ?? null,
+            'avatar' => $user->avatar ?? null, // 假设有头像字段
+            'base_version_id' => $editors[$user->id]['base_version_id'] ?? $page->current_version_id, // 记录基版本
         ];
 
-        Cache::put($cacheKey, $editors, now()->addMinutes(30));
+        Cache::put($cacheKey, $editors, now()->addMinutes(30)); // 编辑列表缓存时间
         $this->broadcastEditorsChange($page, $editors);
 
-        // 记录活动日志
-        \App\Models\ActivityLog::log('editor_active', $page, [
-            'user_id' => $user->id,
-            'action' => 'registered',
-        ]);
+        // 记录活动日志 (可选，看是否需要记录心跳)
+        ActivityLog::log('editor_active', $page, ['user_id' => $user->id, 'action' => 'registered/heartbeat']);
+
+        return true; // 返回 true 表示注册/心跳成功
+    }
+
+    public function setTemporaryLock(int $pageId): void
+    {
+        $tempLockKey = self::TEMP_LOCK_PREFIX . $pageId;
+        Cache::put($tempLockKey, true, self::TEMP_LOCK_DURATION);
+        Log::info("Temporary lock set for page {$pageId} for " . self::TEMP_LOCK_DURATION . " seconds.");
+    }
+
+    // --- 新增：移除临时锁的方法 ---
+    public function removeTemporaryLock(int $pageId): void
+    {
+        $tempLockKey = self::TEMP_LOCK_PREFIX . $pageId;
+        if (Cache::forget($tempLockKey)) {
+            Log::info("Temporary lock removed for page {$pageId}.");
+        }
     }
 
     public function unregisterEditor(WikiPage $page, User $user): void
@@ -49,22 +90,24 @@ class CollaborationService
         $cacheKey = $this->getEditorsKey($page->id);
         $editors = $this->getEditors($page->id);
 
-        // 移除编辑者
+        $wasEditing = isset($editors[$user->id]); // 检查用户是否真的在编辑列表里
+
         unset($editors[$user->id]);
 
         if (! empty($editors)) {
             Cache::put($cacheKey, $editors, now()->addMinutes(30));
         } else {
             Cache::forget($cacheKey);
+            // 当最后一个编辑器离开时，移除临时锁
+            $this->removeTemporaryLock($page->id);
         }
 
         $this->broadcastEditorsChange($page, $editors);
 
-        // 记录活动日志
-        \App\Models\ActivityLog::log('editor_active', $page, [
-            'user_id' => $user->id,
-            'action' => 'unregistered',
-        ]);
+        // 只有当用户确实在编辑列表里时才记录日志
+        if ($wasEditing) {
+            ActivityLog::log('editor_active', $page, ['user_id' => $user->id, 'action' => 'unregistered']);
+        }
     }
 
     public function getEditors(int $pageId): array

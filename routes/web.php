@@ -21,6 +21,8 @@ Route::prefix('wiki')->name('wiki.')->group(function () {
 
         Route::post('preview', [WikiController::class, 'preview'])->name('preview');
 
+        Route::delete('{page:slug}/my-draft', [WikiController::class, 'deleteMyDraft'])->name('draft.delete'); // 新增路由
+
         Route::middleware('permission:wiki.create')->group(function () {
             Route::get('create', [WikiController::class, 'create'])->name('create');
             Route::post('', [WikiController::class, 'store'])->name('store');
