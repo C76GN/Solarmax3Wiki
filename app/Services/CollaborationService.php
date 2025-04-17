@@ -112,7 +112,7 @@ class CollaborationService
         }
     }
 
-        public function getEditors(int $pageId): array
+    public function getEditors(int $pageId): array
     {
         $cacheKey = $this->getEditorsKey($pageId);
         $editors = Cache::get($cacheKey, []);
@@ -134,7 +134,7 @@ class CollaborationService
                     ]);
                     Log::info("Editor {$userId} timed out from page {$pageId}."); // 添加日志记录
                 } else {
-                     Log::warning("Attempted to log editor timeout for non-existent page {$pageId}, user {$userId}.");
+                    Log::warning("Attempted to log editor timeout for non-existent page {$pageId}, user {$userId}.");
                 }
             }
         }
@@ -142,13 +142,13 @@ class CollaborationService
         // 如果有编辑器被移除，更新缓存
         // (这步可选，如果get总是从缓存读最新，不写回去也没问题，下次get时自然会清理)
         // 但为了明确性，可以在这里判断是否有移除并更新缓存
-         if (count($editors) < count(Cache::get($cacheKey, []))) { // 检查编辑器数量是否减少
-             if (empty($editors)) {
-                 Cache::forget($cacheKey); // 如果没有编辑器了，直接删除缓存键
+        if (count($editors) < count(Cache::get($cacheKey, []))) { // 检查编辑器数量是否减少
+            if (empty($editors)) {
+                Cache::forget($cacheKey); // 如果没有编辑器了，直接删除缓存键
             } else {
-                 Cache::put($cacheKey, $editors, now()->addMinutes(30)); // 更新缓存
+                Cache::put($cacheKey, $editors, now()->addMinutes(30)); // 更新缓存
             }
-             // 不需要再次广播，因为这不是主动操作，下次心跳或获取时会更新
+            // 不需要再次广播，因为这不是主动操作，下次心跳或获取时会更新
         }
 
         return $editors;
