@@ -4,11 +4,11 @@ namespace App\Services;
 
 use App\Events\WikiDiscussionMessage;
 use App\Events\WikiEditorsUpdated;
+use App\Models\ActivityLog;
 use App\Models\User;
 use App\Models\WikiPage;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
-use App\Models\ActivityLog; // Added import for ActivityLog
+use Illuminate\Support\Facades\Log; // Added import for ActivityLog
 
 class CollaborationService
 {
@@ -23,6 +23,7 @@ class CollaborationService
     const MAX_MESSAGES = 100; // 最大保留消息数
 
     const TEMP_LOCK_PREFIX = 'wiki_temp_lock_'; // 新增常量
+
     const TEMP_LOCK_DURATION = 60; // 临时锁定持续时间（秒），例如 1 分钟
 
     public function registerEditor(WikiPage $page, User $user): bool // 修改返回类型为 bool
@@ -31,21 +32,22 @@ class CollaborationService
         $editors = $this->getEditors($page->id); // getEditors 内部会清理超时的
 
         // --- 新增：检查临时锁 ---
-        $tempLockKey = self::TEMP_LOCK_PREFIX . $page->id;
-        if (Cache::has($tempLockKey) && !isset($editors[$user->id])) {
+        $tempLockKey = self::TEMP_LOCK_PREFIX.$page->id;
+        if (Cache::has($tempLockKey) && ! isset($editors[$user->id])) {
             // 如果存在临时锁，并且当前用户不是已在编辑列表中的用户，则拒绝
             Log::warning("Temporary lock active for page {$page->id}. User {$user->id} registration denied.");
+
             return false; // 返回 false 表示注册失败
         }
         // --- 结束新增 ---
-
 
         // --- 新增：检查编辑人数限制 ---
         $editorCount = count($editors);
         $isCurrentUserEditing = isset($editors[$user->id]);
 
-        if ($editorCount >= 2 && !$isCurrentUserEditing) {
+        if ($editorCount >= 2 && ! $isCurrentUserEditing) {
             Log::warning("Editor limit (2) reached for page {$page->id}. User {$user->id} registration denied.");
+
             return false; // 返回 false 表示注册失败
         }
         // --- 结束新增 ---
@@ -71,15 +73,15 @@ class CollaborationService
 
     public function setTemporaryLock(int $pageId): void
     {
-        $tempLockKey = self::TEMP_LOCK_PREFIX . $pageId;
+        $tempLockKey = self::TEMP_LOCK_PREFIX.$pageId;
         Cache::put($tempLockKey, true, self::TEMP_LOCK_DURATION);
-        Log::info("Temporary lock set for page {$pageId} for " . self::TEMP_LOCK_DURATION . " seconds.");
+        Log::info("Temporary lock set for page {$pageId} for ".self::TEMP_LOCK_DURATION.' seconds.');
     }
 
     // --- 新增：移除临时锁的方法 ---
     public function removeTemporaryLock(int $pageId): void
     {
-        $tempLockKey = self::TEMP_LOCK_PREFIX . $pageId;
+        $tempLockKey = self::TEMP_LOCK_PREFIX.$pageId;
         if (Cache::forget($tempLockKey)) {
             Log::info("Temporary lock removed for page {$pageId}.");
         }
