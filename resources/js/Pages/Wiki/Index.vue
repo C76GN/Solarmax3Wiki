@@ -4,7 +4,7 @@
         <Head title="Wiki 页面列表" />
         <div class="container mx-auto py-6 px-4">
             <div class="flex flex-col md:flex-row md:space-x-8">
-                <!-- Sidebar: Categories & Tags -->
+                <!-- Sidebar (Categories & Tags) -->
                 <div class="w-full md:w-1/4 mb-6 md:mb-0 flex-shrink-0">
                     <!-- Categories Card -->
                     <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg p-4 mb-6">
@@ -32,29 +32,33 @@
                                 :class="filters.tag === tag.slug
                                     ? 'bg-blue-600 text-white hover:bg-blue-700'
                                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'">
-                            {{ tag.name }} ({{ tag.pages_count }}) <!-- Added non-breaking space -->
+                            {{ tag.name }} ({{ tag.pages_count }})
                             </Link>
                         </div>
                         <p v-else class="text-sm text-gray-500 dark:text-gray-400 italic">暂无标签</p>
                     </div>
                 </div>
 
-                <!-- Main Content: Wiki Pages List -->
+                <!-- Main Content (Page List & Filters) -->
                 <div class="w-full md:w-3/4">
                     <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg shadow-lg p-4 md:p-6 mb-6">
-                        <!-- Header and Search/Create -->
+                        <!-- Header & Filters -->
                         <div
                             class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b dark:border-gray-700">
                             <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 sm:mb-0">Wiki 页面</h1>
                             <div class="flex items-center gap-4 w-full sm:w-auto flex-wrap">
-                            <div class="relative">
-                                     <select v-model="statusFilter" @change="performStatusFilter"
+                                <!-- Status Filter Dropdown -->
+                                <div class="relative">
+                                    <select v-model="statusFilter" @change="performStatusFilter"
                                         class="py-2 px-4 pr-8 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm appearance-none">
+                                        <!-- Option Texts Should NOT contain the extra icon -->
                                         <option value="">所有状态</option>
                                         <option value="published">已发布</option>
                                         <option value="conflict">有冲突</option>
                                     </select>
-                                     <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-400 dark:text-gray-500">
+                                    <!-- Custom Chevron Icon -->
+                                    <div
+                                        class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-400 dark:text-gray-500">
                                         <font-awesome-icon :icon="['fas', 'chevron-down']" class="h-3 w-3" />
                                     </div>
                                 </div>
@@ -68,7 +72,7 @@
                                         <font-awesome-icon :icon="['fas', 'search']" />
                                     </div>
                                 </div>
-                                <!-- Create Button -->
+                                <!-- Create Page Button -->
                                 <Link
                                     v-if="$page.props.auth.user && $page.props.auth.user.permissions.includes('wiki.create')"
                                     :href="route('wiki.create')"
@@ -79,65 +83,74 @@
                         </div>
 
                         <!-- Active Filters Display -->
-                        <div v-if="hasFilters" class="flex items-center flex-wrap gap-2 mb-4 text-sm border-b dark:border-gray-700 pb-4">
-                             <span class="mr-2 text-gray-600 dark:text-gray-400 font-medium">筛选条件:</span>
+                        <div v-if="hasFilters"
+                            class="flex items-center flex-wrap gap-2 mb-4 text-sm border-b dark:border-gray-700 pb-4">
+                            <span class="mr-2 text-gray-600 dark:text-gray-400 font-medium">筛选条件:</span>
                             <!-- Category Filter Tag -->
-                             <div v-if="filters.category" class="filter-tag bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                            <div v-if="filters.category"
+                                class="filter-tag bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
                                 <span>分类: {{ getCategoryName(filters.category) }}</span>
                                 <button @click="removeFilter('category')" class="filter-remove-btn">
                                     <font-awesome-icon :icon="['fas', 'times']" />
                                 </button>
                             </div>
                             <!-- Tag Filter Tag -->
-                             <div v-if="filters.tag" class="filter-tag bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
+                            <div v-if="filters.tag"
+                                class="filter-tag bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
                                 <span>标签: {{ getTagName(filters.tag) }}</span>
                                 <button @click="removeFilter('tag')" class="filter-remove-btn">
                                     <font-awesome-icon :icon="['fas', 'times']" />
                                 </button>
                             </div>
                             <!-- Search Filter Tag -->
-                            <div v-if="filters.search" class="filter-tag bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                            <div v-if="filters.search"
+                                class="filter-tag bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
                                 <span>搜索: "{{ filters.search }}"</span>
                                 <button @click="removeFilter('search')" class="filter-remove-btn">
                                     <font-awesome-icon :icon="['fas', 'times']" />
                                 </button>
                             </div>
-                            <!-- Status Filter Tag (New) -->
-                            <div v-if="filters.status" class="filter-tag bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">
+                            <!-- Status Filter Tag -->
+                            <div v-if="filters.status"
+                                class="filter-tag bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">
                                 <span>状态: {{ filters.status === 'conflict' ? '有冲突' : '已发布' }}</span>
                                 <button @click="removeFilter('status')" class="filter-remove-btn">
                                     <font-awesome-icon :icon="['fas', 'times']" />
                                 </button>
                             </div>
-                             <!-- Clear Filters Button -->
-                             <button @click="clearFilters" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 underline ml-auto text-xs">
+                            <!-- Clear Filters Button -->
+                            <button @click="clearFilters"
+                                class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 underline ml-auto text-xs">
                                 清除所有筛选
                             </button>
                         </div>
-                        <!-- Pages List -->
+
+                        <!-- Page List -->
                         <div v-if="pages.data.length > 0">
                             <div class="divide-y dark:divide-gray-700">
-                                 <div v-for="page in pages.data" :key="page.id"
+                                <div v-for="page in pages.data" :key="page.id"
                                     class="py-5 group transition duration-150 ease-in-out hover:bg-gray-50 dark:hover:bg-gray-700/50 px-2 -mx-2 rounded-md">
-                                     <div class="flex flex-col sm:flex-row justify-between sm:items-start">
+                                    <div class="flex flex-col sm:flex-row justify-between sm:items-start">
                                         <div class="flex-grow mb-3 sm:mb-0 mr-4">
-                                             <!-- 标题和冲突标记 -->
-                                             <Link :href="route('wiki.show', page.slug)"
+                                            <!-- Title and Status Badge -->
+                                            <Link :href="route('wiki.show', page.slug)"
                                                 class="text-xl font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mb-1 block break-words">
                                             {{ page.title }}
-                                                <!-- 新增: 冲突标记 -->
-                                                <span v-if="page.status === 'conflict'"
-                                                    class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 animate-pulse"
-                                                     title="此页面存在编辑冲突">
-                                                    <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="mr-1" /> 冲突
-                                                </span>
+                                            <span v-if="page.status === 'conflict'"
+                                                class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 animate-pulse"
+                                                title="此页面存在编辑冲突">
+                                                <font-awesome-icon :icon="['fas', 'exclamation-triangle']"
+                                                    class="mr-1" /> 冲突
+                                            </span>
                                             </Link>
+                                            <!-- Meta Info -->
                                             <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">
                                                 <span>由 {{ page.creator?.name || '未知用户' }} 创建于 {{
                                                     formatDateShort(page.created_at) }}</span>
                                                 <span class="mx-1">|</span>
                                                 <span>最后更新于 {{ formatDate(page.updated_at) }}</span>
                                             </div>
+                                            <!-- Categories and Tags -->
                                             <div class="flex flex-wrap gap-1.5 mt-2">
                                                 <Link v-for="category in page.categories" :key="`cat-${category.id}`"
                                                     :href="route('wiki.index', { category: category.slug })"
@@ -150,7 +163,7 @@
                                                 </Link>
                                             </div>
                                         </div>
-                                        <!-- Actions -->
+                                        <!-- Action Buttons -->
                                         <div class="flex items-center space-x-3 flex-shrink-0 ml-0 sm:ml-4">
                                             <Link
                                                 v-if="$page.props.auth.user && $page.props.auth.user.permissions.includes('wiki.edit')"
@@ -164,7 +177,6 @@
                                                 title="查看历史">
                                             <font-awesome-icon :icon="['fas', 'history']" />
                                             </Link>
-                                            <!-- Delete Button Added -->
                                             <button
                                                 v-if="$page.props.auth.user && $page.props.auth.user.permissions.includes('wiki.delete')"
                                                 @click="confirmDelete(page)"
@@ -176,6 +188,7 @@
                                     </div>
                                 </div>
                             </div>
+                            <!-- Pagination -->
                             <Pagination :links="pages.links" class="mt-6" />
                         </div>
                         <!-- No Pages Found Message -->
@@ -207,7 +220,7 @@
                     </h3>
                     <p class="mb-4 text-gray-600 dark:text-gray-300">
                         确定要将页面 “<strong class="font-semibold text-gray-800 dark:text-gray-200">{{ pageToDelete?.title
-                            }}</strong>”
+                        }}</strong>”
                         移至回收站吗？
                     </p>
                     <p class="text-sm text-gray-500 dark:text-gray-400">
@@ -216,7 +229,7 @@
                 </div>
             </template>
         </Modal>
-
+        <!-- Flash Message Component -->
         <FlashMessage ref="flashMessage" />
     </MainLayout>
 </template>
@@ -230,74 +243,86 @@ import Modal from '@/Components/Modal/Modal.vue';
 import FlashMessage from '@/Components/Other/FlashMessage.vue';
 import { formatDate, formatDateShort } from '@/utils/formatters';
 import { mainNavigationLinks } from '@/config/navigationConfig';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'; // 引入图标
-import { faChevronDown } from '@fortawesome/free-solid-svg-icons'; // 引入向下箭头图标
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+// Ensure chevron-down is imported if not already globally available
+import { faChevronDown } from '@fortawesome/free-solid-svg-icons'; // Correct import path
+
 
 const navigationLinks = mainNavigationLinks;
+
+// Props definition
 const props = defineProps({
     pages: { type: Object, required: true },
     categories: { type: Array, required: true },
     tags: { type: Array, required: true },
-    filters: { type: Object, default: () => ({}) }
+    filters: { type: Object, default: () => ({}) } // Applied filters from backend
 });
 
+// Reactive refs
 const search = ref(props.filters.search || '');
-const statusFilter = ref(props.filters.status || ''); // 初始化状态筛选器
+const statusFilter = ref(props.filters.status || ''); // State for status filter
 const flashMessage = ref(null);
 const showDeleteConfirm = ref(false);
 const pageToDelete = ref(null);
 
+// Computed property to check if any filters are active
 const hasFilters = computed(() => {
-     return Object.entries(props.filters).some(([key, value]) => value !== null && value !== '' && value !== undefined);
+    // Check props.filters which reflects the actual applied filters from the controller
+    return Object.entries(props.filters).some(([key, value]) => value !== null && value !== '' && value !== undefined);
 });
 
-// 合并搜索和筛选逻辑
-const applyFilters = () => {
-    const currentFilters = { ...props.filters }; // 先保留已有的分类和标签筛选
 
-    // 处理搜索
+// Apply search and filters
+const applyFilters = () => {
+    const currentFilters = { ...props.filters }; // Start with existing server-side filters (like category/tag)
+
+    // Add or remove search filter based on input
     if (search.value.trim()) {
         currentFilters.search = search.value.trim();
     } else {
-        delete currentFilters.search;
+        delete currentFilters.search; // Remove if empty
     }
 
-    // 处理状态
+    // Add or remove status filter based on selection
     if (statusFilter.value) {
         currentFilters.status = statusFilter.value;
     } else {
-        delete currentFilters.status;
+        delete currentFilters.status; // Remove if empty
     }
 
+    // Make the Inertia request
     router.get(route('wiki.index'), currentFilters, {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
+        preserveState: true, // Keep component state like input values
+        preserveScroll: true, // Keep scroll position
+        replace: true,        // Replace history entry instead of pushing
     });
 };
 
+// Event handlers for filters
 const performSearch = () => {
-    applyFilters(); // 搜索时应用所有筛选条件
+    applyFilters();
 };
 
 const performStatusFilter = () => {
-    applyFilters(); // 状态筛选时应用所有筛选条件
+    applyFilters();
 };
 
-// 移除单个筛选条件
+
+// Remove a specific filter and update
 const removeFilter = (filterKey) => {
     const newFilters = { ...props.filters };
-    delete newFilters[filterKey];
+    delete newFilters[filterKey]; // Remove the specific key
 
-    // 重置前端对应的输入状态
+    // Reset the local state if it corresponds to the removed key
     if (filterKey === 'search') {
         search.value = '';
     }
     if (filterKey === 'status') {
         statusFilter.value = '';
     }
-    // 如果还需要重置 category 或 tag，也在这里处理
+    // For category/tag, they are already removed from newFilters derived from props
 
+    // Fetch data with updated filters
     router.get(route('wiki.index'), newFilters, {
         preserveState: true,
         preserveScroll: true,
@@ -305,30 +330,32 @@ const removeFilter = (filterKey) => {
     });
 };
 
-// 清除所有筛选条件
+// Clear all filters and update
 const clearFilters = () => {
-    search.value = '';
-    statusFilter.value = ''; // 清除状态筛选
-    // 清除 props.filters 中可能的 category 和 tag
-    const clearFiltersObj = {}; // 构建一个空的筛选对象
-    router.get(route('wiki.index'), clearFiltersObj, {
+    search.value = '';        // Clear local search state
+    statusFilter.value = '';  // Clear local status state
+
+    // Send request with empty filters object
+    router.get(route('wiki.index'), {}, { // Use an empty object for filters
         preserveState: true,
         preserveScroll: true,
         replace: true
     });
 };
 
+
+// Helper functions to get names from slugs (useful for filter tags display)
 const getCategoryName = (slug) => {
     const category = props.categories.find(c => c.slug === slug);
-    return category ? category.name : slug;
+    return category ? category.name : slug; // Fallback to slug if name not found
 };
 
 const getTagName = (slug) => {
     const tag = props.tags.find(t => t.slug === slug);
-    return tag ? tag.name : slug;
+    return tag ? tag.name : slug; // Fallback to slug if name not found
 };
 
-// --- Delete Logic ---
+// Delete Page Confirmation Logic
 const confirmDelete = (page) => {
     pageToDelete.value = page;
     showDeleteConfirm.value = true;
@@ -341,37 +368,42 @@ const cancelDelete = () => {
 
 const deletePage = () => {
     if (!pageToDelete.value) return;
-
-    // 使用 page slug 而不是 id，根据你的路由定义
     router.delete(route('wiki.destroy', pageToDelete.value.slug), {
         preserveScroll: true,
         onSuccess: () => {
             flashMessage.value?.addMessage('success', `页面 "${pageToDelete.value.title}" 已移至回收站。`);
+            // The page list will update automatically via Inertia
         },
         onError: (errors) => {
+            // Display error from backend, or a default message
             const errorMsg = Object.values(errors).flat()[0] || '删除页面失败，请重试。';
             flashMessage.value?.addMessage('error', errorMsg);
         },
         onFinish: () => {
-            cancelDelete(); // 关闭模态框
+            cancelDelete(); // Close the modal regardless of success/error
         }
     });
 };
+
 </script>
 
 <style scoped>
+/* Filter Tag Styles */
 .filter-tag {
     @apply flex items-center rounded-full px-3 py-1 text-xs font-medium;
 }
 
 .filter-remove-btn {
+    /* Style for the 'x' button within filter tags */
     @apply ml-1.5 -mr-0.5 p-0.5 rounded-full inline-flex items-center justify-center hover:bg-opacity-20 hover:bg-current focus:outline-none;
 }
 
 .filter-remove-btn svg {
     @apply h-2 w-2;
+    /* Adjust size as needed */
 }
 
+/* Category and Tag pill styles */
 .tag-category {
     @apply inline-block px-2 py-0.5 bg-gray-200 text-gray-700 text-xs rounded-full hover:bg-gray-300 transition dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 whitespace-nowrap;
 }
@@ -380,16 +412,18 @@ const deletePage = () => {
     @apply inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full hover:bg-blue-200 transition dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 whitespace-nowrap;
 }
 
-/* Action Button Style */
+/* Action button styles (Edit, History, Delete) */
 .action-btn {
     @apply p-1 rounded transition-colors duration-150 ease-in-out;
+    /* Basic styling for action buttons */
 }
 
 .action-btn svg {
     @apply h-4 w-4;
+    /* Icon size */
 }
 
-/* Modal content text styling (consistent with Roles/Index) */
+/* Specific Modal content styling if needed */
 .modal-content p {
     @apply text-gray-600 dark:text-gray-300;
 }
