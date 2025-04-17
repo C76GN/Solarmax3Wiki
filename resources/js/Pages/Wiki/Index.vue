@@ -223,7 +223,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { Link, router, usePage } from '@inertiajs/vue3'; // usePage 需要引入
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayouts/MainLayout.vue';
 import Pagination from '@/Components/Other/Pagination.vue';
 import Modal from '@/Components/Modal/Modal.vue';

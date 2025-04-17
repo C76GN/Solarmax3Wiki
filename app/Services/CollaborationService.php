@@ -112,7 +112,7 @@ class CollaborationService
         }
     }
 
-    public function getEditors(int $pageId): array
+        public function getEditors(int $pageId): array
     {
         $cacheKey = $this->getEditorsKey($pageId);
         $editors = Cache::get($cacheKey, []);
@@ -120,15 +120,35 @@ class CollaborationService
 
         // 清理超时的编辑者
         foreach ($editors as $userId => $editor) {
-            if ($now - $editor['last_active'] > self::EDITOR_TIMEOUT) {
+            // 检查 'last_active' 是否存在，并且计算时间差
+            if (isset($editor['last_active']) && ($now - $editor['last_active'] > self::EDITOR_TIMEOUT)) { // <-- 添加了缺失的右括号
                 unset($editors[$userId]);
 
                 // 记录活动日志（超时退出）
-                \App\Models\ActivityLog::log('editor_active', WikiPage::find($pageId), [
-                    'user_id' => $userId,
-                    'action' => 'timeout',
-                ]);
+                // 确保WikiPage模型存在
+                $wikiPage = WikiPage::find($pageId);
+                if ($wikiPage) { // 只有在页面存在时才记录日志
+                    \App\Models\ActivityLog::log('editor_active', $wikiPage, [
+                        'user_id' => $userId,
+                        'action' => 'timeout',
+                    ]);
+                    Log::info("Editor {$userId} timed out from page {$pageId}."); // 添加日志记录
+                } else {
+                     Log::warning("Attempted to log editor timeout for non-existent page {$pageId}, user {$userId}.");
+                }
             }
+        }
+
+        // 如果有编辑器被移除，更新缓存
+        // (这步可选，如果get总是从缓存读最新，不写回去也没问题，下次get时自然会清理)
+        // 但为了明确性，可以在这里判断是否有移除并更新缓存
+         if (count($editors) < count(Cache::get($cacheKey, []))) { // 检查编辑器数量是否减少
+             if (empty($editors)) {
+                 Cache::forget($cacheKey); // 如果没有编辑器了，直接删除缓存键
+            } else {
+                 Cache::put($cacheKey, $editors, now()->addMinutes(30)); // 更新缓存
+            }
+             // 不需要再次广播，因为这不是主动操作，下次心跳或获取时会更新
         }
 
         return $editors;
