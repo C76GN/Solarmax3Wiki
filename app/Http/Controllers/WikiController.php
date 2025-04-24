@@ -268,81 +268,93 @@ class WikiController extends Controller
 
     public function edit(WikiPage $page, CollaborationService $collaborationService): InertiaResponse|RedirectResponse
     {
-        $this->authorize('update', $page); // 先检查是否有更新权限 (策略会处理锁定和冲突基础逻辑)
+        $this->authorize('update', $page); // Basic update authorization first
         $user = Auth::user();
-        // 检查并发编辑限制
+
+         // === CONFLICT CHECK AND REDIRECT ===
+        if ($page->status === WikiPage::STATUS_CONFLICT) {
+             // User MUST have specific permission to resolve
+             if (!$user?->can('wiki.resolve_conflict')) {
+                Log::warning("User {$user?->id} attempted to access edit route for conflicted page {$page->id} without resolve permissions.");
+                return redirect()->route('wiki.show', $page->slug)
+                       ->with('flash', ['message' => ['type' => 'error', 'text' => '此页面处于冲突状态，您没有权限解决。']]);
+             }
+            // User has permission, redirect them to the dedicated conflict resolution page
+            Log::info("User {$user->id} accessing conflict resolution for page {$page->id} via edit route. Redirecting to show-conflicts.");
+             return redirect()->route('wiki.show-conflicts', $page->slug); // <<< KEY REDIRECT
+        }
+        // === END CONFLICT CHECK ===
+
+        // === NON-CONFLICTED EDITING FLOW ===
+        // Check collaboration limits (only relevant if not in conflict)
         $editors = $collaborationService->getEditors($page->id);
         $editorCount = count($editors);
         $isCurrentUserEditing = isset($editors[$user->id]);
-        if ($editorCount >= 2 && ! $isCurrentUserEditing) {
+        if ($editorCount >= 2 && !$isCurrentUserEditing) {
             Log::warning("Editor limit reached for page {$page->id}. User {$user->id} denied entry.");
-
             return redirect()->route('wiki.show', $page->slug)
-                ->with('flash', ['message' => ['type' => 'error', 'text' => '此页面当前已有两人正在编辑，请稍后再试。']]);
+                   ->with('flash', ['message' => ['type' => 'error', 'text' => '此页面当前已有两人正在编辑，请稍后再试。']]);
         }
-        // 检查冲突状态和权限
-        $isInConflict = $page->status === WikiPage::STATUS_CONFLICT;
-        $canResolveConflict = $user && $user->can('wiki.resolve_conflict');
-        if ($isInConflict && ! $canResolveConflict) {
-            Log::warning("User {$user->id} attempted to edit conflicted page {$page->id} without resolve permissions.");
 
-            return redirect()->route('wiki.show', $page->slug)
-                ->with('flash', ['message' => ['type' => 'error', 'text' => '此页面处于冲突状态，需要权限解决后才能编辑。']]);
-        }
-        // 使用 Gate::allows 检查是否允许编辑 (它内部会调用 Policy 的 update 方法)
-        $isEditable = Gate::allows('update', $page);
-        // 如果不可编辑且不是冲突待解决状态（即被他人锁定），则重定向
-        if (! $isEditable && ! $isInConflict) {
-            $page->loadMissing('locker:id,name'); // 加载锁定者信息
+        // Check general editability (lock status etc. - relies on policy)
+         // Since we already handled conflict above, Gate::allows 'update' will work based on non-conflict policy logic
+         $isEditable = Gate::allows('update', $page);
+        if (!$isEditable) {
+            $page->loadMissing('locker:id,name'); // Load locker info if available
             $lockerName = $page->locker ? $page->locker->name : '未知用户';
             Log::warning("User {$user->id} attempted to edit locked page {$page->id}. Locked by {$lockerName}.");
-
             return redirect()->route('wiki.show', $page->slug)
-                ->with('flash', ['message' => ['type' => 'warning', 'text' => "页面当前被 {$lockerName} 锁定编辑中。"]]);
+                 ->with('flash', ['message' => ['type' => 'warning', 'text' => "页面当前被 {$lockerName} 锁定编辑中。"]]);
         }
-        // 获取用户草稿或最新版本内容
+
+         // --- Proceed to load data for the Edit view ---
+
+        // Get user's draft or current content
         $draft = WikiPageDraft::where('wiki_page_id', $page->id)
-            ->where('user_id', $user->id)
-            ->select('content', 'last_saved_at')
-            ->orderBy('last_saved_at', 'desc')
+             ->where('user_id', $user->id)
+             ->select('content', 'last_saved_at')
+             ->orderBy('last_saved_at', 'desc') // Get the latest draft
             ->first();
+
+        // Load required relationships for the form
+         $page->load(['currentVersion:id,wiki_page_id,version_number,content', 'categories:id', 'tags:id']);
+
+        // Use draft content if available, otherwise current version content
         $content = $draft ? $draft->content : ($page->currentVersion ? $page->currentVersion->content : '');
-        // 加载必要的数据
-        $page->load(['currentVersion:id,wiki_page_id,version_number', 'categories:id', 'tags:id']);
+
+        // Get all categories and tags for selection fields
         $categories = WikiCategory::select('id', 'name')->orderBy('order')->get();
         $tags = WikiTag::select('id', 'name')->orderBy('name')->get();
-        // 如果允许编辑或可以解决冲突，则注册编辑者
-        $editorIsEffectivelyEditable = $isEditable || ($isInConflict && $canResolveConflict);
-        if ($editorIsEffectivelyEditable) {
-            $collaborationService->registerEditor($page, $user);
-        }
-        // 准备传递给视图的数据
+
+        // Register editor if allowed
+         if ($isEditable) {
+             $collaborationService->registerEditor($page, $user);
+         }
+
+        // Prepare data for Inertia
         $editPageData = [
             'page' => array_merge(
                 $page->only('id', 'title', 'slug', 'current_version_id', 'status'),
                 [
                     'category_ids' => $page->categories->pluck('id')->toArray(),
                     'tag_ids' => $page->tags->pluck('id')->toArray(),
-                    // 注意: currentVersion 可能为 null
-                    'current_version' => $page->currentVersion,
+                     'current_version' => $page->currentVersion, // Include version details
                 ]
             ),
-            'content' => $content,
+            'content' => $content, // Draft or current content
             'categories' => $categories,
             'tags' => $tags,
-            'hasDraft' => ! is_null($draft),
+             'hasDraft' => ! is_null($draft),
             'lastSaved' => $draft ? $draft->last_saved_at->toIso8601String() : null,
-            'canResolveConflict' => $canResolveConflict,
-            'isConflict' => $isInConflict,
-            'editorIsEditable' => $editorIsEffectivelyEditable, // 传递实际可编辑状态给前端
+             // Conflict props are not needed here as conflicts redirect
+            'editorIsEditable' => $isEditable, // True if user can edit (not locked, has permission)
             'errors' => session('errors') ? session('errors')->getBag('default')->getMessages() : (object) [],
             'flash' => session('flash'),
-            // 将初始版本信息传递给前端，用于提交时的版本校验
-            'initialVersionId' => $page->current_version_id,
-            'initialVersionNumber' => $page->currentVersion?->version_number ?? 0, // 如果没有版本则为0
+            'initialVersionId' => $page->current_version_id, // Track the version user started editing from
+            'initialVersionNumber' => $page->currentVersion?->version_number ?? 0,
         ];
 
-        return Inertia::render('Wiki/Edit', $editPageData);
+         return Inertia::render('Wiki/Edit', $editPageData);
     }
 
     // AJAX 保存草稿

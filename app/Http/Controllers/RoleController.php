@@ -11,6 +11,7 @@ use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role; // 保留 Str 用于 fallback
+use App\Models\ActivityLog; // 保留 ActivityLog 用于记录操作日志
 
 class RoleController extends Controller
 {
