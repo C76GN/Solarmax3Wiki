@@ -1,529 +1,545 @@
 <template>
-    <div class="mb-4">
-        <!-- 修改提示框背景、边框和文字颜色 -->
-        <div v-if="editors.length > 0" class="p-3 rounded-lg border" :class="alertClass">
-            <div class="flex items-start">
-                <font-awesome-icon :icon="['fas', 'users']" class="mr-2 mt-1 flex-shrink-0" :class="iconClass" />
-                <div class="w-full">
-                    <!-- 修改标题文字颜色 -->
-                    <div class="flex justify-between items-center mb-1">
-                        <p class="font-medium text-sm md:text-base text-gray-200">当前编辑者 ({{ editors.length }}):</p>
-                        <button v-if="showChatButton" @click="toggleChat"
-                            class="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 transition relative">
-                            <font-awesome-icon :icon="['fas', 'comments']" class="mr-1" />
-                            实时讨论
-                            <!-- 未读消息样式不变 -->
-                            <span v-if="unreadMessages > 0 && !showChat" class="absolute -top-1 -right-1 flex h-4 w-4">
-                                <span
-                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span
-                                    class="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center text-white text-[10px] leading-none">
-                                    {{ unreadMessages > 9 ? '9+' : unreadMessages }}
-                                </span>
-                            </span>
-                            <span v-else-if="unreadMessages > 0 && showChat"
-                                class="ml-1 inline-block bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 leading-none">
-                                {{ unreadMessages }}
-                            </span>
-                        </button>
+    <!-- 编辑器菜单栏主容器，包含各种工具按钮 -->
+    <div
+        class="editor-menu-bar bg-gray-800 p-2 flex flex-wrap gap-1 rounded-t-lg border-b border-gray-700 items-center">
+        <!-- 如果编辑器可编辑，显示工具栏 -->
+        <div v-if="isEditable" class="menu-container flex-grow flex flex-wrap items-center gap-1">
+            <!-- 移动端菜单分类按钮，根据屏幕宽度显示 -->
+            <div v-if="isMobile"
+                class="mobile-menu-categories w-full flex justify-center mb-2 border-b border-gray-700 pb-2">
+                <button v-for="(category, index) in menuCategories" :key="index" @click="activeCategoryIndex = index"
+                    :class="['px-2 py-1 text-xs rounded-md mx-1 transition-colors',
+                        activeCategoryIndex === index
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                    ]">
+                    {{ category }}
+                </button>
+            </div>
+
+            <!-- 格式工具按钮组：粗体、斜体、下划线、删除线、高亮、内联代码 -->
+            <div v-if="!isMobile || activeCategoryIndex === 0" class="menu-group">
+                <button type="button" @click="editor.chain().focus().toggleBold().run()"
+                    :disabled="!editor.can().chain().focus().toggleBold().run()"
+                    :class="{ 'is-active': editor.isActive('bold') }" class="menu-button" title="粗体 (Ctrl+B)">
+                    <font-awesome-icon :icon="['fas', 'bold']" /> </button>
+                <button type="button" @click="editor.chain().focus().toggleItalic().run()"
+                    :disabled="!editor.can().chain().focus().toggleItalic().run()"
+                    :class="{ 'is-active': editor.isActive('italic') }" class="menu-button" title="斜体 (Ctrl+I)">
+                    <font-awesome-icon :icon="['fas', 'italic']" /> </button>
+                <button type="button" @click="editor.chain().focus().toggleUnderline().run()"
+                    :disabled="!editor.can().chain().focus().toggleUnderline().run()"
+                    :class="{ 'is-active': editor.isActive('underline') }" class="menu-button" title="下划线 (Ctrl+U)">
+                    <font-awesome-icon :icon="['fas', 'underline']" /> </button>
+                <button type="button" @click="editor.chain().focus().toggleStrike().run()"
+                    :disabled="!editor.can().chain().focus().toggleStrike().run()"
+                    :class="{ 'is-active': editor.isActive('strike') }" class="menu-button" title="删除线">
+                    <font-awesome-icon :icon="['fas', 'strikethrough']" /> </button>
+                <button type="button" @click="editor.chain().focus().toggleHighlight().run()"
+                    :disabled="!editor.can().chain().focus().toggleHighlight().run()"
+                    :class="{ 'is-active': editor.isActive('highlight') }" class="menu-button" title="高亮">
+                    <font-awesome-icon :icon="['fas', 'highlighter']" /> </button>
+                <button type="button" @click="editor.chain().focus().toggleCode().run()"
+                    :disabled="!editor.can().chain().focus().toggleCode().run()"
+                    :class="{ 'is-active': editor.isActive('code') }" class="menu-button" title="内联代码 (Ctrl+E)">
+                    <font-awesome-icon :icon="['fas', 'code']" /> </button>
+            </div>
+
+            <!-- 段落工具按钮组：标题、文本对齐 -->
+            <div v-if="!isMobile || activeCategoryIndex === 1" class="menu-group">
+                <button type="button" @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
+                    :disabled="!editor.can().chain().focus().toggleHeading({ level: 1 }).run()"
+                    :class="{ 'is-active': editor.isActive('heading', { level: 1 }) }"
+                    class="menu-button menu-button-heading" title="标题 1">H1</button>
+                <button type="button" @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
+                    :disabled="!editor.can().chain().focus().toggleHeading({ level: 2 }).run()"
+                    :class="{ 'is-active': editor.isActive('heading', { level: 2 }) }"
+                    class="menu-button menu-button-heading" title="标题 2">H2</button>
+                <button type="button" @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
+                    :disabled="!editor.can().chain().focus().toggleHeading({ level: 3 }).run()"
+                    :class="{ 'is-active': editor.isActive('heading', { level: 3 }) }"
+                    class="menu-button menu-button-heading" title="标题 3">H3</button>
+                <button type="button" @click="editor.chain().focus().setTextAlign('left').run()"
+                    :disabled="!editor.can().chain().focus().setTextAlign('left').run()"
+                    :class="{ 'is-active': editor.isActive({ textAlign: 'left' }) }" class="menu-button"
+                    title="左对齐"><font-awesome-icon :icon="['fas', 'align-left']" /> </button>
+                <button type="button" @click="editor.chain().focus().setTextAlign('center').run()"
+                    :disabled="!editor.can().chain().focus().setTextAlign('center').run()"
+                    :class="{ 'is-active': editor.isActive({ textAlign: 'center' }) }" class="menu-button"
+                    title="居中对齐"><font-awesome-icon :icon="['fas', 'align-center']" /> </button>
+                <button type="button" @click="editor.chain().focus().setTextAlign('right').run()"
+                    :disabled="!editor.can().chain().focus().setTextAlign('right').run()"
+                    :class="{ 'is-active': editor.isActive({ textAlign: 'right' }) }" class="menu-button"
+                    title="右对齐"><font-awesome-icon :icon="['fas', 'align-right']" /> </button>
+                <button type="button" @click="editor.chain().focus().setTextAlign('justify').run()"
+                    :disabled="!editor.can().chain().focus().setTextAlign('justify').run()"
+                    :class="{ 'is-active': editor.isActive({ textAlign: 'justify' }) }" class="menu-button"
+                    title="两端对齐"> <font-awesome-icon :icon="['fas', 'align-justify']" /> </button>
+            </div>
+
+            <!-- 插入工具按钮组：列表、引用、代码块、表格及表格操作 -->
+            <div v-if="!isMobile || activeCategoryIndex === 2" class="menu-group">
+                <button type="button" @click="editor.chain().focus().toggleBulletList().run()"
+                    :disabled="!editor.can().chain().focus().toggleBulletList().run()"
+                    :class="{ 'is-active': editor.isActive('bulletList') }" class="menu-button" title="无序列表">
+                    <font-awesome-icon :icon="['fas', 'list-ul']" /> </button>
+                <button type="button" @click="editor.chain().focus().toggleOrderedList().run()"
+                    :disabled="!editor.can().chain().focus().toggleOrderedList().run()"
+                    :class="{ 'is-active': editor.isActive('orderedList') }" class="menu-button" title="有序列表">
+                    <font-awesome-icon :icon="['fas', 'list-ol']" /> </button>
+                <button type="button" @click="editor.chain().focus().toggleBlockquote().run()"
+                    :disabled="!editor.can().chain().focus().toggleBlockquote().run()"
+                    :class="{ 'is-active': editor.isActive('blockquote') }" class="menu-button" title="引用">
+                    <font-awesome-icon :icon="['fas', 'quote-left']" /> </button>
+                <button type="button" @click="openCodeLangModal" :class="{ 'is-active': editor.isActive('codeBlock') }"
+                    class="menu-button" title="代码块"> <font-awesome-icon :icon="['fas', 'file-code']" /> </button>
+                <button type="button" @click="insertTable" class="menu-button" title="插入表格"> <font-awesome-icon
+                        :icon="['fas', 'table']" /> </button>
+                <!-- 如果当前光标在表格内，显示表格操作按钮 -->
+                <template v-if="editor.isActive('table')">
+                    <button type="button" @click="editor.chain().focus().addColumnBefore().run()"
+                        :disabled="!editor.can().addColumnBefore()" class="menu-button" title="左侧插入列"><font-awesome-icon
+                            :icon="['fas', 'table-columns']" /><font-awesome-icon :icon="['fas', 'arrow-left']"
+                            class="ml-1 text-xs" /></button>
+                    <button type="button" @click="editor.chain().focus().addColumnAfter().run()"
+                        :disabled="!editor.can().addColumnAfter()" class="menu-button" title="右侧插入列"><font-awesome-icon
+                            :icon="['fas', 'table-columns']" /><font-awesome-icon :icon="['fas', 'arrow-right']"
+                            class="ml-1 text-xs" /></button>
+                    <button type="button" @click="editor.chain().focus().deleteColumn().run()"
+                        :disabled="!editor.can().deleteColumn()" class="menu-button" title="删除列"><font-awesome-icon
+                            :icon="['fas', 'eraser']" /> <font-awesome-icon :icon="['fas', 'table-columns']"
+                            class="ml-1 text-xs" /></button>
+                    <button type="button" @click="editor.chain().focus().addRowBefore().run()"
+                        :disabled="!editor.can().addRowBefore()" class="menu-button" title="上方插入行"><font-awesome-icon
+                            :icon="['fas', 'grip-lines']" /><font-awesome-icon :icon="['fas', 'arrow-up']"
+                            class="ml-1 text-xs" /></button>
+                    <button type="button" @click="editor.chain().focus().addRowAfter().run()"
+                        :disabled="!editor.can().addRowAfter()" class="menu-button" title="下方插入行"><font-awesome-icon
+                            :icon="['fas', 'grip-lines']" /><font-awesome-icon :icon="['fas', 'arrow-down']"
+                            class="ml-1 text-xs" /></button>
+                    <button type="button" @click="editor.chain().focus().deleteRow().run()"
+                        :disabled="!editor.can().deleteRow()" class="menu-button" title="删除行"><font-awesome-icon
+                            :icon="['fas', 'eraser']" /><font-awesome-icon :icon="['fas', 'grip-lines']"
+                            class="ml-1 text-xs" /></button>
+                    <button type="button" @click="editor.chain().focus().deleteTable().run()"
+                        :disabled="!editor.can().deleteTable()" class="menu-button" title="删除表格"><font-awesome-icon
+                            :icon="['fas', 'trash-alt']" /></button>
+                </template>
+            </div>
+
+            <!-- 其他工具按钮组：链接、图片、分隔线、撤销、重做 -->
+            <div v-if="!isMobile || activeCategoryIndex === 3" class="menu-group">
+                <button type="button" @click="setLink" :disabled="editor.isActive('codeBlock')"
+                    :class="{ 'is-active': editor.isActive('link') }" class="menu-button" title="链接"> <font-awesome-icon
+                        :icon="['fas', 'link']" /> </button>
+                <button type="button" @click="openImageUpload" class="menu-button" title="图片"> <font-awesome-icon
+                        :icon="['fas', 'image']" /> </button>
+                <button type="button" @click="editor.chain().focus().setHorizontalRule().run()"
+                    :disabled="!editor.can().setHorizontalRule()" class="menu-button" title="分隔线"> <font-awesome-icon
+                        :icon="['fas', 'minus']" /> </button>
+                <button type="button" @click="editor.chain().focus().undo().run()" :disabled="!editor.can().undo()"
+                    class="menu-button" title="撤销 (Ctrl+Z)"> <font-awesome-icon :icon="['fas', 'undo']" /> </button>
+                <button type="button" @click="editor.chain().focus().redo().run()" :disabled="!editor.can().redo()"
+                    class="menu-button" title="重做 (Ctrl+Y)"> <font-awesome-icon :icon="['fas', 'redo']" /> </button>
+            </div>
+        </div>
+
+        <!-- 预览/编辑切换按钮 -->
+        <div class="ml-auto pl-2 border-l border-gray-600 flex-shrink-0">
+            <button type="button" @click="$emit('toggle-edit')" class="menu-button"
+                :title="isEditable ? '切换到预览模式' : '切换到编辑模式'">
+                <font-awesome-icon :icon="['fas', isEditable ? 'eye' : 'pen']" class="mr-1" />
+                <span>{{ isEditable ? '预览' : '编辑' }}</span>
+            </button>
+        </div>
+
+        <!-- 图片上传模态框 -->
+        <div v-if="showImageUpload"
+            class="image-upload-modal fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+            <div class="image-upload-modal-content bg-gray-800 rounded-lg p-6 w-11/12 max-w-lg shadow-xl">
+                <h3 class="text-lg font-medium mb-4 text-gray-100">插入图片</h3>
+                <div class="mb-4">
+                    <div class="flex items-center mb-2">
+                        <input id="url-radio" type="radio" v-model="imageSource" value="url"
+                            class="mr-2 h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-600 bg-gray-700">
+                        <label for="url-radio" class="text-sm text-gray-300">图片URL</label>
                     </div>
-                    <!-- 修改编辑者药丸样式 -->
-                    <div class="flex flex-wrap items-center mt-1 gap-1">
-                        <div v-for="editor in editors" :key="editor.id"
-                            class="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-700 border border-gray-600 text-gray-300 text-xs"
-                            :title="`${editor.name} - ${isEditorActive(editor) ? '活跃中' : '可能已离开 (' + formatTime(editor.last_active) + ')'}`">
-                            <span v-if="editor.avatar" class="mr-1">
-                                <img :src="editor.avatar" class="w-4 h-4 rounded-full" :alt="editor.name" />
-                            </span>
-                            <!-- 头像背景调整 -->
-                            <span v-else
-                                class="mr-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-gray-500 text-gray-100 text-[10px] font-semibold">
-                                {{ getInitials(editor.name) }}
-                            </span>
-                            <span class="font-medium truncate max-w-[100px]">{{ editor.name }}</span>
-                            <!-- 状态点样式不变 -->
-                            <span v-if="isEditorActive(editor)"
-                                class="ml-1.5 w-1.5 h-1.5 bg-green-500 rounded-full flex-shrink-0" title="活跃中"></span>
-                            <span v-else class="ml-1.5 w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0"
-                                :title="`最后活跃: ${formatTime(editor.last_active)}`"></span>
+                    <!-- 图片URL输入框 -->
+                    <input v-if="imageSource === 'url'" v-model="imageUrl" type="text" placeholder="输入图片URL"
+                        class="w-full p-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-gray-700 text-gray-200 placeholder-gray-500">
+                </div>
+                <div class="mb-4">
+                    <div class="flex items-center mb-2">
+                        <input id="upload-radio" type="radio" v-model="imageSource" value="upload"
+                            class="mr-2 h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-600 bg-gray-700">
+                        <label for="upload-radio" class="text-sm text-gray-300">上传图片</label>
+                    </div>
+                    <!-- 文件上传输入框和进度条 -->
+                    <input v-if="imageSource === 'upload'" type="file" @change="handleFileUpload" accept="image/*"
+                        class="w-full p-2 border border-gray-600 rounded-md text-sm file:mr-4 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-800 file:text-blue-200 hover:file:bg-blue-700 bg-gray-700 text-gray-400">
+                    <div v-if="uploadProgress > 0 && uploadProgress < 100" class="mt-2">
+                        <div class="bg-gray-600 rounded-full h-2.5">
+                            <div class="bg-blue-500 h-2.5 rounded-full" :style="{ width: uploadProgress + '%' }"></div>
                         </div>
                     </div>
-                    <!-- 修改警告信息样式 -->
-                    <p v-if="editors.length > 1" class="text-xs mt-2 p-2 rounded border"
-                        :class="warningTextClass + ' ' + warningBgClass">
-                        <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="mr-1" />
-                        <strong>注意:</strong> 多人同时编辑极易导致内容冲突！强烈建议通过下方的 **实时讨论** 功能进行协调，避免同时保存。
-                    </p>
+                    <p v-if="uploadError" class="text-red-400 text-sm mt-1">{{ uploadError }}</p>
+                    <div v-if="uploadedImageUrl" class="mt-2">
+                        <p class="text-sm text-green-400 mb-1">图片上传成功!</p>
+                        <img :src="uploadedImageUrl"
+                            class="max-h-32 max-w-full rounded border border-gray-600 bg-gray-700" />
+                    </div>
+                </div>
+                <!-- 图片替代文本和标题设置 -->
+                <div class="mb-4">
+                    <div class="flex items-center mb-2">
+                        <label class="text-sm font-medium text-gray-300">图片设置</label>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs text-gray-400 block mb-1">替代文本</label>
+                            <input v-model="imageAlt" type="text" placeholder="图片描述（可选）"
+                                class="w-full p-2 text-sm border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-gray-200 placeholder-gray-500">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-400 block mb-1">标题</label>
+                            <input v-model="imageTitle" type="text" placeholder="图片标题（可选）"
+                                class="w-full p-2 text-sm border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-gray-200 placeholder-gray-500">
+                        </div>
+                    </div>
+                </div>
+                <!-- 图片上传模态框操作按钮 -->
+                <div class="flex justify-end space-x-2">
+                    <button @click="cancelImageUpload"
+                        class="px-4 py-2 bg-gray-600 text-gray-200 rounded-md hover:bg-gray-500 text-sm transition">取消</button>
+                    <button @click="insertImage"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 text-sm transition disabled:opacity-50"
+                        :disabled="!(imageUrl || uploadedImageUrl)">插入</button>
                 </div>
             </div>
         </div>
-        <!-- 聊天窗口样式调整 -->
-        <Transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0 translate-y-2"
-            enter-to-class="opacity-100 translate-y-0" leave-active-class="transition ease-in duration-200"
-            leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-2">
-            <div v-if="showChat" class="bg-gray-800 border border-gray-700 rounded-lg shadow-md p-3 mb-4">
-                <!-- 聊天窗口头部样式 -->
-                <div class="flex justify-between items-center mb-2 border-b border-gray-600 pb-2">
-                    <h3 class="font-medium text-base text-gray-200">实时讨论</h3>
-                    <button @click="toggleChat" class="text-gray-400 hover:text-gray-200">
-                        <font-awesome-icon :icon="['fas', 'times']" />
-                    </button>
+
+        <!-- 代码块语言选择模态框 -->
+        <div v-if="showCodeLangModal"
+            class="image-upload-modal fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+            <div class="image-upload-modal-content bg-gray-800 rounded-lg p-6 w-11/12 max-w-md shadow-xl">
+                <h3 class="text-lg font-medium mb-4 text-gray-100">选择代码语言</h3>
+                <div class="mb-4">
+                    <!-- 代码语言下拉选择框 -->
+                    <select v-model="selectedCodeLang"
+                        class="w-full p-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-gray-700 text-gray-200">
+                        <option value="">纯文本 (Plain Text)</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="html">HTML</option>
+                        <option value="css">CSS</option>
+                        <option value="php">PHP</option>
+                        <option value="python">Python</option>
+                        <option value="json">JSON</option>
+                    </select>
                 </div>
-                <!-- 消息容器样式 -->
-                <div ref="messagesContainer"
-                    class="chat-messages h-48 overflow-y-auto border border-gray-600 p-2 rounded mb-2 bg-gray-900 text-sm">
-                    <div v-if="messages.length === 0"
-                        class="flex items-center justify-center h-full text-gray-500 text-xs italic">
-                        暂无消息，开始讨论吧！
-                    </div>
-                    <div v-else class="space-y-3">
-                        <div v-for="msg in messages" :key="msg.id" class="flex message-item"
-                            :class="{ 'justify-end': isCurrentUser(msg.user_id), 'new-message': isNewMessage(msg.id) }">
-                            <div class="flex items-start max-w-[80%]"
-                                :class="{ 'flex-row-reverse': isCurrentUser(msg.user_id) }">
-                                <!-- 调整头像背景 -->
-                                <div class="flex-shrink-0 rounded-full w-6 h-6 flex items-center justify-center text-xs font-semibold mx-2"
-                                    :class="getAvatarBgClass(msg.user_id)">
-                                    {{ getInitials(msg.user_name) }}
-                                </div>
-                                <div class="flex flex-col" :class="{ 'items-end': isCurrentUser(msg.user_id) }">
-                                    <!-- 调整名字和时间颜色 -->
-                                    <div class="text-xs text-gray-400 mb-0.5">
-                                        <span class="font-medium mr-1 text-gray-300">{{ msg.user_name }}</span> {{
-                                            formatTime(msg.timestamp) }}
-                                    </div>
-                                    <!-- 调整他人消息气泡背景和文字颜色 -->
-                                    <div class="p-2 rounded-lg text-sm break-words" :class="[isCurrentUser(msg.user_id)
-                                        ? 'bg-blue-600 text-white rounded-br-none' // 自己消息不变
-                                        : 'bg-gray-600 text-gray-200 rounded-bl-none' // 他人消息深色
-                                    ]">
-                                        {{ msg.message }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- 代码语言选择模态框操作按钮 -->
+                <div class="flex justify-end space-x-2">
+                    <button @click="cancelCodeLangSelection"
+                        class="px-4 py-2 bg-gray-600 text-gray-200 rounded-md hover:bg-gray-500 text-sm transition">取消</button>
+                    <button @click="insertCodeBlock"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 text-sm transition">插入</button>
                 </div>
-                <!-- 输入框和发送按钮样式 -->
-                <div class="flex">
-                    <input v-model="newMessage" @keyup.enter="sendMessage" type="text" placeholder="发送消息 (Enter 发送)..."
-                        :disabled="sendingMessage"
-                        class="flex-grow px-3 py-1.5 border border-gray-600 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm bg-gray-700 text-gray-200 placeholder-gray-500 disabled:bg-gray-600 disabled:text-gray-400" />
-                    <button @click="sendMessage"
-                        class="w-[70px] px-4 py-1.5 bg-blue-600 text-white rounded-r-md hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center"
-                        :disabled="!newMessage.trim() || sendingMessage">
-                        <font-awesome-icon v-if="!sendingMessage" :icon="['fas', 'paper-plane']" />
-                        <font-awesome-icon v-else :icon="['fas', 'spinner']" spin />
-                    </button>
-                </div>
-                <!-- 错误信息颜色 -->
-                <div v-if="sendMessageError" class="text-red-400 text-xs mt-1">{{ sendMessageError }}</div>
             </div>
-        </Transition>
+        </div>
     </div>
 </template>
 
 <script setup>
-// Script 部分保持不变
-import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
-import { formatDistanceToNow } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
-import { usePage } from '@inertiajs/vue3';
 
-const page = usePage();
-
+// 定义组件接收的 props
 const props = defineProps({
-    pageId: {
-        type: Number,
-        required: true
-    }
+    editor: { type: Object, required: true }, // Tiptap 编辑器实例
+    isEditable: { type: Boolean, default: true } // 编辑器是否可编辑
 });
 
-const editors = ref([]);
-const messages = ref([]);
-const newMessage = ref('');
-const showChat = ref(false);
-const unreadMessages = ref(0);
-const showChatButton = ref(true); // 控制聊天按钮是否显示
-const sendingMessage = ref(false); // 发送中状态
-const sendMessageError = ref(''); // 发送错误信息
+// 定义组件触发的事件
+const emit = defineEmits(['toggle-edit']); // 切换编辑/预览模式事件
 
-let echoChannel = null;
-let heartbeatInterval = null;
-const messagesContainer = ref(null); // Ref for scrolling
-const newMessagesQueue = ref([]); // 用于追踪新消息ID
-let highlightTimeout = null; // 用于清除高亮
+// 响应式变量
+const isMobile = ref(false); // 是否为移动端
+const activeCategoryIndex = ref(0); // 移动端当前激活的菜单分类索引
+const menuCategories = ['格式', '段落', '插入', '工具']; // 移动端菜单分类名称
 
-// --- Helper Functions ---
-const scrollToMessageBottom = () => {
-    nextTick(() => {
-        const container = messagesContainer.value;
-        if (container) {
-            const isScrolledToBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
-            if (isScrolledToBottom || sendingMessage.value) { // Add condition for self-sent message if needed
-                container.scrollTop = container.scrollHeight;
-            }
-        }
-    });
+// 图片上传相关状态
+const showImageUpload = ref(false); // 是否显示图片上传模态框
+const imageSource = ref('url'); // 图片来源：'url' 或 'upload'
+const imageUrl = ref(''); // 图片URL
+const imageAlt = ref(''); // 图片alt文本
+const imageTitle = ref(''); // 图片title文本
+const uploadedImageUrl = ref(''); // 上传成功后的图片URL
+const uploadProgress = ref(0); // 图片上传进度
+const uploadError = ref(''); // 图片上传错误信息
+
+// 代码块语言选择相关状态
+const showCodeLangModal = ref(false); // 是否显示代码语言选择模态框
+const selectedCodeLang = ref(''); // 选中的代码语言
+
+// --- 方法定义 ---
+
+/**
+ * 检测并更新设备类型（移动端/非移动端）
+ */
+const checkDeviceType = () => {
+    isMobile.value = window.innerWidth < 768;
 };
 
-const getInitials = (name) => {
-    if (!name) return '?';
-    const nameTrimmed = name.trim();
-    if (!nameTrimmed) return '?';
-    const chineseMatch = nameTrimmed.match(/[\u4E00-\u9FA5]/);
-    if (chineseMatch) {
-        return chineseMatch[0];
-    }
-    const parts = nameTrimmed.split(/\s+/);
-    if (parts.length > 0 && parts[0]) {
-        return parts[0].charAt(0).toUpperCase();
-    }
-    return nameTrimmed.charAt(0).toUpperCase() || '?';
-};
-
-// 调整头像背景色（深色模式）
-const userColors = {};
-const bgColors = [
-    'bg-blue-900/50 text-blue-300', 'bg-green-900/50 text-green-300',
-    'bg-yellow-900/50 text-yellow-300', 'bg-purple-900/50 text-purple-300',
-    'bg-pink-900/50 text-pink-300', 'bg-indigo-900/50 text-indigo-300',
-    'bg-red-900/50 text-red-300', 'bg-teal-900/50 text-teal-300'
-];
-let colorIndex = 0;
-const getAvatarBgClass = (userId) => {
-    if (!userId) return bgColors[0]; // Default for null/0 userId
-    if (!userColors[userId]) {
-        userColors[userId] = bgColors[colorIndex % bgColors.length];
-        colorIndex++;
-    }
-    return userColors[userId];
-};
-
-
-// 调整警告/提示框样式（深色模式）
-const alertClass = computed(() => {
-    return editors.value.length > 1
-        ? 'bg-red-900/50 border-l-4 border-red-500' // 深红背景
-        : 'bg-yellow-900/50 border-l-4 border-yellow-500'; // 深黄背景
+// 组件挂载时执行
+onMounted(() => {
+    checkDeviceType(); // 初始化设备类型
+    window.addEventListener('resize', checkDeviceType); // 监听窗口大小变化
 });
 
-const iconClass = computed(() => {
-    return editors.value.length > 1 ? 'text-red-400' : 'text-yellow-400';
+// 组件卸载时执行
+onUnmounted(() => {
+    window.removeEventListener('resize', checkDeviceType); // 移除窗口大小变化监听
 });
 
-const warningTextClass = computed(() => {
-    return editors.value.length > 1 ? 'text-red-300 border-red-700' : 'text-yellow-300 border-yellow-700';
-});
+/**
+ * 设置或更新链接
+ */
+const setLink = () => {
+    if (!props.isEditable) return; // 如果不可编辑，则退出
+    const previousUrl = props.editor.getAttributes('link').href; // 获取当前链接属性
+    const url = window.prompt('输入链接URL', previousUrl); // 弹出提示框输入URL
 
-const warningBgClass = computed(() => {
-    return editors.value.length > 1 ? 'bg-red-900/40' : 'bg-yellow-900/40';
-})
+    if (url === null) return; // 如果用户取消输入，则退出
 
-
-const isCurrentUser = (userId) => {
-    return userId === page.props.auth.user?.id;
-};
-
-const isEditorActive = (editor) => {
-    const now = Math.floor(Date.now() / 1000);
-    return editor.last_active && (now - editor.last_active < 70); // 70秒内算活跃
-};
-
-const formatTime = (timestamp) => {
-    if (!timestamp) return '';
-    try {
-        // 将 Unix 时间戳转换为毫秒
-        const date = new Date(timestamp * 1000);
-        return formatDistanceToNow(date, {
-            addSuffix: true,
-            locale: zhCN
-        });
-    } catch (e) {
-        console.error("Error formatting time:", e);
-        return '时间错误';
-    }
-};
-
-
-// --- Lifecycle Hooks ---
-onMounted(async () => {
-    if (!props.pageId) {
-        console.error("EditorsList: Page ID not provided on mount.");
+    if (url === '') {
+        // 如果输入为空，则移除链接
+        props.editor.chain().focus().extendMarkRange('link').unsetLink().run();
         return;
     }
-    await loadEditors();
-    await loadMessages();
-    await registerAsEditor(); // 初始注册
-    heartbeatInterval = setInterval(registerAsEditor, 45000); // 保持心跳
-    setupRealTimeListener(); // 设置监听器
-});
+    // 简单的 URL 格式校验和补全
+    let finalUrl = url;
+    if (!url.includes('://') && !url.startsWith('/') && !url.startsWith('#') && !url.startsWith('mailto:') && !url.startsWith('tel:')) {
+        finalUrl = 'https://' + url;
+    }
 
-onBeforeUnmount(() => {
-    unregisterAsEditor(); // 组件卸载时注销
-    if (heartbeatInterval) {
-        clearInterval(heartbeatInterval);
-    }
-    // 清理 Echo 监听器
-    if (echoChannel) {
-        echoChannel.stopListening('.editors.updated');
-        echoChannel.stopListening('.discussion.message');
-        echoChannel.stopListening('.page.version.updated');
-        try {
-            window.Echo.leave(`wiki.page.${props.pageId}`);
-        } catch (e) {
-            console.error("Error leaving Echo channel:", e);
-        }
-        echoChannel = null;
-    }
-    // 清理高亮计时器
-    if (highlightTimeout) {
-        clearTimeout(highlightTimeout);
-    }
-});
-
-// --- API Calls ---
-const loadEditors = async () => {
-    /* 保持不变 */
-    if (!props.pageId) return;
-    try {
-        const response = await axios.get(route('wiki.editors', { page: props.pageId }));
-        editors.value = response.data.editors || [];
-    } catch (error) {
-        console.error(`EditorsList: Failed to load editors for page ${props.pageId}:`, error.response?.data || error.message);
-    }
+    // 设置链接
+    props.editor.chain().focus().extendMarkRange('link').setLink({ href: finalUrl }).run();
 };
 
-const loadMessages = async () => {
-    /* 保持不变 */
-    try {
-        const response = await axios.get(route('wiki.discussion', { page: props.pageId }));
-        messages.value = response.data.messages || [];
-        scrollToMessageBottom();
-    } catch (error) {
-        console.error(`EditorsList: Failed to load messages for page ${props.pageId}:`, error.response?.data || error.message);
-        messages.value = [];
-    }
+/**
+ * 打开图片上传模态框并重置状态
+ */
+const openImageUpload = () => {
+    if (!props.isEditable) return; // 如果不可编辑，则退出
+    showImageUpload.value = true; // 显示模态框
+    // 重置所有图片上传相关状态
+    imageSource.value = 'url';
+    imageUrl.value = '';
+    imageAlt.value = '';
+    imageTitle.value = '';
+    uploadedImageUrl.value = '';
+    uploadProgress.value = 0;
+    uploadError.value = '';
 };
 
-const registerAsEditor = async () => {
-    /* 保持不变 */
-    if (!props.pageId || !page.props.auth.user) return; // 未登录用户不注册
-    try {
-        await axios.post(route('wiki.editors.register', { page: props.pageId }));
-    } catch (error) {
-        console.error(`EditorsList: Failed to register/heartbeat for page ${props.pageId}:`, error.response?.data || error.message);
-    }
+/**
+ * 取消图片上传并关闭模态框
+ */
+const cancelImageUpload = () => {
+    showImageUpload.value = false;
 };
 
-const unregisterAsEditor = async () => {
-    /* 保持不变 */
-    if (!props.pageId || !page.props.auth.user) return;
-    try {
-        // 使用 navigator.sendBeacon 尝试在页面关闭时发送请求
-        if (navigator.sendBeacon) {
-            const url = route('wiki.editors.unregister', { page: props.pageId });
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const formData = new FormData();
-            if (csrfToken) formData.append('_token', csrfToken);
-            navigator.sendBeacon(url, formData);
-        } else {
-            // Fallback to axios if sendBeacon is not available
-            await axios.post(route('wiki.editors.unregister', { page: props.pageId }));
-        }
-    } catch (error) {
-        // 避免在页面卸载时显示错误，只在控制台记录
-        console.error(`EditorsList: Failed to unregister from page ${props.pageId}:`, error.response?.data || error.message);
-    }
-};
+/**
+ * 处理文件上传
+ * @param {Event} event - 文件输入框的 change 事件
+ */
+const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return; // 如果没有选择文件，则退出
 
-
-const sendMessage = async () => {
-    /* 保持不变 */
-    if (!newMessage.value.trim() || sendingMessage.value) return;
-
-    sendingMessage.value = true;
-    sendMessageError.value = ''; // 清除之前的错误
-
-    try {
-        const response = await axios.post(route('wiki.discussion.send', { page: props.pageId }), {
-            message: newMessage.value
-        });
-        // 成功时不再清除输入框，交给 Echo 监听处理
-    } catch (error) {
-        console.error(`EditorsList: Failed to send message for page ${props.pageId}:`, error.response?.data || error.message);
-        sendMessageError.value = `发送失败: ${error.response?.data?.message || '网络错误，请稍后重试'}`;
-        // 发送失败时需要手动结束 loading 状态
-        sendingMessage.value = false;
-    }
-    // finally {
-    //     sendingMessage.value = false; // 不论成功失败都结束 loading，但在成功时由 Echo 监听处理更好
-    // }
-};
-
-
-// --- Real-time Listener ---
-const isNewMessage = (messageId) => {
-    return newMessagesQueue.value.includes(messageId);
-};
-
-const setupRealTimeListener = () => {
-    const channelName = `wiki.page.${props.pageId}`;
-
-    if (!window.Echo) {
-        console.error("Echo is not initialized!");
+    if (!file.type.startsWith('image/')) {
+        uploadError.value = '请选择图片文件'; // 非图片文件提示错误
         return;
     }
 
-    try {
-        echoChannel = window.Echo.channel(channelName);
+    const formData = new FormData();
+    formData.append('image', file); // 添加图片文件到 FormData
+    uploadProgress.value = 0; // 重置上传进度
+    uploadError.value = ''; // 清除错误信息
 
-        // 监听编辑者更新
-        echoChannel.listen('.editors.updated', (data) => {
-            console.log('Received editors.updated:', data);
-            editors.value = data.editors || [];
-        });
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'); // 获取 CSRF token
 
-        // 监听新消息
-        echoChannel.listen('.discussion.message', (data) => {
-            console.log('Received discussion.message:', data);
-            if (data.message) {
-                const newMessageData = data.message;
-                // 防止重复添加（虽然理论上 Echo 不会重复发）
-                if (!messages.value.some(msg => msg.id === newMessageData.id)) {
-                    messages.value.push(newMessageData);
-
-                    // 如果是当前用户发送的消息，清空输入框并结束 loading
-                    if (isCurrentUser(newMessageData.user_id)) {
-                        newMessage.value = '';
-                        sendingMessage.value = false;
-                        sendMessageError.value = ''; // 清除错误
-                    }
-
-                    // 如果聊天窗口未打开且不是自己发的消息，增加未读计数
-                    if (!showChat.value && !isCurrentUser(newMessageData.user_id)) {
-                        unreadMessages.value++;
-                    }
-
-                    // 添加到新消息队列并设置高亮
-                    newMessagesQueue.value.push(newMessageData.id);
-                    if (highlightTimeout) clearTimeout(highlightTimeout);
-                    highlightTimeout = setTimeout(() => {
-                        newMessagesQueue.value = newMessagesQueue.value.filter(id => id !== newMessageData.id);
-                    }, 1500); // 高亮持续1.5秒
-
-                    scrollToMessageBottom(); // 滚动到底部
-                }
+    // 发送 POST 请求上传图片
+    axios.post('/api/upload-image', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+            'X-CSRF-TOKEN': csrfToken // 设置 CSRF token
+        },
+        onUploadProgress: (progressEvent) => {
+            const total = progressEvent.total;
+            if (total) {
+                uploadProgress.value = Math.round((progressEvent.loaded * 100) / total); // 计算上传进度
             } else {
-                console.warn("EditorsList: Received discussion.message event missing 'message' data:", data);
-                // 如果发送失败，也需要结束loading状态
-                if (sendingMessage.value) {
-                    sendingMessage.value = false;
-                    // sendMessageError 已在 catch 中设置
-                }
+                uploadProgress.value = 50; // 如果无法获取总大小，给一个中间值
             }
-        });
+        }
+    }).then(response => {
+        if (response.data && response.data.url) {
+            uploadedImageUrl.value = response.data.url; // 保存上传后的图片URL
+            uploadProgress.value = 100; // 标记上传完成
+        } else {
+            uploadError.value = '上传成功，但未收到有效的图片URL';
+            uploadProgress.value = 0;
+        }
 
-        // 监听页面版本更新事件 (需要后端配合广播)
-        echoChannel.listen('.page.version.updated', (data) => {
-            console.log('Received page.version.updated:', data);
-            // 触发一个全局事件或使用状态管理通知 Edit.vue
-            const event = new CustomEvent('page-version-updated', { detail: { pageId: props.pageId, newVersionId: data.newVersionId } });
-            window.dispatchEvent(event);
-        });
-
-        // 添加错误处理
-        echoChannel.error((error) => {
-            console.error(`Echo channel error on ${channelName}:`, error);
-            // 这里可以添加一些UI提示，告知用户实时功能可能中断
-        });
-
-        console.log(`Listening on channel: ${channelName}`);
-
-    } catch (error) {
-        console.error(`EditorsList: Error setting up listener for channel ${channelName}:`, error);
-    }
-
-    // 可选：监听连接状态
-    window.Echo.connector.pusher.connection.bind('state_change', (states) => {
-        console.log("Echo connection state changed:", states.current);
+    }).catch(error => {
+        console.error("图片上传错误:", error.response?.data || error.message);
+        uploadError.value = '上传失败：' + (error.response?.data?.message || error.response?.data?.error || '网络或服务器错误');
+        uploadProgress.value = 0;
     });
 };
 
-
-// --- UI Interaction ---
-const toggleChat = () => {
-    showChat.value = !showChat.value;
-    if (showChat.value) {
-        unreadMessages.value = 0; // 打开时清除未读
-        scrollToMessageBottom(); // 打开时滚动到底部
+/**
+ * 插入图片到编辑器
+ */
+const insertImage = () => {
+    const url = imageSource.value === 'url' ? imageUrl.value : uploadedImageUrl.value; // 根据来源获取图片URL
+    if (url && props.isEditable) {
+        const attrs = { src: url }; // 图片属性
+        if (imageAlt.value) attrs.alt = imageAlt.value; // 添加alt属性
+        if (imageTitle.value) attrs.title = imageTitle.value; // 添加title属性
+        props.editor.chain().focus().setImage(attrs).run(); // 在编辑器中插入图片
+        showImageUpload.value = false; // 关闭模态框
     }
 };
 
-// 监听消息变化，如果聊天窗口打开，自动滚动
-watch(messages, () => {
-    if (showChat.value) {
-        // scrollToMessageBottom(); // 现在由接收消息时滚动
+/**
+ * 插入表格到编辑器
+ */
+const insertTable = () => {
+    if (props.isEditable) {
+        props.editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(); // 插入一个3x3带表头的表格
     }
-}, { deep: true });
+};
 
+/**
+ * 打开代码块语言选择模态框
+ */
+const openCodeLangModal = () => {
+    if (!props.isEditable) return; // 如果不可编辑，则退出
+    showCodeLangModal.value = true; // 显示模态框
+    selectedCodeLang.value = props.editor.getAttributes('codeBlock').language || ''; // 获取当前代码块语言并设置到选择框
+};
+
+/**
+ * 取消代码块语言选择并关闭模态框
+ */
+const cancelCodeLangSelection = () => {
+    showCodeLangModal.value = false;
+};
+
+/**
+ * 插入或更新代码块语言
+ */
+const insertCodeBlock = () => {
+    if (props.isEditable) {
+        props.editor.chain().focus().setCodeBlock({ language: selectedCodeLang.value }).run(); // 设置代码块语言
+        showCodeLangModal.value = false; // 关闭模态框
+    }
+};
 </script>
 
 <style scoped>
-.chat-messages {
-    scroll-behavior: smooth;
+/* 菜单按钮通用样式 */
+.menu-button {
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.375rem;
+    background: transparent;
+    border: none;
+    color: #d1d5db;
+    cursor: pointer;
+    font-size: 0.875rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.2s ease;
+    margin: 0 1px;
 }
 
-/* 新消息高亮效果 */
-.message-item.new-message>div>div:last-child>div:last-child {
-    /* Target the message bubble */
-    animation: highlight-new-message 1.5s ease-out;
+/* 菜单按钮悬停和激活状态样式 */
+.menu-button:hover:not(:disabled) {
+    background-color: #374151;
+    color: #f9fafb;
 }
 
-@keyframes highlight-new-message {
-    0% {
-        background-color: #67e8f9;
+.menu-button.is-active {
+    background-color: #3b82f6;
+    color: #ffffff;
+}
+
+/* 禁用状态的菜单按钮 */
+.menu-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 标题按钮的特定样式 */
+.menu-button-heading {
+    font-weight: bold;
+    min-width: 30px;
+    justify-content: center;
+}
+
+/* 菜单分组的样式，用于视觉上区分不同的工具集 */
+.menu-group {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0 0.5rem;
+    align-items: center;
+    border-right: 1px solid #4b5563;
+}
+
+/* 最后一个菜单分组没有右边框 */
+.menu-group:last-of-type {
+    border-right: none;
+}
+
+/* 移动端响应式样式调整 */
+@media (max-width: 768px) {
+    .menu-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+        width: 100%;
     }
 
-    /* Light cyan */
-    100% {
-        background-color: inherit;
+    .menu-group {
+        border-right: none;
+        padding: 0;
+        justify-content: center;
+        flex-wrap: wrap;
     }
 
-    /* Revert to original (set by class) */
-}
-
-/* 为自己发送的消息设置不同的高亮颜色 */
-.justify-end .message-item.new-message>div>div:last-child>div:last-child {
-    animation: highlight-new-message-user 1.5s ease-out;
-}
-
-@keyframes highlight-new-message-user {
-    0% {
-        background-color: #22d3ee;
+    .editor-menu-bar {
+        flex-direction: column;
     }
 
-    /* Slightly darker cyan for user */
-    100% {
-        background-color: inherit;
+    /* 移动端预览/编辑切换按钮的边距调整 */
+    .ml-auto {
+        margin-left: 0;
+        margin-top: 0.5rem;
     }
 }
 
-
-/* 使头像背景更柔和 */
-.rounded-full[class*="bg-"] {
-    opacity: 0.85;
+/* 图片上传模态框内容区域的文字颜色 */
+.image-upload-modal-content {
+    color: #d1d5db;
 }
 
-/* 确保长名字能被截断 */
-.truncate {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.image-upload-modal-content h3 {
+    color: #f9fafb;
 }
 
-.max-w-\[100px\] {
-    max-width: 100px;
+.image-upload-modal-content label {
+    color: #9ca3af;
 }
 </style>

@@ -1,5 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Other/InputLabel.vue
-<!-- 动态显示组件 -->
 <script setup>
 defineProps({
     value: {

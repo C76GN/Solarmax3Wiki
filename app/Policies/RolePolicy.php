@@ -2,17 +2,23 @@
 
 namespace App\Policies;
 
-use App\Models\User; // 使用 App\Models\User
-use Illuminate\Auth\Access\HandlesAuthorization; // 使用 Spatie\Models\Role
+use App\Models\User;
+use Illuminate\Auth\Access\HandlesAuthorization;
 use Spatie\Permission\Models\Role;
 
+/**
+ * RolePolicy 类
+ * 用于定义用户对 Role 模型的授权逻辑。
+ */
 class RolePolicy
 {
     use HandlesAuthorization;
 
     /**
-     * Determine whether the user can view any models.
-     * 对应 'role.view' 权限
+     * 判断用户是否可以查看所有角色。
+     *
+     * @param  \App\Models\User  $user 当前用户
+     * @return bool
      */
     public function viewAny(User $user): bool
     {
@@ -20,17 +26,22 @@ class RolePolicy
     }
 
     /**
-     * Determine whether the user can view the model.
+     * 判断用户是否可以查看指定角色。
+     *
+     * @param  \App\Models\User  $user 当前用户
+     * @param  \Spatie\Permission\Models\Role  $role 要查看的角色
+     * @return bool
      */
     public function view(User $user, Role $role): bool
     {
-        // 通常只要能看列表就能看单个详情
         return $user->can('role.view');
     }
 
     /**
-     * Determine whether the user can create models.
-     * 对应 'role.create' 权限
+     * 判断用户是否可以创建角色。
+     *
+     * @param  \App\Models\User  $user 当前用户
+     * @return bool
      */
     public function create(User $user): bool
     {
@@ -38,51 +49,36 @@ class RolePolicy
     }
 
     /**
-     * Determine whether the user can update the model.
-     * 对应 'role.edit' 权限
+     * 判断用户是否可以更新指定角色。
+     *
+     * @param  \App\Models\User  $user 当前用户
+     * @param  \Spatie\Permission\Models\Role  $role 要更新的角色
+     * @return bool
      */
     public function update(User $user, Role $role): bool
     {
-        // 系统管理员角色通常不允许编辑
+        // 管理员角色（'admin'）不允许被修改
         if ($role->name === 'admin') {
-            // 可以在这里决定是否完全禁止，或只允许特定用户（如 superadmin）
-            return false; // 简单处理：禁止编辑 admin
+            return false;
         }
 
         return $user->can('role.edit');
     }
 
     /**
-     * Determine whether the user can delete the model.
-     * 对应 'role.delete' 权限
+     * 判断用户是否可以删除指定角色。
+     *
+     * @param  \App\Models\User  $user 当前用户
+     * @param  \Spatie\Permission\Models\Role  $role 要删除的角色
+     * @return bool
      */
     public function delete(User $user, Role $role): bool
     {
-        // 系统管理员角色通常不允许删除
+        // 管理员角色（'admin'）不允许被删除
         if ($role->name === 'admin') {
             return false;
         }
 
-        // 还可以检查角色是否仍被用户使用
-        // if ($role->users()->exists()) {
-        //     return false; // 可以在控制器或这里检查
-        // }
         return $user->can('role.delete');
     }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    // public function restore(User $user, Role $role): bool
-    // {
-    //     return $user->can('role.restore');
-    // }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    // public function forceDelete(User $user, Role $role): bool
-    // {
-    //     return $user->can('role.force_delete');
-    // }
 }

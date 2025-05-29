@@ -1,5 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Other/Checkbox.vue
-<!-- 复选框组件：可在布尔值和数组模式间切换的双向绑定组件 -->
 <script setup>
 import { defineEmits, defineProps } from 'vue';
 

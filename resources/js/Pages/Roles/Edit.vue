@@ -20,7 +20,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import RoleForm from '@/Components/Form/RoleForm.vue'
 import MainLayout from "@/Layouts/MainLayouts/MainLayout.vue";
-import { adminNavigationLinks } from '@/config/navigationConfig'; // Assuming admin links are appropriate here
+import { adminNavigationLinks } from '@/config/navigationConfig';
 
 const navigationLinks = adminNavigationLinks;
 
@@ -29,7 +29,7 @@ defineProps({
         type: Object,
         required: true
     },
-    permissions: { // Expecting grouped permissions: { group: [perms] }
+    permissions: {
         type: Object,
         required: true
     }

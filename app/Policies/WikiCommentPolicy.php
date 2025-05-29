@@ -4,47 +4,39 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\WikiComment;
-use Illuminate\Auth\Access\HandlesAuthorization; // 或者 Gate
+use Illuminate\Auth\Access\HandlesAuthorization;
 
+/**
+ * WikiCommentPolicy 类
+ * 定义了 Wiki 评论相关的用户授权逻辑。
+ */
 class WikiCommentPolicy
 {
-    use HandlesAuthorization; // 如果使用 HandlesAuthorization
+    use HandlesAuthorization;
 
     /**
-     * Determine whether the user can update the model.
+     * 判断用户是否可以更新指定的 Wiki 评论。
+     *
+     * @param  \App\Models\User  $user        当前认证用户。
+     * @param  \App\Models\WikiComment  $wikiComment  要更新的 Wiki 评论。
+     * @return bool
      */
     public function update(User $user, WikiComment $wikiComment): bool
     {
-        // 用户是评论所有者 或 用户有管理评论的权限
+        // 只有评论的作者或拥有 'wiki.moderate_comments' 权限的用户才能更新评论。
         return $user->id === $wikiComment->user_id || $user->hasPermission('wiki.moderate_comments');
     }
 
     /**
-     * Determine whether the user can delete the model.
-     * 在你的应用中，删除是隐藏，所以可以用 delete 权限控制隐藏操作
+     * 判断用户是否可以删除（隐藏）指定的 Wiki 评论。
+     *
+     * @param  \App\Models\User  $user        当前认证用户。
+     * @param  \App\Models\WikiComment  $wikiComment  要删除的 Wiki 评论。
+     * @return bool
      */
     public function delete(User $user, WikiComment $wikiComment): bool
     {
-        // 用户是评论所有者 或 用户有管理评论的权限
+        // 只有评论的作者或拥有 'wiki.moderate_comments' 权限的用户才能删除（隐藏）评论。
         return $user->id === $wikiComment->user_id || $user->hasPermission('wiki.moderate_comments');
     }
-
-    /**
-     * Determine whether the user can view the model. (如果需要)
-     */
-    // public function view(User $user, WikiComment $wikiComment): bool
-    // {
-    //     // 通常所有登录用户都能看，或者根据 is_hidden 判断
-    //     return true;
-    // }
-
-    /**
-     * Determine whether the user can create models. (如果需要，可以用在 store 方法前)
-     */
-    // public function create(User $user): bool
-    // {
-    //     return $user->hasPermission('wiki.comment');
-    // }
-
-    // ... 其他策略方法 ...
 }

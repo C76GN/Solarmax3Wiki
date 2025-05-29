@@ -4,135 +4,168 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\WikiPage;
-use Illuminate\Auth\Access\HandlesAuthorization; // 引入 HandlesAuthorization
+use Illuminate\Auth\Access\HandlesAuthorization; // 权限授权处理 Trait
 
+/**
+ * WikiPagePolicy 类
+ * 定义了用户对 Wiki 页面的各种操作权限。
+ */
 class WikiPagePolicy
 {
-    use HandlesAuthorization; // 使用 Trait
+    use HandlesAuthorization; // 引入授权逻辑处理功能
 
     /**
-     * Determine whether the user can view any models (Wiki Index page).
+     * 判断用户是否可以查看任何 Wiki 页面 (如 Wiki 列表页)。
+     *
+     * @param \App\Models\User|null $user 当前认证用户或 null。
+     * @return bool
      */
     public function viewAny(?User $user): bool
     {
-        // 通常所有人都可以查看 Wiki 索引页
-        return true; // 或者根据需要检查 'wiki.view'
-        // return $user?->can('wiki.view') ?? true; // 如果未登录用户也可以看
+        // 允许所有用户（包括未登录用户）查看 Wiki 列表页。
+        return true;
     }
 
     /**
-     * Determine whether the user can view the model.
+     * 判断用户是否可以查看指定 Wiki 页面。
+     *
+     * @param \App\Models\User|null $user 当前认证用户或 null。
+     * @param \App\Models\WikiPage $wikiPage 待查看的 Wiki 页面实例。
+     * @return bool
      */
     public function view(?User $user, WikiPage $wikiPage): bool
     {
-        // 公开页面允许所有人看
+        // 已发布的页面允许所有用户查看。
         if ($wikiPage->status === WikiPage::STATUS_PUBLISHED) {
             return true;
         }
 
-        // 草稿、冲突等状态需要登录并有查看权限
-        // 这里简化处理，假设有 'wiki.view' 权限就能看所有状态
-        // 注意：如果 $user 为 null (未登录), $user?->can 会返回 null，你需要处理这种情况
+        // 对于非公开状态的页面（如草稿、冲突），需要用户登录并拥有 'wiki.view' 权限。
         return $user?->can('wiki.view') ?? false;
     }
 
     /**
-     * Determine whether the user can create models.
+     * 判断用户是否可以创建 Wiki 页面。
+     *
+     * @param \App\Models\User $user 当前认证用户。
+     * @return bool
      */
     public function create(User $user): bool
     {
+        // 用户需拥有 'wiki.create' 权限。
         return $user->can('wiki.create');
     }
 
     /**
-     * Determine whether the user can update the model.
+     * 判断用户是否可以更新 Wiki 页面。
+     *
+     * @param \App\Models\User $user 当前认证用户。
+     * @param \App\Models\WikiPage $wikiPage 待更新的 Wiki 页面实例。
+     * @return bool
      */
     public function update(User $user, WikiPage $wikiPage): bool
     {
-        // 处于冲突状态时，只有能解决冲突的人可以“更新”（通过 resolveConflict 流程）
+        // 如果页面处于冲突状态，只有拥有 'wiki.resolve_conflict' 权限的用户才能更新。
         if ($wikiPage->status === WikiPage::STATUS_CONFLICT) {
             return $user->can('wiki.resolve_conflict');
         }
-        // 检查页面是否被锁定，并且不是自己锁定的
+
+        // 如果页面被锁定且锁定者不是当前用户，则不能更新。
         if ($wikiPage->isLocked() && $wikiPage->locked_by !== $user->id) {
             return false;
         }
 
-        // 检查是否有编辑权限
+        // 用户需拥有 'wiki.edit' 权限。
         return $user->can('wiki.edit');
     }
 
     /**
-     * Determine whether the user can delete the model (soft delete).
+     * 判断用户是否可以删除 Wiki 页面 (软删除)。
+     *
+     * @param \App\Models\User $user 当前认证用户。
+     * @param \App\Models\WikiPage $wikiPage 待删除的 Wiki 页面实例。
+     * @return bool
      */
     public function delete(User $user, WikiPage $wikiPage): bool
     {
-        // 可以在这里添加其他逻辑，比如只有作者或管理员能删除
+        // 用户需拥有 'wiki.delete' 权限。
         return $user->can('wiki.delete');
     }
 
     /**
-     * Determine whether the user can view the trash bin.
+     * 判断用户是否可以查看 Wiki 回收站。
+     *
+     * @param \App\Models\User $user 当前认证用户。
+     * @return bool
      */
-    public function viewTrash(User $user): bool // 注意：第一个参数是 $user，Policy 规定
+    public function viewTrash(User $user): bool
     {
+        // 用户需拥有 'wiki.trash.view' 权限。
         return $user->can('wiki.trash.view');
     }
 
     /**
-     * Determine whether the user can restore a wiki page.
+     * 判断用户是否可以恢复回收站中的 Wiki 页面。
+     *
+     * @param \App\Models\User $user 当前认证用户。
+     * @param \App\Models\WikiPage|null $wikiPage 待恢复的 Wiki 页面实例 (可选，可用于检查特定页面权限)。
+     * @return bool
      */
-    public function restore(User $user, ?WikiPage $wikiPage = null): bool // 可以处理类名或实例
+    public function restore(User $user, ?WikiPage $wikiPage = null): bool
     {
+        // 用户需拥有 'wiki.trash.restore' 权限。
         return $user->can('wiki.trash.restore');
     }
 
     /**
-     * Determine whether the user can permanently delete a wiki page.
+     * 判断用户是否可以永久删除回收站中的 Wiki 页面。
+     *
+     * @param \App\Models\User $user 当前认证用户。
+     * @param \App\Models\WikiPage|null $wikiPage 待永久删除的 Wiki 页面实例 (可选)。
+     * @return bool
      */
     public function forceDelete(User $user, ?WikiPage $wikiPage = null): bool
     {
+        // 用户需拥有 'wiki.trash.force_delete' 权限。
         return $user->can('wiki.trash.force_delete');
     }
 
     /**
-     * Determine whether the user can resolve conflicts for the model.
+     * 判断用户是否可以解决 Wiki 页面冲突。
+     *
+     * @param \App\Models\User $user 当前认证用户。
+     * @param \App\Models\WikiPage $wikiPage 存在冲突的 Wiki 页面实例。
+     * @return bool
      */
     public function resolveConflict(User $user, WikiPage $wikiPage): bool
     {
+        // 用户需拥有 'wiki.resolve_conflict' 权限。
         return $user->can('wiki.resolve_conflict');
     }
 
     /**
-     * Determine whether the user can view the history for the model.
+     * 判断用户是否可以查看 Wiki 页面历史版本。
+     *
+     * @param \App\Models\User $user 当前认证用户。
+     * @param \App\Models\WikiPage $wikiPage 待查看历史的 Wiki 页面实例。
+     * @return bool
      */
     public function viewHistory(User $user, WikiPage $wikiPage): bool
     {
-        // 假设有查看权限就可以看历史
+        // 用户需拥有 'wiki.history' 权限。
         return $user->can('wiki.history');
     }
 
     /**
-     * Determine whether the user can revert the model to a previous version.
+     * 判断用户是否可以将 Wiki 页面恢复到历史版本。
+     *
+     * @param \App\Models\User $user 当前认证用户。
+     * @param \App\Models\WikiPage $wikiPage 待恢复的 Wiki 页面实例。
+     * @return bool
      */
     public function revert(User $user, WikiPage $wikiPage): bool
     {
-        // 恢复版本本质上是创建新版本，所以检查编辑权限
-        // 并且页面不能处于冲突状态
+        // 页面不能处于冲突状态，并且用户需拥有 'wiki.edit' 权限。
         return $wikiPage->status !== WikiPage::STATUS_CONFLICT && $user->can('wiki.edit');
     }
-
-    // --- WikiComment 相关权限如果放在这里 ---
-    // （你也可以保持在 WikiCommentPolicy 中）
-
-    // public function viewComments(User $user, WikiPage $wikiPage): bool
-    // {
-    //     // 假设有查看权限就能看评论
-    //     return $user->can('wiki.view');
-    // }
-
-    // public function createComment(User $user, WikiPage $wikiPage): bool
-    // {
-    //     return $user->can('wiki.comment');
-    // }
 }

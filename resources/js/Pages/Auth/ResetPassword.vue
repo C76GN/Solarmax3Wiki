@@ -1,4 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Pages/Auth/ResetPassword.vue
 <template>
     <GuestLayout>
 

@@ -1,4 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Other/Pagination.vue
 <template>
     <div v-if="links.length > 3" class="flex justify-center">
         <div v-for="(link, index) in links" :key="index" class="mx-1">

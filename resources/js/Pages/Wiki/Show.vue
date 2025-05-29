@@ -1,30 +1,36 @@
 <template>
+    <!-- 主布局容器，用于整合导航链接 -->
     <MainLayout :navigationLinks="navigationLinks">
+
+        <!-- 设置页面标题，根据是否为预览模式动态显示 -->
 
         <Head :title="page.title + (isPreview ? ' (预览)' : '')" />
         <div class="container mx-auto py-8 px-4 md:px-6 lg:px-8">
             <div class="flex flex-col lg:flex-row lg:space-x-8">
+                <!-- 左侧主内容区域，占据大部分宽度 -->
                 <div class="w-full lg:w-3/4">
-                    <!-- 预览提示 -->
+                    <!-- 预览模式提示，只有在isPreview为true时显示 -->
                     <div v-if="isPreview"
                         class="mb-4 p-3 bg-blue-100 dark:bg-blue-900/50 border-l-4 border-blue-500 text-blue-700 dark:text-blue-300 rounded-md text-sm italic text-center">
                         <font-awesome-icon :icon="['fas', 'eye']" class="mr-2" /> 内容预览模式（未保存）
                     </div>
-                    <!-- 主内容区 -->
+                    <!-- 页面主要内容卡片 -->
                     <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-lg shadow-lg p-6 md:p-8">
-                        <!-- 标题和元信息区 -->
+                        <!-- 页面标题和元信息区 -->
                         <div class="mb-8 pb-4 border-b border-gray-200 dark:border-gray-700">
                             <div class="flex flex-col md:flex-row justify-between md:items-start mb-4 gap-4">
                                 <div>
                                     <h1
                                         class="text-3xl md:text-4xl font-bold mb-2 leading-tight text-gray-900 dark:text-gray-100 break-words">
                                         {{ page.title }}
+                                        <!-- 版本号显示，预览模式或有当前版本时显示 -->
                                         <span
                                             v-if="isPreview || (currentVersion && currentVersion.version_number != null)"
                                             class="text-xl font-normal text-gray-500 dark:text-gray-400">
                                             (版本 {{ currentVersion?.version_number ?? '预览' }})
                                         </span>
                                     </h1>
+                                    <!-- 页面创建和更新信息 -->
                                     <div
                                         class="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-x-4 gap-y-1">
                                         <span v-if="page.creator" class="whitespace-nowrap flex items-center">
@@ -45,6 +51,7 @@
                                         </span>
                                     </div>
                                 </div>
+                                <!-- 操作按钮组（历史、编辑、解决冲突），预览模式下不显示 -->
                                 <div v-if="!isPreview" class="flex items-center space-x-2 flex-shrink-0 mt-2 md:mt-0">
                                     <Link :href="route('wiki.history', page.slug)" class="btn-icon-secondary">
                                     <font-awesome-icon :icon="['fas', 'history']" /> <span>历史</span>
@@ -59,7 +66,7 @@
                                     </Link>
                                 </div>
                             </div>
-                            <!-- 分类和标签 -->
+                            <!-- 分类和标签显示区域 -->
                             <div class="flex flex-wrap gap-2 mt-3 items-center">
                                 <span class="text-sm text-gray-500 dark:text-gray-400 mr-2">分类:</span>
                                 <span v-for="category in page.categories" :key="category.id" class="tag-category">
@@ -72,9 +79,9 @@
                                 </span>
                             </div>
                         </div>
-                        <!-- 警告和草稿提示 -->
+                        <!-- 页面状态警告和草稿提示 -->
                         <div v-if="!isPreview && (isLocked || isConflictPage)" class="mb-6 space-y-4">
-                            <!-- 锁定提示 -->
+                            <!-- 页面锁定提示 -->
                             <div v-if="isLocked && !isConflictPage" class="alert-warning">
                                 <div class="flex items-center">
                                     <font-awesome-icon :icon="['fas', 'lock']" class="mr-2 flex-shrink-0" />
@@ -84,7 +91,7 @@
                                     <p v-else class="text-sm">页面已被锁定，无法获取锁定者信息。</p>
                                 </div>
                             </div>
-                            <!-- 冲突提示 -->
+                            <!-- 页面冲突提示 -->
                             <div v-if="isConflictPage" class="alert-error">
                                 <div class="flex items-center">
                                     <font-awesome-icon :icon="['fas', 'exclamation-circle']"
@@ -104,7 +111,7 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- 草稿提示 -->
+                        <!-- 草稿存在提示，只有在非预览、非冲突、非锁定状态下显示 -->
                         <div v-if="!isPreview && draft && !isConflictPage && !isLocked" class="alert-info mb-6">
                             <div class="flex items-center">
                                 <font-awesome-icon :icon="['fas', 'save']" class="mr-2 flex-shrink-0" />
@@ -117,14 +124,14 @@
                             </div>
                         </div>
 
-                        <!-- 页面内容 -->
+                        <!-- 页面内容展示区域 -->
                         <div ref="wikiContentContainerRef"
                             class="prose max-w-none prose-indigo lg:prose-lg xl:prose-xl wiki-content-display dark:prose-invert">
                             <div v-if="currentVersion && currentVersion.content" v-html="currentVersion.content"></div>
                             <div v-else class="error-content-placeholder">
                                 <p>{{ error || (isConflictPage ? '页面冲突中，最新内容可能不可见。请解决冲突以查看或编辑最新内容。' : '该页面还没有内容。') }}
                                 </p>
-                                <!-- 链接到编辑或解决冲突 -->
+                                <!-- 链接到编辑或解决冲突页面，根据权限和状态显示 -->
                                 <Link v-if="!isPreview && isConflictPage && canResolveConflict"
                                     :href="route('wiki.edit', page.slug)" class="link-style mt-2">
                                 解决冲突
@@ -135,11 +142,11 @@
                                 </Link>
                             </div>
                         </div>
-                        <!-- 评论区 -->
+                        <!-- 评论区，预览模式下不显示 -->
                         <div v-if="!isPreview" class="mt-12 pt-8 border-t border-gray-300 dark:border-gray-700">
                             <h3 class="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-200">评论 ({{ commentsCount
-                            }})</h3>
-                            <!-- 评论表单 -->
+                                }})</h3>
+                            <!-- 评论表单，只有登录且有评论权限的用户才能看到 -->
                             <div v-if="$page.props.auth.user && $page.props.auth.user.permissions.includes('wiki.comment')"
                                 class="mb-8 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border dark:border-gray-700">
                                 <form @submit.prevent="submitComment">
@@ -157,18 +164,17 @@
                                     </div>
                                 </form>
                             </div>
-                            <!-- 登录提示 -->
+                            <!-- 未登录用户的评论提示 -->
                             <div v-else
                                 class="mb-8 p-4 bg-gray-100 dark:bg-gray-700/50 rounded-lg text-center text-sm text-gray-600 dark:text-gray-400">
                                 <Link :href="route('login')"
                                     class="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300">
                                 登录</Link>后即可发表评论。
                             </div>
-                            <!-- 评论列表 -->
+                            <!-- 评论列表，如果存在评论则遍历显示 -->
                             <div v-if="page.comments && page.comments.length > 0" class="space-y-6">
                                 <div v-for="comment in page.comments" :key="comment.id"
                                     class="comment-item pb-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
-                                    <!-- ... 评论内容和操作 ... -->
                                     <div class="flex items-start space-x-3">
                                         <div class="flex-shrink-0 rounded-full w-8 h-8 flex items-center justify-center text-sm font-semibold"
                                             :class="getAvatarBgClass(comment.user?.id || 0)">
@@ -199,6 +205,7 @@
                                                                 replyingToCommentId === comment.id ? '取消回复' : '回复' }}</button>
                                                 </div>
                                             </div>
+                                            <!-- 评论编辑表单 -->
                                             <div v-if="editingCommentId === comment.id" class="mt-2">
                                                 <form @submit.prevent="updateComment(comment)">
                                                     <textarea v-model="editCommentForm.content" rows="3"
@@ -306,7 +313,7 @@
                                 暂无评论，成为第一个评论者吧！
                             </div>
                         </div>
-                        <!-- 预览模式下的评论区占位 -->
+                        <!-- 预览模式下的评论区占位，实际评论功能不在此显示 -->
                         <div v-if="isPreview" class="mt-12 pt-8 border-t border-gray-300 dark:border-gray-700">
                             <h3 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">评论区</h3>
                             <div
@@ -316,7 +323,7 @@
                         </div>
                     </div>
                 </div>
-                <!-- 目录 (保持不变) -->
+                <!-- 右侧目录区域 -->
                 <div class="w-full lg:w-1/4 mt-8 lg:mt-0 lg:pl-4">
                     <div class="bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm rounded-lg shadow-lg p-4 sticky top-8">
                         <h3
@@ -331,8 +338,7 @@
                 </div>
             </div>
         </div>
-        <!-- Modals (保持不变, Resolve Conflict Modal 不再需要) -->
-        <!-- FlashMessage (保持不变) -->
+        <!-- 消息闪现组件，用于显示操作成功或失败的提示 -->
         <FlashMessage ref="flashMessage" />
     </MainLayout>
 </template>
@@ -346,62 +352,75 @@ import FlashMessage from '@/Components/Other/FlashMessage.vue';
 import InputError from '@/Components/Other/InputError.vue';
 import { formatDate, formatDateShort, formatDateTime } from '@/utils/formatters';
 import { mainNavigationLinks } from '@/config/navigationConfig';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'; // Ensure this is imported if used directly in template
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faExclamationTriangle, faExclamationCircle } from '@fortawesome/free-solid-svg-icons'; // 引入图标
 
+// 主导航链接配置
 const navigationLinks = mainNavigationLinks;
+// 获取当前页面属性，如认证用户等
 const pageProps = usePage().props;
+
+// 定义组件接收的属性
 const props = defineProps({
-    page: { type: Object, required: true },
-    currentVersion: { type: Object, default: null },
-    isLocked: { type: Boolean, default: false },
-    lockedBy: { type: Object, default: null },
-    draft: { type: Object, default: null },
-    canEditPage: { type: Boolean, default: false },
-    canResolveConflict: { type: Boolean, default: false },
-    isConflictPage: { type: Boolean, default: false }, // <-- 从 Controller 传递过来
-    error: { type: String, default: '' },
-    comments: { type: Array, default: () => [] },
-    isPreview: { type: Boolean, default: false } // 新增的 Prop
+    page: { type: Object, required: true }, // Wiki页面数据
+    currentVersion: { type: Object, default: null }, // 当前版本数据
+    isLocked: { type: Boolean, default: false }, // 页面是否被锁定
+    lockedBy: { type: Object, default: null }, // 锁定页面的用户
+    draft: { type: Object, default: null }, // 用户草稿数据
+    canEditPage: { type: Boolean, default: false }, // 当前用户是否可以编辑页面
+    canResolveConflict: { type: Boolean, default: false }, // 当前用户是否可以解决冲突
+    isConflictPage: { type: Boolean, default: false }, // 页面是否处于冲突状态
+    error: { type: String, default: '' }, // 页面级错误信息
+    comments: { type: Array, default: () => [] }, // 页面评论列表
+    isPreview: { type: Boolean, default: false } // 是否为预览模式
 });
 
-const wikiContentContainerRef = ref(null);
-const tocContainerRef = ref(null);
-const flashMessage = ref(null);
-const replyingToCommentId = ref(null);
-const editingCommentId = ref(null);
+// DOM元素引用
+const wikiContentContainerRef = ref(null); // Wiki内容容器的引用
+const tocContainerRef = ref(null); // 目录容器的引用
+const flashMessage = ref(null); // FlashMessage 组件的引用
+
+// 评论相关状态
+const replyingToCommentId = ref(null); // 正在回复的评论ID
+const editingCommentId = ref(null); // 正在编辑的评论ID
+
+// 冲突解决模态框状态，此页面不再使用，保留以防万一
 const showResolveConflictModal = ref(false);
-const activeTocId = ref(null);
-let observer = null; // 滚动监听器
 
-// --- Forms ---
-const commentForm = useForm({ content: '', parent_id: null });
-const replyForm = useForm({ content: '', parent_id: null });
-const editCommentForm = useForm({ content: '' });
+// 目录滚动监听器相关状态
+const activeTocId = ref(null); // 当前可视区域内激活的目录项ID
+let observer = null; // Intersection Observer 实例
 
-// --- Computed Properties ---
+// --- 表单状态 ---
+const commentForm = useForm({ content: '', parent_id: null }); // 发表评论表单
+const replyForm = useForm({ content: '', parent_id: null }); // 回复评论表单
+const editCommentForm = useForm({ content: '' }); // 编辑评论表单
+
+// --- 计算属性 ---
+// 计算评论总数，包括回复
 const commentsCount = computed(() => {
     let count = 0;
-    if (props.comments) { // Use props.comments directly as it's guaranteed by default []
+    if (props.comments) {
         props.comments.forEach(comment => {
-            count++;
-            if (comment.replies) count += comment.replies.length;
+            count++; // 计算主评论
+            if (comment.replies) count += comment.replies.length; // 计算回复
         });
     }
     return count;
 });
 
-// --- Methods ---
-// Table of Contents Generation
+// --- 方法 ---
+// 生成用于目录ID和URL的 slug
 const generateSlug = (text) => {
     if (!text) return '';
     return text.toLowerCase()
-        .replace(/[\s\/\\]+/g, '-') // Replace spaces, slashes with hyphen
-        .replace(/[^\w\u4E00-\u9FA5-]+/g, '') // Remove non-word, non-Chinese characters except hyphens
-        .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
-        .replace(/^-+|-+$/g, ''); // Trim hyphens from start/end
+        .replace(/[\s\/\\]+/g, '-') // 将空格、斜杠、反斜杠替换为短横线
+        .replace(/[^\w\u4E00-\u9FA5-]+/g, '') // 移除除字母、数字、下划线、中文和短横线外的字符
+        .replace(/-+/g, '-') // 多个短横线合并为一个
+        .replace(/^-+|-+$/g, ''); // 移除开头和结尾的短横线
 };
 
+// 生成唯一的DOM元素ID
 const generateUniqueId = (baseId, existingIds) => {
     let id = baseId;
     let counter = 1;
@@ -413,17 +432,18 @@ const generateUniqueId = (baseId, existingIds) => {
     return id;
 };
 
+// 生成页面目录
 const generateTableOfContents = () => {
-    nextTick(() => { // Ensure DOM is updated before querySelectorAll
+    nextTick(() => { // 确保在DOM更新后执行，以获取最新的内容结构
         const contentElement = wikiContentContainerRef.value;
         const tocContainer = tocContainerRef.value;
-        const existingIds = new Set();
+        const existingIds = new Set(); // 用于追踪已分配的ID，确保唯一性
 
         if (!tocContainer) {
             console.warn('无法找到 TOC 容器 (ref="tocContainerRef")');
             return;
         }
-        // Clear previous TOC content first
+        // 清空旧目录内容
         tocContainer.innerHTML = '';
 
         if (!contentElement) {
@@ -432,6 +452,7 @@ const generateTableOfContents = () => {
             return;
         }
 
+        // 获取所有标题元素
         const headings = contentElement.querySelectorAll('h1, h2, h3, h4, h5, h6');
 
         if (headings.length === 0) {
@@ -440,48 +461,49 @@ const generateTableOfContents = () => {
         }
 
         const tocList = document.createElement('ul');
-        tocList.classList.add('space-y-1.5', 'list-none', 'pl-0'); // Tailwind classes
+        tocList.classList.add('space-y-1.5', 'list-none', 'pl-0');
 
         headings.forEach((heading, index) => {
-            const level = parseInt(heading.tagName.substring(1));
-            const text = heading.textContent?.trim() || `无标题 ${index + 1}`;
-            let id = heading.id; // Use existing ID if available
+            const level = parseInt(heading.tagName.substring(1)); // 获取标题级别 (例如，H1 -> 1)
+            const text = heading.textContent?.trim() || `无标题 ${index + 1}`; // 获取标题文本
+            let id = heading.id; // 尝试使用现有ID
 
-            // Ensure ID is unique and generate if needed
+            // 确保ID唯一，如果不存在或已重复则生成新ID
             if (!id || existingIds.has(id)) {
                 const baseSlug = generateSlug(text);
                 id = generateUniqueId(`toc-${baseSlug || 'heading'}-${index}`, existingIds);
-                heading.id = id; // Assign the generated ID back to the heading
+                heading.id = id; // 将生成的ID分配给标题元素
             } else {
-                existingIds.add(id); // Add the valid existing ID to the set
+                existingIds.add(id); // 将现有ID添加到集合中
             }
 
             const listItem = document.createElement('li');
-            // Apply indentation based on heading level
-            listItem.style.paddingLeft = `${Math.max(0, level - 1) * 1}rem`; // 1rem per level indent
+            // 根据标题级别应用缩进
+            listItem.style.paddingLeft = `${Math.max(0, level - 1) * 1}rem`;
 
             const link = document.createElement('a');
             link.href = `#${id}`;
             link.textContent = text;
-            link.dataset.tocId = id; // Store ID for scroll spying
+            link.dataset.tocId = id; // 存储ID用于滚动监听
             link.classList.add(
-                'toc-link', // Custom class for easier selection
+                'toc-link',
                 'block',
-                'truncate', // Prevent long text overflow
+                'truncate',
                 'transition-colors',
                 'duration-150',
-                'text-xs', // Smaller font size for TOC
-                'py-0.5', // Vertical padding
-                'text-gray-600', 'dark:text-gray-400', // Base color
-                'hover:text-blue-600', 'dark:hover:text-blue-400' // Hover color
+                'text-xs',
+                'py-0.5',
+                'text-gray-600', 'dark:text-gray-400',
+                'hover:text-blue-600', 'dark:hover:text-blue-400'
             );
 
-            // Click handler for smooth scrolling
+            // 目录链接点击事件，实现平滑滚动
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const targetElement = document.getElementById(id);
                 if (targetElement) {
-                    const offset = 80; // Adjust this value based on your sticky header height
+                    const offset = 80; // 偏移量，用于避免标题被固定导航栏遮挡
+                    // 计算目标元素的滚动位置
                     const bodyRect = document.body.getBoundingClientRect().top;
                     const elementRect = targetElement.getBoundingClientRect().top;
                     const elementPosition = elementRect - bodyRect;
@@ -489,17 +511,16 @@ const generateTableOfContents = () => {
 
                     window.scrollTo({
                         top: offsetPosition,
-                        behavior: 'smooth'
+                        behavior: 'smooth' // 平滑滚动
                     });
 
-                    // Optional: Add temporary highlight to target heading
+                    // 可选：添加临时高亮效果
                     targetElement.classList.add('highlight-scroll');
                     setTimeout(() => {
                         targetElement.classList.remove('highlight-scroll');
-                    }, 1000); // Highlight duration
-
+                    }, 1000); // 高亮持续时间
                 } else {
-                    console.warn(`Target element not found for ID: ${id}`);
+                    console.warn(`未找到目标元素，ID: ${id}`);
                 }
             });
 
@@ -508,134 +529,130 @@ const generateTableOfContents = () => {
         });
 
         tocContainer.appendChild(tocList);
-        // Setup scroll spying after TOC is generated
-        if (!props.isPreview) { // Only activate spy on the real page, not preview
+        // 如果不是预览模式，设置滚动监听器
+        if (!props.isPreview) {
             setupTocScrollSpy();
         }
     });
 };
 
-// Intersection Observer for Scroll Spying
+// 设置 Intersection Observer 实现目录的滚动高亮
 const setupTocScrollSpy = () => {
     if (observer) {
-        observer.disconnect(); // Disconnect previous observer if any
+        observer.disconnect(); // 断开旧的观察器
     }
     const tocLinks = tocContainerRef.value?.querySelectorAll('.toc-link');
     if (!tocLinks || tocLinks.length === 0) {
-        // console.log("No TOC links found, skipping scroll spy setup.");
-        return; // No links to observe
+        return;
     }
 
+    // 获取所有标题元素对应的 DOM 节点
     const headingElements = Array.from(tocLinks).map(link => {
         const targetId = link.getAttribute('href')?.substring(1);
         return targetId ? document.getElementById(targetId) : null;
-    }).filter(el => el !== null); // Ensure elements exist
+    }).filter(el => el !== null); // 过滤掉null值，确保元素存在
 
     if (headingElements.length === 0) {
-        // console.log("No heading elements found for TOC links, skipping scroll spy setup.");
-        return; // No valid targets
+        return;
     }
 
-    // Observer options: Trigger when heading enters the top part of the viewport
+    // Intersection Observer 配置项
     const options = {
-        // root: null, // observing intersections with the viewport
-        rootMargin: '-80px 0px -60% 0px', // Top offset for sticky nav, bottom negative margin to activate sooner
-        threshold: 0 // Trigger as soon as any part enters the margin
+        rootMargin: '-80px 0px -60% 0px', // 顶部偏移量（固定导航栏高度），底部负边距使元素提前进入可视区
+        threshold: 0 // 元素进入可视区（或rootMargin定义的区域）的任意部分时触发
     };
 
     observer = new IntersectionObserver(entries => {
         let latestActiveId = null;
 
-        // Iterate entries in reverse to prioritize the one lowest on the screen that's intersecting
+        // 反向遍历，以最靠近屏幕顶部且正在交叉的元素为准
         entries.reverse().forEach(entry => {
             if (entry.isIntersecting) {
                 latestActiveId = entry.target.id;
-                // We found the lowest intersecting element, no need to check further up
-                // Use break or simply don't overwrite `latestActiveId` again if needed
-                // For simplicity, we'll just take the last one in the reversed loop
             }
         });
 
-        // Fallback: If nothing is intersecting in the primary zone,
-        // find the highest element that is *above* the top threshold
+        // 备用逻辑：如果主区域没有交叉元素，则查找顶部阈值以上最近的元素
         if (!latestActiveId) {
             const elementsAboveThreshold = entries
-                .filter(entry => entry.boundingClientRect.top < 80) // Check if top edge is above threshold (e.g., 80px from viewport top)
-                .map(entry => entry.target); // Get the DOM elements
+                .filter(entry => entry.boundingClientRect.top < 80) // 检查元素顶部是否在80px阈值以上
+                .map(entry => entry.target);
             if (elementsAboveThreshold.length > 0) {
-                // Get the *last* element among those above (closest to the top threshold)
+                // 取这些元素中最后一个（即最靠近阈值的那个）
                 latestActiveId = elementsAboveThreshold[elementsAboveThreshold.length - 1].id;
             }
         }
 
-        activeTocId.value = latestActiveId;
+        activeTocId.value = latestActiveId; // 更新激活的目录ID
 
-        // Update TOC link styles
+        // 更新目录链接的样式
         tocLinks.forEach(link => {
-            link.classList.remove('is-active'); // Remove active class from all
+            link.classList.remove('is-active');
             if (link.dataset.tocId === activeTocId.value) {
-                link.classList.add('is-active'); // Add to the currently active one
+                link.classList.add('is-active');
             }
         });
     }, options);
 
-    // Observe all heading elements
+    // 观察所有标题元素
     headingElements.forEach(el => observer.observe(el));
 };
 
 
-// User Avatar helpers
-const userColors = {};
-const bgColors = [
+// 用户头像背景颜色和首字母生成
+const userColors = {}; // 存储用户ID到颜色类的映射
+const bgColors = [ // 预定义的背景颜色类
     'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300', 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
     'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
     'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300', 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
     'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300', 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300'
 ];
-let colorIndex = 0;
+let colorIndex = 0; // 颜色索引，循环使用
 const getAvatarBgClass = (userId) => {
-    if (!userId) return bgColors[0]; // Default color for null userId
+    if (!userId) return bgColors[0]; // 对匿名用户使用默认颜色
     if (!userColors[userId]) {
         userColors[userId] = bgColors[colorIndex % bgColors.length];
         colorIndex++;
     }
     return userColors[userId];
 };
+
+// 获取用户姓名的首字母或首个汉字
 const getInitials = (name) => {
     if (!name) return '?';
     const nameTrimmed = name.trim();
     if (!nameTrimmed) return '?';
-    // Check if it's a Chinese character first
+    // 优先匹配汉字
     const chineseMatch = nameTrimmed.match(/[\u4E00-\u9FA5]/);
     if (chineseMatch) {
-        return chineseMatch[0]; // Return the first Chinese character
+        return chineseMatch[0];
     }
-    // Fallback for English names
+    // 非汉字则取首字母
     const parts = nameTrimmed.split(/\s+/);
     if (parts.length > 0 && parts[0]) {
         return parts[0].charAt(0).toUpperCase();
     }
-    // Fallback if splitting fails or name is weird
     return nameTrimmed.charAt(0).toUpperCase() || '?';
 };
 
 
-// Comment management methods
+// 评论管理方法
+// 检查用户是否可以管理某条评论（自己的评论或有特定权限）
 const canManageComment = (comment) => {
     const user = pageProps.auth.user;
     if (!user) return false;
-    // User can manage their own comments OR if they have the specific permission
     return comment.user_id === user.id || user.permissions?.includes('wiki.moderate_comments');
 };
 
+// 提交新评论
 const submitComment = () => {
-    commentForm.parent_id = null; // Ensure parent_id is null for top-level comments
+    commentForm.parent_id = null; // 顶级评论没有父ID
     commentForm.post(route('wiki.comments.store', props.page.slug), {
-        preserveScroll: true,
+        preserveScroll: true, // 保持滚动位置
         onSuccess: () => {
-            commentForm.reset('content');
+            commentForm.reset('content'); // 清空评论内容
             flashMessage.value?.addMessage('success', '评论发布成功！');
-            router.reload({ only: ['comments'] }); // Only reload comments data
+            router.reload({ only: ['comments'] }); // 仅重新加载评论数据
         },
         onError: (errors) => {
             const firstError = Object.values(errors).flat()[0];
@@ -644,30 +661,33 @@ const submitComment = () => {
     });
 };
 
+// 切换回复表单的显示/隐藏状态
 const toggleReply = (comment) => {
     if (replyingToCommentId.value === comment.id) {
-        cancelReply(); // Close if already replying to this one
+        cancelReply(); // 如果已经在回复当前评论，则取消回复
     } else {
-        replyingToCommentId.value = comment.id; // Set the target for reply
-        replyForm.reset('content'); // Clear previous reply input
-        cancelEditComment(); // Close any open edit form
+        replyingToCommentId.value = comment.id; // 设置要回复的评论ID
+        replyForm.reset('content'); // 清空回复内容
+        cancelEditComment(); // 关闭任何正在进行的评论编辑
     }
 };
 
+// 取消回复
 const cancelReply = () => {
     replyingToCommentId.value = null;
     replyForm.reset('content');
-    replyForm.clearErrors();
+    replyForm.clearErrors(); // 清除表单错误
 };
 
+// 提交回复
 const submitReply = (parentComment) => {
-    replyForm.parent_id = parentComment.id; // Set the parent comment ID
+    replyForm.parent_id = parentComment.id; // 设置父评论ID
     replyForm.post(route('wiki.comments.store', props.page.slug), {
         preserveScroll: true,
         onSuccess: () => {
-            cancelReply(); // Close reply form
+            cancelReply(); // 关闭回复表单
             flashMessage.value?.addMessage('success', '回复成功！');
-            router.reload({ only: ['comments'] }); // Reload comments
+            router.reload({ only: ['comments'] }); // 重新加载评论数据
         },
         onError: (errors) => {
             const firstError = Object.values(errors).flat()[0];
@@ -676,29 +696,32 @@ const submitReply = (parentComment) => {
     });
 };
 
+// 切换评论编辑表单的显示/隐藏状态
 const editComment = (comment) => {
     if (editingCommentId.value === comment.id) {
-        cancelEditComment(); // Close if already editing this one
+        cancelEditComment(); // 如果已经在编辑当前评论，则取消编辑
     } else {
-        editingCommentId.value = comment.id; // Set the target for edit
-        editCommentForm.content = comment.content; // Load current content
-        cancelReply(); // Close any open reply form
+        editingCommentId.value = comment.id; // 设置要编辑的评论ID
+        editCommentForm.content = comment.content; // 加载当前评论内容到表单
+        cancelReply(); // 关闭任何正在进行的回复
     }
 };
 
+// 取消编辑评论
 const cancelEditComment = () => {
     editingCommentId.value = null;
     editCommentForm.reset('content');
-    editCommentForm.clearErrors();
+    editCommentForm.clearErrors(); // 清除表单错误
 };
 
+// 更新评论
 const updateComment = (comment) => {
     editCommentForm.put(route('wiki.comments.update', comment.id), {
         preserveScroll: true,
         onSuccess: () => {
-            cancelEditComment(); // Close edit form
+            cancelEditComment(); // 关闭编辑表单
             flashMessage.value?.addMessage('success', '评论更新成功！');
-            router.reload({ only: ['comments'] }); // Reload comments
+            router.reload({ only: ['comments'] }); // 重新加载评论数据
         },
         onError: (errors) => {
             const firstError = Object.values(errors).flat()[0];
@@ -707,17 +730,18 @@ const updateComment = (comment) => {
     });
 };
 
+// 删除（隐藏）评论
 const deleteComment = (comment) => {
-    const typeText = comment.parent_id ? '回复' : '评论';
+    const typeText = comment.parent_id ? '回复' : '评论'; // 判断是回复还是评论
     if (confirm(`确定要隐藏这条${typeText}吗？此操作将对其他用户隐藏该内容。`)) {
         router.delete(route('wiki.comments.destroy', comment.id), {
             preserveScroll: true,
             onSuccess: () => {
                 flashMessage.value?.addMessage('success', `${typeText}已隐藏！`);
-                // Close any forms related to this comment
+                // 如果当前评论正在编辑或回复，则取消相关操作
                 if (editingCommentId.value === comment.id) cancelEditComment();
                 if (replyingToCommentId.value === comment.id || (comment.parent_id && replyingToCommentId.value === comment.parent_id)) cancelReply();
-                router.reload({ only: ['comments'] }); // Reload comments
+                router.reload({ only: ['comments'] }); // 重新加载评论数据
             },
             onError: (errors) => {
                 const errorMsg = Object.values(errors).flat()[0] || `${typeText}删除失败，请重试`;
@@ -727,15 +751,10 @@ const deleteComment = (comment) => {
     }
 };
 
-// Resolve Conflict Modal (不再需要)
-const openResolveConflictModal = () => { /* Kept for potential future use but likely unused */ };
-const closeResolveConflictModal = () => { /* Kept for potential future use */ };
-
-
-// --- Lifecycle Hooks ---
+// 生命周期钩子
 onMounted(() => {
-    generateTableOfContents(); // Generate TOC on mount
-    // Show initial flash messages if provided
+    generateTableOfContents(); // 组件挂载时生成目录
+    // 处理页面初始加载时的错误和警告信息
     if (props.error && !props.isPreview) {
         flashMessage.value?.addMessage('error', props.error);
     }
@@ -743,47 +762,40 @@ onMounted(() => {
     if (pageLevelErrors && pageLevelErrors.general && !props.isPreview) {
         flashMessage.value?.addMessage('error', pageLevelErrors.general);
     }
-    // Show conflict warning messages on initial load if applicable
     if (props.isConflictPage && !props.canResolveConflict && !props.isPreview) {
         flashMessage.value?.addMessage('warning', '此页面当前存在编辑冲突，您没有权限解决。');
     } else if (props.isConflictPage && props.canResolveConflict && !props.isPreview) {
         flashMessage.value?.addMessage('info', '此页面存在编辑冲突，您可以前往编辑页解决。');
     }
-    // Set up scroll spy only if not in preview mode
+    // 如果不是预览模式，设置目录滚动监听器
     if (!props.isPreview) {
-        // Add a small delay to ensure content is rendered for accurate observer setup
-        setTimeout(setupTocScrollSpy, 100);
-        // Optional: Re-run setup after a larger delay if dynamic content loading affects headings
-        // setTimeout(setupTocScrollSpy, 1000);
+        setTimeout(setupTocScrollSpy, 100); // 延迟设置，确保DOM渲染完成
     }
 });
 
 onUnmounted(() => {
     if (observer) {
-        observer.disconnect(); // Clean up the observer
+        observer.disconnect(); // 组件卸载时断开观察器，防止内存泄漏
     }
 });
 
-// Watch for content changes to regenerate TOC
+// 监听 currentVersion.content 属性的变化，如果内容更新则重新生成目录
 watch(() => props.currentVersion?.content, (newContent, oldContent) => {
     if (newContent !== oldContent) {
-        console.log("Content prop changed, regenerating TOC...");
+        console.log("内容属性改变，重新生成目录...");
         generateTableOfContents();
     }
-}, { immediate: false }); // Run on mount might cause issues if content isn't fully rendered
+}, { immediate: false });
 
-// Watch for the comments prop specifically if you expect it to reload often
+// 监听 comments 属性的变化 (可选，如果评论不是通过router.reload更新的)
 watch(() => props.comments, () => {
-    // Reset any reply/edit states if comments reload entirely? Optional.
-    // cancelReply();
-    // cancelEditComment();
-    console.log("Comments prop possibly updated.");
+    console.log("评论属性可能已更新。");
 }, { deep: true });
 
 </script>
 
 <style scoped>
-/* 高亮滚动目标 */
+/* 滚动到目标时的高亮动画 */
 .highlight-scroll {
     animation: highlight 1s ease-out;
 }
@@ -798,26 +810,22 @@ watch(() => props.comments, () => {
     }
 }
 
-/* 目录链接 */
+/* 目录链接样式 */
 .toc-link {
     @apply block truncate transition-colors duration-150 text-xs py-0.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400;
     padding-left: inherit;
-    /* 继承 li 的 padding-left */
 }
 
-/* 激活目录项的样式 */
+/* 激活的目录链接样式 */
 .toc-link.is-active {
     @apply text-blue-600 dark:text-blue-400 font-semibold;
     transform: translateX(4px);
-    /* 轻微向右移动 */
     border-left: 2px solid;
-    /* 左侧高亮线 */
     @apply border-blue-600 dark:border-blue-400;
     padding-left: calc(inherit - 2px + 1rem);
-    /* 调整内边距，留出高亮线的空间 */
 }
 
-/* 为不同级别的 TOC 链接应用缩进（如果使用内联样式则无需这里，但可以备用）*/
+/* 目录子项的额外缩进 */
 #toc-container ul ul .toc-link {
     padding-left: 1rem;
 }
@@ -830,7 +838,7 @@ watch(() => props.comments, () => {
     padding-left: 3rem;
 }
 
-/* 主要内容显示区域的基础样式 */
+/* Wiki内容显示区域的基础排版样式 */
 .wiki-content-display {
     @apply text-base text-gray-700 dark:text-gray-300;
 }
@@ -838,9 +846,9 @@ watch(() => props.comments, () => {
 .wiki-content-display :deep(p) {
     @apply leading-relaxed mb-5;
     line-height: 1.8;
-    /* 行高调整 */
 }
 
+/* Wiki内容显示区域的标题样式 */
 .wiki-content-display :deep(h1),
 .wiki-content-display :deep(h2),
 .wiki-content-display :deep(h3),
@@ -848,11 +856,8 @@ watch(() => props.comments, () => {
 .wiki-content-display :deep(h5),
 .wiki-content-display :deep(h6) {
     @apply font-semibold text-gray-800 dark:text-gray-200 mt-10 mb-4;
-    /* 调整标题间距 */
     scroll-margin-top: 80px;
-    /* 滚动定位偏移 */
     line-height: 1.4;
-    /* 标题行高 */
 }
 
 .wiki-content-display :deep(h1) {
@@ -893,18 +898,15 @@ watch(() => props.comments, () => {
     @apply mb-1 inline;
 }
 
-/* 防止列表项内 p 增加过多间距 */
-
-/* 引用块 */
+/* 引用块样式 */
 .wiki-content-display :deep(blockquote) {
     @apply border-l-4 border-blue-300 dark:border-blue-700 pl-5 italic text-gray-600 dark:text-gray-400 my-6 py-2 bg-blue-50/50 dark:bg-blue-900/20 rounded-r;
 }
 
-/* 代码块 */
+/* 代码块样式 */
 .wiki-content-display :deep(pre) {
     @apply bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-6 text-sm shadow-md leading-relaxed dark:bg-black/50 dark:text-gray-200;
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    /* 代码字体 */
 }
 
 .wiki-content-display :deep(code:not(pre code)) {
@@ -919,6 +921,7 @@ watch(() => props.comments, () => {
     line-height: inherit;
 }
 
+/* 代码高亮颜色 */
 .wiki-content-display :deep(pre code .hljs-comment) {
     @apply text-gray-400 italic;
 }
@@ -935,27 +938,25 @@ watch(() => props.comments, () => {
     @apply text-yellow-400;
 }
 
-/* 链接 */
+/* 链接样式 */
 .wiki-content-display :deep(a) {
     @apply text-cyan-600 dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300 underline decoration-cyan-600/50 hover:decoration-cyan-800 transition-colors duration-150;
 }
 
-/* 图片 */
+/* 图片样式 */
 .wiki-content-display :deep(img) {
     @apply max-w-full h-auto my-8 rounded-lg shadow-lg mx-auto block border border-gray-300 dark:border-gray-700;
 }
 
-/* 表格 */
+/* 表格样式 */
 .wiki-content-display :deep(table) {
     @apply w-full my-8 border-collapse border border-gray-400 dark:border-gray-600 shadow-md;
     table-layout: auto;
-    /* 允许表格根据内容调整列宽 */
 }
 
 .wiki-content-display :deep(th),
 .wiki-content-display :deep(td) {
     @apply border border-gray-300 dark:border-gray-600 px-5 py-3 text-left text-sm;
-    /* 增加 padding */
     vertical-align: top;
 }
 
@@ -971,7 +972,7 @@ watch(() => props.comments, () => {
     @apply bg-gray-200/50 dark:bg-gray-700/50;
 }
 
-/* 分类和标签样式 */
+/* 标签分类样式 */
 .tag-category {
     @apply inline-block px-2.5 py-0.5 bg-gray-200 text-gray-700 text-xs rounded-full hover:bg-gray-300 transition dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600;
 }
@@ -980,7 +981,7 @@ watch(() => props.comments, () => {
     @apply inline-block px-2.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full hover:bg-blue-200 transition dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60;
 }
 
-/* 操作按钮 */
+/* 图标按钮样式 */
 .btn-icon-primary {
     @apply inline-flex items-center px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition;
 }
@@ -999,7 +1000,7 @@ watch(() => props.comments, () => {
     @apply mr-1.5 h-3 w-3;
 }
 
-/* 警告/提示框 */
+/* 警告/错误/信息提示框样式 */
 .alert-error {
     @apply bg-red-100 border-l-4 border-red-500 text-red-800 p-4 rounded-md dark:bg-red-900/40 dark:border-red-600 dark:text-red-300;
 }
@@ -1012,7 +1013,7 @@ watch(() => props.comments, () => {
     @apply bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md dark:bg-blue-900/40 dark:border-blue-600 dark:text-blue-300;
 }
 
-/* 评论区样式 */
+/* 评论项交互样式 */
 .comment-item:hover .comment-actions,
 .reply-item:hover .comment-actions {
     opacity: 1;
@@ -1041,7 +1042,7 @@ watch(() => props.comments, () => {
     @apply inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition text-sm font-medium dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 dark:focus:ring-offset-gray-800;
 }
 
-/* 深色模式下的Prose适配 */
+/* 深色模式下 Prose 排版组件的颜色变量覆盖 */
 .dark .dark\:prose-invert {
     --tw-prose-body: theme(colors.gray.300);
     --tw-prose-headings: theme(colors.gray.100);
@@ -1061,10 +1062,9 @@ watch(() => props.comments, () => {
     --tw-prose-td-borders: theme(colors.gray.700);
     --tw-prose-thead: theme(colors.gray.700);
     --tw-prose-tbody: theme(colors.transparent);
-    /* 更自然的背景 */
 }
 
-/* 保证内容换行 */
+/* 强制文字换行，用于处理长单词或URL */
 .break-words {
     overflow-wrap: break-word;
     word-break: break-word;
@@ -1073,13 +1073,12 @@ watch(() => props.comments, () => {
     hyphens: auto;
 }
 
+/* 确保行内代码也能正确换行 */
 .prose :deep(code) {
     word-break: break-all;
 }
 
-/* 修正：确保code内部也换行 */
-
-/* 内容错误提示占位符 */
+/* 内容区域的错误/无内容占位符样式 */
 .error-content-placeholder {
     @apply text-gray-500 dark:text-gray-400 italic py-8 text-center border rounded-lg bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700 mt-6;
 }

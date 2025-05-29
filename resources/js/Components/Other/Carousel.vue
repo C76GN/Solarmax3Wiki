@@ -1,4 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Other/Carousel.vue
 <template>
     <div class="carousel-container relative rounded-lg" role="region" aria-roledescription="carousel"
         @wheel="handleWheel" @mouseenter="pauseAutoPlay" @mouseleave="resumeAutoPlay" @keydown="handleKeyDown"

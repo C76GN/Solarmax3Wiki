@@ -1,5 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Other/DropdownLink.vue
-<!-- 下拉链接组件：用于显示下拉菜单中的链接项 -->
 <script setup>
 import { Link } from '@inertiajs/vue3';
 

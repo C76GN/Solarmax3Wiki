@@ -1,4 +1,3 @@
-// FileName: /var/www/Solarmax3Wiki/resources/js/Components/Other/SectionCard.vue
 <template>
     <div class="masonry-item">
         <div class="section-card">

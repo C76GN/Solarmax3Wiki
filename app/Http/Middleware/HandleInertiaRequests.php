@@ -6,61 +6,84 @@ use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
 
+/**
+ * Inertia 请求处理中间件。
+ *
+ * 此中间件用于初始化 Inertia 应用并共享全局数据到前端。
+ * 它继承自 Inertia 的基类中间件，并负责设置根视图、管理资产版本
+ * 以及定义默认共享的 Inertia props。
+ */
 class HandleInertiaRequests extends Middleware
 {
     /**
-     * The root template that is loaded on the first page visit.
+     * 首次页面访问时加载的根视图模板。
      *
      * @var string
      */
     protected $rootView = 'app';
 
     /**
-     * Determine the current asset version.
+     * 确定当前资产（CSS/JS）的版本。
+     *
+     * @param Request $request 当前 HTTP 请求实例。
+     * @return string|null 资产版本字符串，或 null。
      */
     public function version(Request $request): ?string
     {
+        // 调用父类的版本方法，通常用于缓存清除
         return parent::version($request);
     }
 
     /**
-     * Define the props that are shared by default.
+     * 定义默认共享到前端的 Inertia props。
      *
-     * @return array<string, mixed>
+     * 这些数据将在所有 Inertia 页面请求中可用。
+     *
+     * @param Request $request 当前 HTTP 请求实例。
+     * @return array<string, mixed> 共享给前端的 props 数组。
      */
     public function share(Request $request): array
     {
+        // 获取当前认证用户实例
         $user = $request->user();
 
+        // 合并父类共享的 props 和当前应用特定的共享数据
         return array_merge(parent::share($request), [
+            // 共享 CSRF token，用于表单提交安全
             'csrf' => csrf_token(),
+
+            // 共享认证用户相关信息
             'auth' => [
                 'user' => $user ? [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    // 使用 Spatie 的 getAllPermissions() 方法，并提取 name
-                    'permissions' => $user->getAllPermissions()->pluck('name')->toArray() ?? [], // <--- 修改这里
-                    // 获取角色名称列表（保持不变，Spatie 有 roles 关系）
+                    // 获取用户所有权限的名称列表
+                    'permissions' => $user->getAllPermissions()->pluck('name')->toArray() ?? [],
+                    // 获取用户所有角色的名称列表
                     'roles' => $user->roles->pluck('name')->toArray() ?? [],
-                ] : null,
+                ] : null, // 如果用户未登录则为 null
             ],
-            'flash' => function () use ($request) { // 共享 Flash 消息
+
+            // 共享会话中的一次性（flash）消息
+            'flash' => function () use ($request) {
                 return [
                     'message' => $request->session()->get('flash.message'),
                 ];
             },
-            'errors' => function () use ($request) { // 共享验证错误
+
+            // 共享会话中的验证错误信息
+            'errors' => function () use ($request) {
                 return $request->session()->get('errors')
                     ? $request->session()->get('errors')->getBag('default')->getMessages()
-                    : (object) [];
+                    : (object) []; // 如果没有错误，则返回空对象
             },
-            'ziggy' => fn () => [ // Ziggy 配置用于前端路由
-                ...(new Ziggy)->toArray(),
-                'location' => $request->url(),
+
+            // 共享 Ziggy 路由配置，使 Laravel 路由在 JavaScript 中可用
+            'ziggy' => fn () => [
+                ...(new Ziggy)->toArray(), // 包含所有注册的路由信息
+                'location' => $request->url(), // 当前页面的完整 URL
             ],
-            // 你可以在这里添加其他需要全局共享的数据
-            // 'appName' => config('app.name'),
         ]);
     }
 }

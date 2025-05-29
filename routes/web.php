@@ -21,7 +21,7 @@ Route::prefix('wiki')->name('wiki.')->group(function () {
 
         Route::post('preview', [WikiController::class, 'preview'])->name('preview');
 
-        Route::delete('{page:slug}/my-draft', [WikiController::class, 'deleteMyDraft'])->name('draft.delete'); // 新增路由
+        Route::delete('{page:slug}/my-draft', [WikiController::class, 'deleteMyDraft'])->name('draft.delete');
 
         Route::middleware('permission:wiki.create')->group(function () {
             Route::get('create', [WikiController::class, 'create'])->name('create');
@@ -32,11 +32,11 @@ Route::prefix('wiki')->name('wiki.')->group(function () {
             Route::get('', [WikiController::class, 'trashIndex'])->name('index');
             Route::put('{pageId}/restore', [WikiController::class, 'restore'])
                 ->where('pageId', '[0-9]+')
-                ->middleware('permission:wiki.trash.restore') // 添加恢复权限
+                ->middleware('permission:wiki.trash.restore')
                 ->name('restore');
             Route::delete('{pageId}/force-delete', [WikiController::class, 'forceDelete'])
                 ->where('pageId', '[0-9]+')
-                ->middleware('permission:wiki.trash.force_delete') // 添加永久删除权限
+                ->middleware('permission:wiki.trash.force_delete')
                 ->name('force-delete');
         });
         Route::middleware('permission:wiki.delete')
@@ -120,7 +120,7 @@ Route::middleware(['auth'])->group(function () {
         Route::middleware('permission:role.delete')->delete('{role}', [RoleController::class, 'destroy'])->where('role', '[0-9]+')->name('destroy');
     });
 
-    Route::get('dashboard', [DashboardController::class, 'index']) // 修改这里
+    Route::get('dashboard', [DashboardController::class, 'index'])
         ->middleware('verified')
         ->name('dashboard');
 

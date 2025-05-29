@@ -14,26 +14,37 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse; // 1. 引入 AuthorizesRequests Trait
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
+/**
+ * 维基评论控制器
+ *
+ * 负责处理维基页面评论的发布、更新和删除（隐藏）等操作。
+ * 包含用户权限验证和操作日志记录。
+ */
 class WikiCommentController extends Controller
 {
-    use AuthorizesRequests; // 2. 使用 AuthorizesRequests Trait
+    use AuthorizesRequests; // 启用控制器中的授权功能。
 
     /**
-     * 存储新评论
+     * 发布新的维基评论。
+     *
+     * 接收评论内容和父评论ID（如果为回复），并存储到数据库。
+     * 进行登录检查、数据验证，并记录活动日志。
+     *
+     * @param Request $request HTTP请求实例。
+     * @param WikiPage $page 评论所属的维基页面实例。
+     * @return RedirectResponse|JsonResponse 重定向响应或JSON响应。
      */
     public function store(Request $request, WikiPage $page): RedirectResponse|JsonResponse
     {
-        // 可选：如果你在 Policy 中定义了 create 方法
-        // $this->authorize('create', WikiComment::class);
-
-        // 登录检查仍然是必要的，因为 Policy 可能假设用户已登录
+        // 检查用户是否已认证。
         if (! Auth::check()) {
             return response()->json(['message' => '请先登录'], SymfonyResponse::HTTP_UNAUTHORIZED);
         }
 
         try {
+            // 验证请求数据，包括评论内容和父评论ID的有效性。
             $validated = $request->validate([
                 'content' => 'required|string',
                 'parent_id' => ['nullable', 'exists:wiki_comments,id', function ($attribute, $value, $fail) use ($page) {
@@ -43,23 +54,26 @@ class WikiCommentController extends Controller
                 }],
             ]);
         } catch (ValidationException $e) {
-            // 让 Laravel 的异常处理器处理 Inertia 的验证错误返回
+            // 验证失败，抛出异常交由框架处理。
             throw $e;
         }
 
         try {
-            /** @var User $user */ // 保留类型提示，好习惯
+            // 获取当前认证用户。
             $user = Auth::user();
+            // 创建新的评论记录。
             $comment = WikiComment::create([
                 'wiki_page_id' => $page->id,
                 'user_id' => $user->id,
                 'parent_id' => $validated['parent_id'] ?? null,
                 'content' => $validated['content'],
-                'is_hidden' => false,
+                'is_hidden' => false, // 默认评论不隐藏。
             ]);
 
+            // 记录评论创建活动。
             $this->logActivity('create', $comment);
 
+            // 返回成功响应并重定向。
             return redirect()->back()
                 ->with('flash', [
                     'message' => [
@@ -68,10 +82,11 @@ class WikiCommentController extends Controller
                     ],
                 ]);
         } catch (\Exception $e) {
+            // 记录异常日志。
             Log::error("Error storing comment for page {$page->id}: ".$e->getMessage());
 
+            // 根据请求类型返回错误响应。
             if ($request->inertia() || $request->wantsJson()) {
-                // 返回通用错误给Inertia
                 return back()->withErrors(['general' => '评论发布失败，请稍后再试。'])->withInput();
             }
 
@@ -86,33 +101,41 @@ class WikiCommentController extends Controller
     }
 
     /**
-     * 更新评论
+     * 更新指定维基评论的内容。
+     *
+     * 检查用户权限，验证内容，更新评论，并记录活动日志。
+     *
+     * @param Request $request HTTP请求实例。
+     * @param WikiComment $comment 待更新的评论实例。
+     * @return RedirectResponse|JsonResponse 重定向响应或JSON响应。
      */
     public function update(Request $request, WikiComment $comment): RedirectResponse|JsonResponse
     {
-        // 3. 使用 Policy 进行授权检查
-        // 如果未登录或无权限，这里会自动抛出 AuthorizationException
+        // 授权检查：确保用户有权更新此评论。
         $this->authorize('update', $comment);
 
-        // --- 移除原有的手动权限检查 ---
-
         try {
+            // 验证评论内容。
             $validated = $request->validate([
                 'content' => 'required|string',
             ]);
         } catch (ValidationException $e) {
-            throw $e; // 让 Laravel 处理
+            // 验证失败，抛出异常。
+            throw $e;
         }
 
         try {
+            // 保存旧评论内容以便记录日志。
             $oldContent = $comment->content;
+            // 更新评论内容。
             $comment->update([
                 'content' => $validated['content'],
             ]);
 
-            // 记录活动日志，包含变更
+            // 记录评论更新活动。
             $this->logActivity('update', $comment, ['old_content' => $oldContent, 'new_content' => $validated['content']]);
 
+            // 返回成功响应。
             return redirect()->back()
                 ->with('flash', [
                     'message' => [
@@ -121,7 +144,10 @@ class WikiCommentController extends Controller
                     ],
                 ]);
         } catch (\Exception $e) {
+            // 记录异常日志。
             Log::error("Error updating comment {$comment->id}: ".$e->getMessage());
+
+            // 根据请求类型返回错误响应。
             if ($request->inertia() || $request->wantsJson()) {
                 return back()->withErrors(['general' => '评论更新失败，请稍后再试。'])->withInput();
             }
@@ -137,22 +163,30 @@ class WikiCommentController extends Controller
     }
 
     /**
-     * 隐藏评论 (软删除)
+     * 隐藏（软删除）指定的维基评论。
+     *
+     * 检查用户权限，并将评论的 `is_hidden` 字段设为 `true`。
+     * 记录隐藏操作的活动日志。
+     *
+     * @param Request $request HTTP请求实例。
+     * @param WikiComment $comment 待隐藏的评论实例。
+     * @return RedirectResponse|JsonResponse 重定向响应或JSON响应。
      */
     public function destroy(Request $request, WikiComment $comment): RedirectResponse|JsonResponse
     {
-        // 4. 使用 Policy 进行授权检查
+        // 授权检查：确保用户有权删除（隐藏）此评论。
         $this->authorize('delete', $comment);
 
-        // --- 移除原有的手动权限检查 ---
-
         try {
+            // 将评论标记为隐藏。
             $comment->update([
                 'is_hidden' => true,
             ]);
 
-            $this->logActivity('delete', $comment, ['hidden' => true]); // 记录为隐藏操作
+            // 记录评论隐藏活动。
+            $this->logActivity('delete', $comment, ['hidden' => true]);
 
+            // 返回成功响应。
             return redirect()->back()
                 ->with('flash', [
                     'message' => [
@@ -161,7 +195,10 @@ class WikiCommentController extends Controller
                     ],
                 ]);
         } catch (\Exception $e) {
+            // 记录异常日志。
             Log::error("Error deleting (hiding) comment {$comment->id}: ".$e->getMessage());
+
+            // 根据请求类型返回错误响应。
             if ($request->inertia() || $request->wantsJson()) {
                 return back()->withErrors(['general' => '删除评论失败，请稍后再试。']);
             }
@@ -176,15 +213,29 @@ class WikiCommentController extends Controller
         }
     }
 
-    // 日志记录辅助方法 (保持不变)
+    /**
+     * 记录操作到活动日志。
+     *
+     * 辅助方法，用于统一记录各种操作到活动日志系统。
+     * 在控制台环境和单元测试中会跳过日志记录。
+     *
+     * @param string $action 执行的操作类型。
+     * @param Model $subject 操作涉及的模型实例。
+     * @param array|null $properties 与操作相关的额外属性。
+     * @return void
+     */
     protected function logActivity(string $action, Model $subject, ?array $properties = null): void
     {
+        // 如果在控制台运行且不是单元测试，则跳过日志记录。
         if (app()->runningInConsole() && ! app()->runningUnitTests()) {
             return;
         }
+
         try {
+            // 调用 ActivityLog 模型的静态方法记录日志。
             ActivityLog::log($action, $subject, $properties);
         } catch (\Exception $e) {
+            // 记录日志失败时的错误信息。
             Log::error("Failed to log activity: Action={$action}, Subject={$subject->getTable()}:{$subject->getKey()}, Error: ".$e->getMessage());
         }
     }

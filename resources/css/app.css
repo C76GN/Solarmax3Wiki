@@ -2,80 +2,83 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 基础样式 - 确保默认文本颜色为浅色 */
+/* 基础样式 */
 body {
-    /* 你使用了背景图片，所以这里不设置背景色，但可以设置基础文字颜色 */
+    /* 设置基础文本颜色为浅灰色，适用于深色背景 */
     @apply text-gray-300;
-    /* 设置一个浅灰色作为基础文字颜色 */
 }
 
-/* --- Diff Viewer Styles (Optimized for Dark) --- */
+/* --- 差异对比视图样式 (为深色主题优化) --- */
 .diff-container {
+    /* 边框、圆角、内阴影和深色背景 */
     @apply border border-gray-600 rounded-lg overflow-hidden shadow-inner;
-    /* background-color: #f8f9fa; */
-    /* Light mode background */
     background-color: #1f2937;
-    /* Dark background (Tailwind gray-800) */
+    /* Tailwind gray-800 */
 }
 
 .diff-container table.diff {
+    /* 表格宽度、折叠边框、文本大小、等宽字体，并固定列宽 */
     @apply w-full border-collapse text-xs font-mono;
     table-layout: fixed;
-    /* background-color: white; */
-    /* Light mode background */
     background-color: #111827;
-    /* Darker background (Tailwind gray-900) */
+    /* Tailwind gray-900 */
 }
 
 .diff-container .diff th {
+    /* 表头内边距、文本左对齐、深色背景、边框、粗体字、固定顶部、层级、浅色文本 */
     @apply p-1 px-2 text-left bg-gray-700 border border-gray-600 font-semibold sticky top-0 z-10 text-gray-300;
     width: 50%;
 }
 
 .diff-container .diff td {
+    /* 单元格内边距、边框、顶部对齐、自动换行、行高、浅色文本 */
     @apply p-1 px-2 border border-gray-600 align-top break-words;
     vertical-align: top;
     white-space: pre-wrap;
     word-wrap: break-word;
     word-break: break-all;
     line-height: 1.6;
-    /* color: #374151; */
-    /* Light mode text */
     color: #d1d5db;
-    /* Dark mode text (Tailwind gray-300) */
+    /* Tailwind gray-300 */
 }
 
 .diff-container .diff td.Left {
+    /* 左侧单元格右边框 */
     @apply border-r-2 border-r-gray-500;
 }
 
 .diff-container .diff td.Right {
+    /* 右侧单元格无左边框 */
     border-left: none;
 }
 
 .diff-container .diff td.lines-no {
+    /* 行号单元格样式：右对齐、内边距、浅灰色文本、半透明深色背景、不可选中、固定左侧、固定宽度、层级 */
     @apply text-right pr-2 text-gray-500 bg-gray-700/50 select-none sticky left-0;
     width: 40px !important;
-    /* Adjust if needed */
     min-width: 40px !important;
     z-index: 5;
 }
 
 .diff-container .diff tr td.lines-no:first-of-type {
+    /* 行号单元格的特殊边框 */
     @apply border-r border-gray-600;
 }
 
 .diff-container .diff .Skipped {
+    /* 跳过行背景 */
     @apply bg-gray-700/50;
 }
 
 .diff-container .diff .Skipped td {
+    /* 跳过行单元格内边距和行高 */
     @apply p-0 border-gray-700;
     line-height: 0.5rem;
     height: 0.5rem;
 }
 
 .diff-container .diff .Skipped td span {
+    /* 跳过行文本样式 */
     @apply text-gray-500 text-xs;
     display: block;
     text-align: center;
@@ -83,80 +86,82 @@ body {
 }
 
 .diff-container .diff .ChangeDelete .Left {
+    /* 删除行背景 */
     @apply bg-red-900/40;
-    /* Use dark background for delete */
 }
 
 .diff-container .diff .ChangeDelete .Left,
 .diff-container .diff .ChangeDelete .Left del {
-    /* color: #b91c1c; */
-    /* Light mode text */
+    /* 删除行文本颜色和删除线文本颜色 */
     color: #fca5a5;
-    /* Dark mode text (Tailwind red-300) */
+    /* Tailwind red-300 */
 }
 
 .diff-container .diff .ChangeDelete .Left del {
+    /* 删除文本高亮背景和圆角 */
     @apply bg-red-700/50 px-0.5 rounded-sm;
-    /* Darker highlight for deleted text */
 }
 
 .diff-container .diff .ChangeInsert .Right {
+    /* 插入行背景 */
     @apply bg-green-900/40;
-    /* Use dark background for insert */
 }
 
 .diff-container .diff .ChangeInsert .Right,
 .diff-container .diff .ChangeInsert .Right ins {
-    /* color: #047857; */
-    /* Light mode text */
+    /* 插入行文本颜色和插入文本颜色 */
     color: #6ee7b7;
-    /* Dark mode text (Tailwind green-300) */
+    /* Tailwind green-300 */
 }
 
 .diff-container .diff .ChangeInsert .Right ins {
+    /* 插入文本高亮背景和圆角，无下划线 */
     @apply bg-green-700/50 px-0.5 rounded-sm;
-    /* Darker highlight for inserted text */
     text-decoration: none;
 }
 
 .diff-container .diff .ChangeReplace .Left {
+    /* 替换行左侧背景 */
     @apply bg-red-900/40;
 }
 
 .diff-container .diff .ChangeReplace .Right {
+    /* 替换行右侧背景 */
     @apply bg-green-900/40;
 }
 
 .diff-container .diff td.Left .ChangeReplace del,
 .diff-container .diff td.Left .ChangeDelete del {
+    /* 替换/删除文本高亮背景、文本颜色、内边距、圆角和删除线 */
     @apply bg-red-700/50 text-red-200 px-0.5 rounded-sm;
     text-decoration: line-through;
 }
 
 .diff-container .diff td.Right .ChangeReplace ins,
 .diff-container .diff td.Right .ChangeInsert ins {
+    /* 替换/插入文本高亮背景、文本颜色、内边距、圆角和无下划线 */
     @apply bg-green-700/50 text-green-200 px-0.5 rounded-sm;
     text-decoration: none;
 }
 
 .diff-container .prose {
-    /* Reset prose styles within diff if necessary */
+    /* 清除默认的 `prose` 样式，避免干扰差异视图布局 */
     all: unset;
 }
 
 .diff-container td>*,
 .diff-container td del>*,
 .diff-container td ins>* {
+    /* 确保差异视图中的子元素内边距为0，并保持内联显示 */
     margin: 0 !important;
     padding: 0 !important;
     display: inline;
-    /* Ensure inline elements remain inline within diff */
 }
 
 
-/* --- Prose Styles (Optimized for Dark Theme) --- */
+/* --- `prose` 样式 (为深色主题优化) --- */
 .prose {
-    /* Default text color for prose */
+    /* 默认文本颜色和行高，适用于内容展示 */
     @apply text-gray-200 leading-relaxed;
 }
 
@@ -164,8 +169,8 @@ body {
 .prose li,
 .prose ul,
 .prose ol {
+    /* 段落和列表项的文本颜色 */
     @apply text-gray-200;
-    /* Light text for paragraphs and lists */
 }
 
 .prose h1,
@@ -174,152 +179,169 @@ body {
 .prose h4,
 .prose h5,
 .prose h6 {
-    /* Light text for headings */
+    /* 标题字体粗细、文本颜色、上下边距和滚动锚点 */
     @apply font-semibold text-gray-100 mt-8 mb-4 scroll-mt-20;
 }
 
-/* Specific heading styles */
+/* 特定标题样式 */
 .prose h1 {
+    /* 标题1字体大小、底部边框、内边距和外边距 */
     @apply text-3xl border-b border-gray-700 pb-2 mb-6;
 }
 
 .prose h2 {
+    /* 标题2字体大小、底部边框、内边距和外边距 */
     @apply text-2xl border-b border-gray-700 pb-2 mb-5;
 }
 
 .prose h3 {
+    /* 标题3字体大小 */
     @apply text-xl;
 }
 
 .prose h4 {
+    /* 标题4字体大小 */
     @apply text-lg;
 }
 
 .prose p {
+    /* 段落底部外边距 */
     @apply mb-5;
 }
 
 .prose ul,
 .prose ol {
+    /* 列表左侧内边距和底部外边距 */
     @apply pl-6 mb-5;
 }
 
 .prose ul {
+    /* 无序列表标记样式 */
     @apply list-disc;
 }
 
 .prose ol {
+    /* 有序列表标记样式 */
     @apply list-decimal;
 }
 
 .prose li {
+    /* 列表项底部外边距 */
     @apply mb-2;
 }
 
 .prose li>p {
+    /* 列表项内段落样式，确保内联显示 */
     @apply mb-1 inline;
 }
 
 .prose blockquote {
-    /* Dark mode style for blockquotes */
+    /* 引用块样式：左侧边框、内边距、斜体文本、文本颜色、垂直外边距、内边距、背景色和圆角 */
     @apply border-l-4 border-blue-600 pl-5 italic text-gray-300 my-6 py-2 bg-gray-800/70 rounded-r;
 }
 
 .prose pre {
-    /* Code blocks are already dark */
+    /* 代码块样式：背景色、文本颜色、内边距、圆角、溢出滚动、外边距、字体和阴影 */
     @apply bg-black/50 text-gray-200 p-4 rounded-lg overflow-x-auto my-6 text-sm shadow;
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
 .prose code:not(pre code) {
-    /* Dark mode style for inline code */
+    /* 内联代码样式：背景色、文本颜色、内边距、圆角、文本大小和字体 */
     @apply bg-red-900/50 text-red-300 px-1.5 py-0.5 rounded text-[0.9em] font-mono;
 }
 
 .prose pre code {
-    /* Text color inside code blocks */
+    /* 代码块内部代码文本颜色 */
     @apply text-gray-200;
 }
 
-/* HLJS Syntax Highlighting Colors (Keep as is, they work on dark) */
+/* 代码高亮样式 (Highlight.js) */
 .prose pre code .hljs-comment {
+    /* 注释文本颜色和斜体 */
     @apply text-gray-400 italic;
 }
 
 .prose pre code .hljs-keyword {
+    /* 关键词文本颜色 */
     @apply text-blue-400;
 }
 
 .prose pre code .hljs-string {
+    /* 字符串文本颜色 */
     @apply text-green-400;
 }
 
 .prose pre code .hljs-number {
+    /* 数字文本颜色 */
     @apply text-yellow-400;
 }
 
 .prose a {
-    /* Dark mode link colors */
+    /* 链接样式：文本颜色、悬停颜色、下划线样式和过渡效果 */
     @apply text-cyan-400 hover:text-cyan-300 underline decoration-cyan-600/50 hover:decoration-cyan-700 transition-colors duration-150;
 }
 
 .prose img {
+    /* 图片样式：最大宽度、自动高度、垂直外边距、圆角、阴影、居中显示和边框 */
     @apply max-w-full h-auto my-8 rounded-lg shadow-md mx-auto block border border-gray-700;
 }
 
-/* Prose Table Styles (Optimized for Dark) */
+/* `prose` 表格样式 (为深色主题优化) */
 .prose table {
+    /* 表格宽度、垂直外边距、折叠边框、边框、阴影、圆角和溢出隐藏 */
     @apply w-full my-8 border-collapse border border-gray-600 shadow-md rounded-lg overflow-hidden;
     table-layout: auto;
 }
 
 .prose th,
 .prose td {
+    /* 表头和单元格边框、内边距、文本左对齐和文本大小 */
     @apply border border-gray-700 px-4 py-3 text-left text-sm;
     vertical-align: top;
 }
 
 .prose th {
+    /* 表头背景色、字体粗细和文本颜色 */
     @apply bg-gray-700/80 font-semibold text-gray-200;
-    /* Darker header */
 }
 
 .prose tbody tr {
+    /* 表格行背景色 */
     @apply bg-gray-800;
-    /* Base row background */
 }
 
 .prose tbody tr:nth-child(even) {
+    /* 偶数行背景色，略有不同 */
     @apply bg-gray-700/60;
-    /* Slightly different even row */
 }
 
 .prose tbody tr:hover {
+    /* 表格行悬停背景色和过渡效果 */
     @apply bg-gray-700/70 transition-colors duration-150;
 }
 
 
-/* --- Tiptap Editor Specific Styles (Optimized for Dark) --- */
+/* --- Tiptap 编辑器特有样式 (为深色主题优化) --- */
 .tiptap-editor,
 .editor-content {
-    /* Give the editor content area a dark background */
+    /* 编辑器和内容区域背景色、边框和圆角 */
     background-color: #1f2937;
     /* Tailwind gray-800 */
     border: 1px solid #4b5563;
     /* Tailwind gray-600 */
     border-radius: 0.375rem;
-    /* rounded-md */
 }
 
 .ProseMirror {
+    /* 编辑器核心区域样式：无轮廓、最小高度、文本颜色和内边距 */
     @apply outline-none min-h-[150px];
     color: #d1d5db;
-    /* Tailwind gray-300 - Default text color */
+    /* Tailwind gray-300 */
     padding: 0.75rem;
-    /* Add some padding inside the editor */
 }
 
-/* Placeholder color for dark background */
+/* 编辑器占位符样式 */
 .ProseMirror p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
     float: left;
@@ -329,14 +351,13 @@ body {
     height: 0;
 }
 
-/* Tiptap Table Styles Within Editor (Optimized for Dark) */
+/* Tiptap 编辑器内部表格样式 (为深色主题优化) */
 .ProseMirror table {
     border-collapse: collapse;
     table-layout: fixed;
-    /* Keep fixed for editor stability */
+    /* 固定列宽，保持编辑器稳定性 */
     width: 100%;
     margin: 1rem 0;
-    /* Add margin */
     overflow: hidden;
 }
 
@@ -349,7 +370,6 @@ body {
     vertical-align: top;
     box-sizing: border-box;
     position: relative;
-    /* Ensure text inside cells is light */
     color: #d1d5db;
     /* Tailwind gray-300 */
 }
@@ -360,24 +380,22 @@ body {
     background-color: #374151;
     /* Tailwind gray-700 */
     color: #f3f4f6;
-    /* Tailwind gray-100 for header text */
+    /* Tailwind gray-100 */
 }
 
 .ProseMirror table tr:nth-child(even) {
-    /* background-color: #1f2937; */
-    /* Base dark color */
+    /* 偶数行背景色 (半透明) */
     background-color: rgba(55, 65, 81, 0.5);
     /* Tailwind gray-700 with opacity */
 }
 
 .ProseMirror table tr:nth-child(odd) {
-    /* background-color: #111827; */
-    /* Darker base */
+    /* 奇数行背景色 */
     background-color: #1f2937;
     /* Tailwind gray-800 */
 }
 
-/* Selected cell and resize handle (Keep colors as they are likely fine on dark) */
+/* 选中单元格样式 */
 .ProseMirror .selectedCell:after {
     z-index: 2;
     position: absolute;
@@ -387,10 +405,11 @@ body {
     top: 0;
     bottom: 0;
     background: rgba(59, 130, 246, 0.2);
-    /* Lighter blue overlay */
+    /* Tailwind blue-500 with opacity */
     pointer-events: none;
 }
 
+/* 列调整手柄样式 */
 .ProseMirror .column-resize-handle {
     position: absolute;
     right: -2px;
@@ -398,7 +417,7 @@ body {
     bottom: -2px;
     width: 4px;
     background-color: #3b82f6;
-    /* Tailwind blue-500 - should be visible */
+    /* Tailwind blue-500 */
     pointer-events: all;
     cursor: col-resize;
     z-index: 20;
@@ -409,38 +428,32 @@ body {
 }
 
 
-/* Ensure wiki content display outside editor also uses dark styles */
+/* 确保在编辑器外部显示 Wiki 内容时也使用深色样式 */
 .wiki-content-display table th,
 .wiki-content-display table td {
-    /* border: 1px solid #ccc; */
-    /* Light mode border */
+    /* Wiki 内容展示表格的边框 */
     border: 1px solid #4b5563;
-    /* Dark mode border */
+    /* Tailwind gray-600 */
 }
 
 .wiki-content-display .prose {
-    /* Apply prose dark styles here too */
+    /* 应用 `prose` 的深色文本样式 */
     @apply text-gray-200 leading-relaxed;
 }
 
-/* Add other specific dark overrides for .wiki-content-display if needed */
-
-
-/* Fix for #toc-container text color */
+/* 目录 (Table of Contents) 样式 */
 #toc-container ul {
     list-style: none;
     padding-left: 0;
 }
 
 #toc-container li a {
+    /* 目录链接样式：块级、截断文本、过渡效果、文本大小、浅灰色文本和悬停蓝色 */
     @apply block truncate transition-colors duration-150 text-sm;
-    /* @apply text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400; */
     @apply text-gray-400 hover:text-blue-400;
-    /* Use dark theme colors */
 }
 
 #toc-container li a.is-active {
-    /* @apply text-blue-600 dark:text-blue-400 font-semibold; */
+    /* 活跃（当前可见）目录链接样式：蓝色文本和粗体字 */
     @apply text-blue-400 font-semibold;
-    /* Use dark theme colors */
 }

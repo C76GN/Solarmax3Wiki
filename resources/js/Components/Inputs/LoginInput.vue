@@ -1,10 +1,10 @@
 <template>
     <div class="form-control">
-        <!-- 使用 :value 绑定 modelValue 并监听 input 事件发射 update:modelValue -->
+        <!-- 输入框元素，双向绑定 modelValue -->
         <input :type="type" :value="modelValue" :required="required"
             @input="$emit('update:modelValue', $event.target.value)" ref="input" />
         <label>
-            <!-- 动态显示 label 的波浪效果 -->
+            <!-- 标签字符动态显示动画 -->
             <span v-for="(char, index) in label.split('')" :key="index" :style="{ transitionDelay: `${index * 50}ms` }">
                 {{ char }}
             </span>
@@ -15,26 +15,27 @@
 <script setup>
 import { ref, defineExpose } from 'vue';
 
+// 定义组件接收的属性
 const props = defineProps({
     label: {
         type: String,
-        required: true,  // 输入框的标签，比如 "Email" 或 "Password"
+        required: true,
     },
     type: {
         type: String,
-        default: 'text',  // 输入框的类型，比如 "text" 或 "password"
+        default: 'text',
     },
     modelValue: {
         type: String,
-        default: '',  // 双向绑定值
+        default: '',
     },
     required: {
         type: Boolean,
-        default: false,  // 是否为必填项
+        default: false,
     }
 })
 
-// 暴露 input 元素
+// 暴露 input 元素，以便父组件可以调用其 focus 方法
 const input = ref(null);
 defineExpose({
     focus: () => {
@@ -44,12 +45,6 @@ defineExpose({
 </script>
 
 <style scoped>
-/* 样式保持不变 */
-</style>
-
-
-<style scoped>
-/* 保持原来的样式 */
 .form-control {
     position: relative;
     margin: 20px 0 40px;
@@ -70,10 +65,8 @@ defineExpose({
 .form-control input:focus,
 .form-control input:valid {
     outline: none;
-    /* 去掉蓝色边框 */
     box-shadow: none;
     border-bottom-color: lightblue;
-    /* 只保留底部的下划线变化 */
 }
 
 .form-control label {
@@ -101,6 +94,5 @@ input:-webkit-autofill {
     -webkit-box-shadow: 0 0 0px 1000px transparent inset;
     transition: background-color 5000s ease-in-out 0s;
     -webkit-text-fill-color: white !important;
-    /* 保持字体颜色为白色 */
 }
 </style>
