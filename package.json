@@ -12,11 +12,11 @@
         "@types/diff-match-patch": "^1.0.36",
         "@vitejs/plugin-vue": "^5.0.0",
         "autoprefixer": "^10.4.12",
-        "axios": "^1.8.4",
+        "axios": "^1.9.0",
         "laravel-vite-plugin": "^1.0",
         "postcss": "^8.4.31",
         "tailwindcss": "^3.4.13",
-        "vite": "^6.2.6",
+        "vite": "^6.3.4",
         "vue": "^3.4.0"
     },
     "dependencies": {
